@@ -4,7 +4,7 @@ from PyInquirer import prompt as ask_questions
 import regex
 import sys
 
-from wiperf.config.utils import section_header, sub_section_header
+from wiperf_poller.config.utils import section_header, sub_section_header
 
 def splunk_questions(config_vars):
 

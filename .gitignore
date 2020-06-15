@@ -2,7 +2,7 @@ bundle/
 config.ini
 *.pyc
 dist/*
-wiperf.egg-info/*
+wiperf_poller.egg-info/*
 build/*
 .vscode
 

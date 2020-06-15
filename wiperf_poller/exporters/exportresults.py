@@ -7,9 +7,9 @@ import os
 import sys
 from socket import gethostname
 
-from wiperf.exporters.splunkexporter import splunkexporter
-from wiperf.exporters.influxexporter2 import influxexporter2
-from wiperf.exporters.influxexporter import influxexporter
+from wiperf_poller.exporters.splunkexporter import splunkexporter
+from wiperf_poller.exporters.influxexporter2 import influxexporter2
+from wiperf_poller.exporters.influxexporter import influxexporter
 #TODO: conditional import of influxexporter if Influx module available
 
 class ResultsExporter(object):

@@ -5,9 +5,9 @@ from shutil import copyfile
 import sys
 from PyInquirer import prompt as ask_questions
 
-from wiperf.config.general import general_section
-from wiperf.helpers.config import read_local_config
-from wiperf.helpers.filelogger import FileLogger
+from wiperf_poller.config.general import general_section
+from wiperf_poller.helpers.config import read_local_config
+from wiperf_poller.helpers.filelogger import FileLogger
 
 answers = {}
 

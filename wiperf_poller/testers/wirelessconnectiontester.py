@@ -3,8 +3,8 @@ import time
 import subprocess
 from socket import gethostbyname
 
-from wiperf.helpers.wirelessadapter import WirelessAdapter
-from wiperf.testers.mgtconnectiontester import MgtConnectionTester
+from wiperf_poller.helpers.wirelessadapter import WirelessAdapter
+from wiperf_poller.testers.mgtconnectiontester import MgtConnectionTester
 
 class WirelessConnectionTester(object):
     """

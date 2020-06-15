@@ -6,38 +6,38 @@ import os.path
 import logging
 
 # our local ...
-from wiperf.testers.speedtester import Speedtester
-from wiperf.testers.wirelessconnectiontester import WirelessConnectionTester
-from wiperf.testers.ethernetconnectiontester import EthernetConnectionTester
-from wiperf.testers.pingtester import PingTester
-from wiperf.testers.iperf3tester import IperfTester
-from wiperf.testers.dnstester import DnsTester
-from wiperf.testers.httptester import HttpTester
-from wiperf.testers.dhcptester import DhcpTester
+from wiperf_poller.testers.speedtester import Speedtester
+from wiperf_poller.testers.wirelessconnectiontester import WirelessConnectionTester
+from wiperf_poller.testers.ethernetconnectiontester import EthernetConnectionTester
+from wiperf_poller.testers.pingtester import PingTester
+from wiperf_poller.testers.iperf3tester import IperfTester
+from wiperf_poller.testers.dnstester import DnsTester
+from wiperf_poller.testers.httptester import HttpTester
+from wiperf_poller.testers.dhcptester import DhcpTester
 
-from wiperf.helpers.wirelessadapter import WirelessAdapter
-from wiperf.helpers.ethernetadapter import EthernetAdapter
-from wiperf.helpers.filelogger import FileLogger
-from wiperf.helpers.config import read_local_config
-from wiperf.helpers.bouncer import Bouncer
-from wiperf.helpers.remoteconfig import check_last_cfg_read
-from wiperf.helpers.route import check_route_to_dest
-from wiperf.helpers.statusfile import StatusFile
-from wiperf.helpers.lockfile import LockFile
-from wiperf.helpers.watchdog import Watchdog
+from wiperf_poller.helpers.wirelessadapter import WirelessAdapter
+from wiperf_poller.helpers.ethernetadapter import EthernetAdapter
+from wiperf_poller.helpers.filelogger import FileLogger
+from wiperf_poller.helpers.config import read_local_config
+from wiperf_poller.helpers.bouncer import Bouncer
+from wiperf_poller.helpers.remoteconfig import check_last_cfg_read
+from wiperf_poller.helpers.route import check_route_to_dest
+from wiperf_poller.helpers.statusfile import StatusFile
+from wiperf_poller.helpers.lockfile import LockFile
+from wiperf_poller.helpers.watchdog import Watchdog
 
-from wiperf.exporters.exportresults import ResultsExporter
+from wiperf_poller.exporters.exportresults import ResultsExporter
 
 # define useful system files
 this_dir = os.path.dirname(os.path.realpath(__file__))
 
 config_file = "/etc/wiperf/config.ini"
 log_file = "/var/log/wiperf_agent.log"
-lock_file = '/tmp/wiperf.lock'
+lock_file = '/tmp/wiperf_poller.lock'
 status_file = '/tmp/wiperf_status.txt'
-watchdog_file = '/tmp/wiperf.watchdog'
-bounce_file = '/tmp/wiperf.bounce'
-check_cfg_file = '/tmp/wiperf.cfg'
+watchdog_file = '/tmp/wiperf_poller.watchdog'
+bounce_file = '/tmp/wiperf_poller.bounce'
+check_cfg_file = '/tmp/wiperf_poller.cfg'
 
 # Enable debugs or create some dummy data for testing
 DEBUG = 0

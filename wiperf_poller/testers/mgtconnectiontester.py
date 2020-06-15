@@ -3,7 +3,7 @@ import time
 import subprocess
 from socket import gethostbyname
 
-from wiperf.helpers.ethernetadapter import EthernetAdapter
+from wiperf_poller.helpers.ethernetadapter import EthernetAdapter
 
 class MgtConnectionTester(object):
     """

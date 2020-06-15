@@ -10,7 +10,7 @@ import json
 import subprocess
 import time
 
-from wiperf.testers.pingtester import PingTester
+from wiperf_poller.testers.pingtester import PingTester
 
 class IperfTester(object):
     """

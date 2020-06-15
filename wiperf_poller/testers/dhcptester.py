@@ -3,7 +3,7 @@ A simple class to perform a DHCP release & renew and return the renewal time
 """
 import time
 import subprocess
-from wiperf.helpers.wirelessadapter import WirelessAdapter
+from wiperf_poller.helpers.wirelessadapter import WirelessAdapter
 
 
 class DhcpTester(object):

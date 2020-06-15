@@ -1,0 +1,9 @@
+bundle/
+config.ini
+*.pyc
+dist/*
+wiperf.egg-info/*
+build/*
+.vscode
+
+

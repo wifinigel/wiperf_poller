@@ -4,14 +4,14 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="wiperf", # Replace with your own username
+    name="wiperf_poller",
     version="0.0.1",
     author="Nigel Bowden",
     author_email="wifinigel@gmail.com",
-    description="A small example package",
+    description="Poller for the wiperf utlity",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/wifinigel/wiperf",
+    url="https://github.com/wifinigel/wiperf_poller",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",

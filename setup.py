@@ -13,6 +13,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/wifinigel/wiperf_poller",
     packages=setuptools.find_packages(),
+    install_requires=['speedtest-cli', 'influxdb', 'influxdb_client'],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: Free for non-commercial use",

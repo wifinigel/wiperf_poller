@@ -1,9 +1,12 @@
 bundle/
 config.ini
 *.pyc
-dist/*
+dist
 wiperf_poller.egg-info/*
-build/*
+build
 .vscode
+*.egg-info
+wiperf_poller-*
+
 
 

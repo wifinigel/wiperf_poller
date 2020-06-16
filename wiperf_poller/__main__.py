@@ -28,9 +28,6 @@ from wiperf_poller.helpers.watchdog import Watchdog
 
 from wiperf_poller.exporters.exportresults import ResultsExporter
 
-# define useful system files
-this_dir = os.path.dirname(os.path.realpath(__file__))
-
 config_file = "/etc/wiperf/config.ini"
 log_file = "/var/log/wiperf_agent.log"
 lock_file = '/tmp/wiperf_poller.lock'

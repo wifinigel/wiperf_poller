@@ -54,16 +54,16 @@ class MgtConnectionTester(object):
             passed_auth = True
             
             if response_code == 400:
-                self.file_logger.info("Token check ok.")
+                self.file_logger.info("Splunk token check: ok.")
             elif response_code in failed_auth_codes:
-                self.file_logger.error("Token appears invalid or is not enabled, please check you are using correct Token and that it is enabled on Splunk server")
+                self.file_logger.error("Splunk token check: Token appears invalid or is not enabled, please check you are using correct Token and that it is enabled on Splunk server")
                 passed_auth = False
             else:
-                self.file_logger.error("Bad response code from Splunk server...are its services definitely up? Check Splunk server.")
+                self.file_logger.error("Splunk token check: Bad response code from Splunk server...are its services definitely up? Check Splunk server.")
                 passed_auth = False
 
             if not passed_auth:
-                self.file_logger.error("Auth check to server failed. Err msg: {} (Exiting...)".format(str(output)))
+                self.file_logger.error("Splunk token check: Auth check to server failed. (Exiting...)")
                 watchdog_obj.inc_watchdog_count()
                 lockf_obj.delete_lock_file()
                 sys.exit()

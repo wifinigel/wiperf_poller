@@ -1,3 +1,6 @@
+v0.1.5
+1. Improved Splunk token check messages
+
 v0.1.4
 1. Added token check for splunk
 

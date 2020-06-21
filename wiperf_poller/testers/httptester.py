@@ -34,6 +34,7 @@ class HttpTester(object):
 
         self.file_logger.debug("HTTP test target: {}".format(http_target))
 
+        # TODO: Perform 3 tests and avg best 2 to remove anomalies?
         start = time.time()
         try:
             #response = requests.get(target_url, verify=False)

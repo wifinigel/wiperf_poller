@@ -29,7 +29,8 @@ class IperfTester(object):
         '''
         # This is a little clunky, but the 'which' cmd stopped
         # working in WLANPi image 1.9...after many hours of diagnosing,
-        # finally gave up and put this in...
+        # finally gave up and put this in... (update: think it may have
+        # been a hostname mis-config, but never verified)
         locations = [
             '/usr/local/bin/iperf3',
             '/usr/bin/iperf3',

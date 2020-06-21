@@ -36,6 +36,8 @@ class DnsTester(object):
         self.file_logger.debug("DNS test target: {}".format(self.target))
         self.file_logger.debug("Performing DNS lookup for: {}".format(target))
 
+        # TODO: Perform the test 3 times and take avg of best 2 out of 3 to iron
+        #       out single-case anonmalies
         start = time.time()
         try:
             socket.gethostbyname(target)

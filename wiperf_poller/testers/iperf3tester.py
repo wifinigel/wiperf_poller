@@ -272,7 +272,7 @@ class IperfTester(object):
                 results_dict['jitter_ms'] = round(result['jitter_ms'], 1)
                 results_dict['packets'] = result['packets']
                 results_dict['lost_packets'] = result['lost_packets']
-                results_dict['lost_percent'] = round(result['lost_percent'], 1)
+                results_dict['lost_percent'] = float(result['lost_percent'])
                 results_dict['mos_score']=self.calculate_mos(rtt_avg_ms,round(result['jitter_ms'], 1),round(result['lost_percent'], 1))
 
                 # workaround for crazy jitter figures sometimes seen

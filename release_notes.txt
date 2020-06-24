@@ -1,3 +1,6 @@
+v0.16
+1. fixed integer/float issue for lost_percent data in to influx
+
 v0.1.5
 1. Improved Splunk token check messages
 

@@ -5,6 +5,7 @@ from socket import gethostbyname
 
 from wiperf_poller.helpers.wirelessadapter import WirelessAdapter
 from wiperf_poller.testers.mgtconnectiontester import MgtConnectionTester
+from wiperf_poller.helpers.route import check_correct_mode_interface
 
 class WirelessConnectionTester(object):
     """
@@ -62,6 +63,16 @@ class WirelessConnectionTester(object):
                 "DNS seems to be failing, bouncing wireless interface. Err msg: {}".format(ex))
             watchdog_obj.inc_watchdog_count()
             self.adapter_obj.bounce_error_exit(lockf_obj)  # exit here
+        
+        # check we are going to the Internet over the correct interface
+        ip_address = gethostbyname(config_vars['connectivity_lookup'])
+        if not check_correct_mode_interface(ip_address, config_vars, self.file_logger):
+
+            self.file_logger.error("We are not using the interface required to perform our tests due to a routing issue in this unit.")
+            self.file_logger.error("Suggest making static routing additions or adding an additional metric to the interface causing the issue.")
+            self.file_logger.error("Exiting.")
+            lockf_obj.delete_lock_file()
+            sys.exit()
 
         # Check we can get to the mgt platform (function will exit script if no connectivity)
         self.file_logger.info("Checking we can get to the management platform...")

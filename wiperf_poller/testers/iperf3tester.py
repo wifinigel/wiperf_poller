@@ -183,7 +183,7 @@ class IperfTester(object):
 
         return result
 
-    def run_tcp_test(self, config_vars, status_file_obj, check_route_to_dest, exporter_obj):
+    def run_tcp_test(self, config_vars, status_file_obj, check_correct_mode_interface, exporter_obj):
 
             duration = int(config_vars['iperf3_tcp_duration'])
             port = int(config_vars['iperf3_tcp_port'])
@@ -193,7 +193,7 @@ class IperfTester(object):
             status_file_obj.write_status_file("iperf3 tcp")
 
             # check test to iperf3 server will go via wlan interface
-            if check_route_to_dest(server_hostname, self.file_logger) == config_vars['wlan_if']:
+            if check_correct_mode_interface(server_hostname, config_vars, self.file_logger):
 
                 # run iperf test
                 result = self.tcp_iperf_client_test(server_hostname, duration=duration, port=port, debug=False)
@@ -232,7 +232,7 @@ class IperfTester(object):
                 config_vars['test_issue'] = True
                 config_vars['test_issue_descr'] = "TCP iperf test failure"
     
-    def run_udp_test(self, config_vars, status_file_obj, check_route_to_dest, exporter_obj):
+    def run_udp_test(self, config_vars, status_file_obj, check_correct_mode_interface, exporter_obj):
 
         duration = int(config_vars['iperf3_udp_duration'])
         port = int(config_vars['iperf3_udp_port'])
@@ -242,7 +242,7 @@ class IperfTester(object):
         self.file_logger.info("Starting iperf3 udp test ({}:{})...".format(server_hostname, str(port)))
         status_file_obj.write_status_file("iperf3 udp")
 
-        if check_route_to_dest(server_hostname, self.file_logger) == config_vars['wlan_if']:
+        if check_correct_mode_interface(server_hostname, config_vars, self.file_logger):
 
             # Run a ping to the iperf server to get an rtt to feed in to MOS score calc
             ping_obj = PingTester(self.file_logger, platform=self.platform)

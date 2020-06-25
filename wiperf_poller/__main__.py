@@ -21,7 +21,7 @@ from wiperf_poller.helpers.filelogger import FileLogger
 from wiperf_poller.helpers.config import read_local_config
 from wiperf_poller.helpers.bouncer import Bouncer
 from wiperf_poller.helpers.remoteconfig import check_last_cfg_read
-from wiperf_poller.helpers.route import check_route_to_dest
+from wiperf_poller.helpers.route import check_correct_mode_interface
 from wiperf_poller.helpers.statusfile import StatusFile
 from wiperf_poller.helpers.lockfile import LockFile
 from wiperf_poller.helpers.watchdog import Watchdog
@@ -141,7 +141,7 @@ def main():
     # Run network checks
     #############################################
     # Note: test_issue flag not set by connection tests, as issues will result in process exit
-    file_logger.info("########## Wireless connection checks ##########")
+    file_logger.info("########## Network connection checks ##########")
     connection_obj = ''
 
     status_file_obj.write_status_file("network check")
@@ -163,7 +163,7 @@ def main():
     if config_vars['speedtest_enabled'] == 'yes':
 
         speedtest_obj = Speedtester(file_logger, platform)
-        speedtest_obj.run_tests(status_file_obj, check_route_to_dest, config_vars, exporter_obj)
+        speedtest_obj.run_tests(status_file_obj, check_correct_mode_interface, config_vars, exporter_obj)
 
     else:
         file_logger.info(
@@ -187,7 +187,7 @@ def main():
         else:
             file_logger.info("Unknown probe mode: {} (exiting)".format(probe_mode))
 
-        ping_obj.run_tests(status_file_obj, config_vars, adapter_obj, check_route_to_dest, exporter_obj, watchdog_obj)
+        ping_obj.run_tests(status_file_obj, config_vars, adapter_obj, check_correct_mode_interface, exporter_obj, watchdog_obj)
 
     else:
         if config_vars['test_issue'] == True:
@@ -232,7 +232,7 @@ def main():
     if config_vars['iperf3_tcp_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
         iperf3_tcp_obj = IperfTester(file_logger, platform)
-        iperf3_tcp_obj.run_tcp_test(config_vars, status_file_obj, check_route_to_dest, exporter_obj)
+        iperf3_tcp_obj.run_tcp_test(config_vars, status_file_obj, check_correct_mode_interface, exporter_obj)
 
     else:
         if config_vars['test_issue'] == True:
@@ -247,7 +247,7 @@ def main():
     if config_vars['iperf3_udp_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
         iperf3_udp_obj = IperfTester(file_logger, platform)
-        iperf3_udp_obj.run_udp_test(config_vars, status_file_obj, check_route_to_dest, exporter_obj)
+        iperf3_udp_obj.run_udp_test(config_vars, status_file_obj, check_correct_mode_interface, exporter_obj)
 
     else:
         if config_vars['test_issue'] == True:

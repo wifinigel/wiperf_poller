@@ -137,7 +137,7 @@ class PingTester(object):
             'rtt_avg': self.rtt_avg,
             'rtt_mdev': self.rtt_mdev}
 
-    def run_tests(self, status_file_obj, config_vars, adapter, check_route_to_dest, exporter_obj, watchd):
+    def run_tests(self, status_file_obj, config_vars, adapter, check_correct_mode_interface, exporter_obj, watchd):
 
         self.file_logger.info("Starting ping test...")
         status_file_obj.write_status_file("Ping tests")
@@ -166,7 +166,7 @@ class PingTester(object):
                     ping_host = adapter.get_def_gw()
 
                 # check test to Intenet will go via wlan interface
-                if check_route_to_dest(ping_host, self.file_logger) == config_vars['wlan_if']:
+                if check_correct_mode_interface(ping_host, config_vars, self.file_logger):
                     self.ping_host(ping_host, 1)
                 else:
                     self.file_logger.error(

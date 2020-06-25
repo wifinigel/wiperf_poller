@@ -1,3 +1,6 @@
+v0.17
+1. Added more checked to detect bad routing due to multiple interfaces updated
+
 v0.16
 1. fixed integer/float issue for lost_percent data in to influx
 

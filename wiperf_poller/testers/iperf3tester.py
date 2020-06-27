@@ -11,6 +11,7 @@ import subprocess
 import time
 
 from wiperf_poller.testers.pingtester import PingTester
+from wiperf_poller.helpers.route import inject_static_route
 
 class IperfTester(object):
     """
@@ -229,6 +230,7 @@ class IperfTester(object):
 
             else:
                 self.file_logger.error("Unable to run iperf test to {} as route to destination not over wireless interface...bypassing test".format(server_hostname))
+                inject_static_route(server_hostname, config_vars, self.file_logger)
                 config_vars['test_issue'] = True
                 config_vars['test_issue_descr'] = "TCP iperf test failure"
     
@@ -297,5 +299,6 @@ class IperfTester(object):
 
         else:
             self.file_logger.error("Unable to run iperf test to {} as route to destination not over wireless interface...bypassing test".format(server_hostname))
+            inject_static_route(server_hostname, config_vars, self.file_logger)
             config_vars['test_issue'] = True
             config_vars['test_issue_descr'] = "UDP iperf test failure"

@@ -2,6 +2,7 @@ import re
 import subprocess
 import sys
 import time
+from wiperf_poller.helpers.os_cmds import IWCONFIG_CMD, IW_CMD, IF_CONFIG_CMD, ROUTE_CMD, IF_DOWN_CMD, IF_UP_CMD
 
 
 class WirelessAdapter(object):
@@ -101,7 +102,7 @@ class WirelessAdapter(object):
         # Get wireless interface IP address info using the iwconfig command
         ####################################################################
         try:
-            cmd = "/sbin/iwconfig {}".format(self.wlan_if_name)
+            cmd = "{} {}".format(IWCONFIG_CMD, self.wlan_if_name)
             iwconfig_info = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True).decode()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
@@ -178,7 +179,7 @@ class WirelessAdapter(object):
         # Get wireless interface IP address info using the iw dev wlanX info command
         #############################################################################
         try:
-            cmd = "/sbin/iw {} info".format(self.wlan_if_name)
+            cmd = "{} {} info".format(IW_CMD, self.wlan_if_name)
             iw_info = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True).decode()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
@@ -226,7 +227,7 @@ class WirelessAdapter(object):
         # Get wireless interface IP address info using the iw dev wlanX link command
         #############################################################################
         try:
-            cmd = "/sbin/iw {} link".format(self.wlan_if_name)
+            cmd = "{} {} link".format(IW_CMD, self.wlan_if_name)
             iw_link = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True).decode()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
@@ -282,7 +283,7 @@ class WirelessAdapter(object):
         # Get wireless interface IP address info using the iw dev wlanX station dump command
         ######################################################################################
         try:
-            cmd = "/sbin/iw {} station dump".format(self.wlan_if_name)
+            cmd = "{} {} station dump".format(IW_CMD, self.wlan_if_name)
             iw_station = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True).decode()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
@@ -394,7 +395,7 @@ class WirelessAdapter(object):
 
         # Get interface info
         try:
-            cmd = "/sbin/ifconfig {}".format(self.wlan_if_name)
+            cmd = "{} {}".format(IF_CONFIG_CMD, self.wlan_if_name)
             self.ifconfig_info = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True).decode()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
@@ -434,7 +435,7 @@ class WirelessAdapter(object):
 
         # Get route info (used to figure out default gateway)
         try:
-            cmd = "/sbin/route -n | grep ^0.0.0.0 | grep {}".format(self.wlan_if_name)
+            cmd = "{} -n | grep ^0.0.0.0 | grep {}".format(ROUTE_CMD, self.wlan_if_name)
             self.route_info = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True).decode()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
@@ -467,23 +468,33 @@ class WirelessAdapter(object):
 
         self.file_logger.debug("Bouncing interface (platform type = " + self.platform + ")")
 
-        self.file_logger.info(
-            "Bouncing interface {} (platform type = {})".format(self.wlan_if_name, self.platform))
+        self.file_logger.info("Bouncing interface {} (platform type = {})".format(self.wlan_if_name, self.platform))
 
-        if_bounce_cmd = "sudo /sbin/ifdown {} && sudo /sbin/ifup {};".format(self.wlan_if_name, self.wlan_if_name)
-
-        self.file_logger.debug("if bounce command: {}".format(if_bounce_cmd))
+        if_down_cmd = "{} {};".format(IF_DOWN_CMD, self.wlan_if_name)
+        if_up_cmd = "{} {}".format(IF_UP_CMD, self.wlan_if_name)
 
         try:
-            if_bounce = subprocess.check_output(if_bounce_cmd, stderr=subprocess.STDOUT, shell=True).decode()
+            self.file_logger.error("Taking interface down...")
+            if_bounce = subprocess.check_output(if_down_cmd, stderr=subprocess.STDOUT, shell=True).decode()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
-            error_descr = "i/f bounce command appears to have failed. Error: {}".format(str(output))
-
+            error_descr = "i/f down command appears to have failed. Error: {} (signalling error)".format(str(output))
             self.file_logger.error(error_descr)
-            self.file_logger.error("Returning error...")
+            return False
+        
+        # allow interface time to completely drop, release dhcp etc.
+        time.sleep(10)
+
+        try:
+            self.file_logger.error("Bringing interface up...")
+            if_bounce = subprocess.check_output(if_up_cmd, stderr=subprocess.STDOUT, shell=True).decode()
+        except subprocess.CalledProcessError as exc:
+            output = exc.output.decode()
+            error_descr = "i/f up command appears to have failed. Error: {} (signalling error)".format(str(output))
+            self.file_logger.error(error_descr)
             return False
 
+        self.file_logger.info("Interface bounce completed OK.")
         return True
     
     def bounce_error_exit(self, lockf_obj):

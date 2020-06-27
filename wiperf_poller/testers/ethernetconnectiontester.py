@@ -5,7 +5,7 @@ from socket import gethostbyname
 
 from wiperf_poller.helpers.ethernetadapter import EthernetAdapter
 from wiperf_poller.testers.mgtconnectiontester import MgtConnectionTester
-from wiperf_poller.helpers.route import check_correct_mode_interface
+from wiperf_poller.helpers.route import check_correct_mode_interface, inject_default_route
 
 class EthernetConnectionTester(object):
     """
@@ -62,11 +62,20 @@ class EthernetConnectionTester(object):
         ip_address = gethostbyname(config_vars['connectivity_lookup'])
         if not check_correct_mode_interface(ip_address, config_vars, self.file_logger):
 
-            self.file_logger.error("We are not using the interface required to perform our tests due to a routing issue in this unit.")
-            self.file_logger.error("Suggest making static routing additions or adding an additional metric to the interface causing the issue.")
-            self.file_logger.error("Exiting.")
-            lockf_obj.delete_lock_file()
-            sys.exit()
+            self.file_logger.warning("We are not using the interface required to perform our tests due to a routing issue in this unit - attempt route addition to fix issue")
+            
+            if inject_default_route(config_vars['connectivity_lookup'], config_vars, self.file_logger):
+            
+                self.adapter_obj.bounce_eth_interface()
+                self.file_logger.info("Checking if route injection worked...")
+
+                if check_correct_mode_interface(ip_address, config_vars, self.file_logger):
+                    self.file_logger.info("Routing issue corrected OK.")
+                else:
+                    self.file_logger.warning("We still have a routing issue. Will have to exit as testing over correct interface not possible")
+                    self.file_logger.warning("Suggest making static routing additions or adding an additional metric to the interface causing the issue.")
+                    lockf_obj.delete_lock_file()
+                    sys.exit()
 
         # Check we can get to the mgt platform (function will exit script if no connectivity)
         self.file_logger.info("Checking we can get to the management platform...")

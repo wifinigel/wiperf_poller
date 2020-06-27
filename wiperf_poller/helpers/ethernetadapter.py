@@ -2,6 +2,7 @@ import re
 import subprocess
 import sys
 import time
+from wiperf_poller.helpers.os_cmds import IP_CMD, ROUTE_CMD, IF_DOWN_CMD, IF_UP_CMD
 
 
 class EthernetAdapter(object):
@@ -42,7 +43,7 @@ class EthernetAdapter(object):
         # Get wireless interface IP address info using the iwconfig command
         ####################################################################
         try:
-            cmd = "/sbin/ip link show {}".format(self.eth_if_name)
+            cmd = "{} link show {}".format(IP_CMD, self.eth_if_name)
             if_info = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True).decode()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
@@ -111,7 +112,7 @@ class EthernetAdapter(object):
 
         # Get interface info
         try:
-            cmd = "/sbin/ip -4 a show  {}".format(self.eth_if_name)
+            cmd = "{} -4 a show  {}".format(IP_CMD, self.eth_if_name)
             self.ifconfig_info = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True).decode()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
@@ -151,7 +152,7 @@ class EthernetAdapter(object):
 
         # Get route info (used to figure out default gateway)
         try:
-            cmd = "/sbin/route -n | grep ^0.0.0.0 | grep {}".format(self.eth_if_name)
+            cmd = "{} -n | grep ^0.0.0.0 | grep {}".format(ROUTE_CMD, self.eth_if_name)
             self.route_info = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True).decode()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
@@ -186,20 +187,31 @@ class EthernetAdapter(object):
 
         self.file_logger.info("Bouncing interface {} (platform type = {})".format(self.eth_if_name, self.platform))
 
-        if_bounce_cmd = "sudo /sbin/ifdown {} && sudo /sbin/ifup {};".format(self.eth_if_name, self.eth_if_name)
-
-        self.file_logger.debug("if bounce command: {}".format(if_bounce_cmd))
+        if_down_cmd = "{} {};".format(IF_DOWN_CMD, self.eth_if_name)
+        if_up_cmd = "{} {}".format(IF_UP_CMD, self.eth_if_name)
 
         try:
-            if_bounce = subprocess.check_output(if_bounce_cmd, stderr=subprocess.STDOUT, shell=True).decode()
+            self.file_logger.error("Taking interface down...")
+            if_bounce = subprocess.check_output(if_down_cmd, stderr=subprocess.STDOUT, shell=True).decode()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
-            error_descr = "i/f bounce command appears to have failed. Error: {}".format(str(output))
-
+            error_descr = "i/f down command appears to have failed. Error: {} (signalling error)".format(str(output))
             self.file_logger.error(error_descr)
-            self.file_logger.error("Returning error...")
+            return False
+        
+        # allow interface time to completely drop, release dhcp etc.
+        time.sleep(10)
+
+        try:
+            self.file_logger.error("Bringing interface up...")
+            if_bounce = subprocess.check_output(if_up_cmd, stderr=subprocess.STDOUT, shell=True).decode()
+        except subprocess.CalledProcessError as exc:
+            output = exc.output.decode()
+            error_descr = "i/f up command appears to have failed. Error: {} (signalling error)".format(str(output))
+            self.file_logger.error(error_descr)
             return False
 
+        self.file_logger.info("Interface bounce completed OK.")
         return True
     
     def bounce_error_exit(self, lockf_obj):

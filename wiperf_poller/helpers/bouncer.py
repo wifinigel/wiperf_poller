@@ -7,6 +7,7 @@ import os
 import sys
 import datetime
 import subprocess
+from wiperf_poller.helpers.os_cmds import REBOOT_CMD
 
 ####################################
 # Unit bouncer
@@ -52,7 +53,7 @@ class Bouncer(object):
 
     def reboot(self):
         try:
-            reboot_output = subprocess.check_output('sudo /sbin/reboot', stderr=subprocess.STDOUT, shell=True).decode()
+            reboot_output = subprocess.check_output(REBOOT_CMD, stderr=subprocess.STDOUT, shell=True).decode()
             self.file_logger.info("Reboot output: {}".format(reboot_output))
             sys.exit()
         except subprocess.CalledProcessError as exc:

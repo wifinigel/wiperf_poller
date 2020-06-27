@@ -214,7 +214,7 @@ class EthernetAdapter(object):
         self.file_logger.info("Interface bounce completed OK.")
         return True
     
-    def bounce_error_exit(self, lockf_obj):
+    def bounce_error_exit(self, lockf_obj, poll_obj):
         '''
         Log an error before bouncing the eth interface and then exiting as we have an unrecoverable error with the network connection
         '''
@@ -227,6 +227,7 @@ class EthernetAdapter(object):
 
         # clean up lock file & exit
         lockf_obj.delete_lock_file()
+        poll_obj.dump()
         sys.exit()
 
     def get_if_status(self):

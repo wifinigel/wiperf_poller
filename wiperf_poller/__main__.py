@@ -174,7 +174,7 @@ def main():
         file_logger.info("Checking wireless connection is good...(layer 1 &2)")
         connection_obj = WirelessConnectionTester(file_logger, wlan_if, platform)
     
-    connection_obj.run_tests(watchdog_obj, lockf_obj, config_vars, exporter_obj)
+    connection_obj.run_tests(watchdog_obj, lockf_obj, config_vars, exporter_obj, poll_obj)
     poll_obj.network('OK') 
     
     # update poll summary with IP
@@ -337,8 +337,6 @@ def main():
     poll_obj.dump()
 
     file_logger.info("########## end ##########")
-
-
 
     # decrement watchdog as we ran OK
     if config_vars['test_issue'] == False:

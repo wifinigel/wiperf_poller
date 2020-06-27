@@ -18,7 +18,7 @@ class EthernetConnectionTester(object):
         self.file_logger = file_logger
         self.adapter_obj = EthernetAdapter(interface, self.file_logger, platform)
 
-    def run_tests(self, watchdog_obj, lockf_obj, config_vars, exporter_obj):
+    def run_tests(self, watchdog_obj, lockf_obj, config_vars, exporter_obj, poll_obj):
 
         # if we have no network connection (i.e. link down or no IP), no point in proceeding...
         self.file_logger.info("Checking ethernet connection available.")
@@ -26,14 +26,14 @@ class EthernetConnectionTester(object):
 
             self.file_logger.error("Unable to get ethernet info due to failure with ifconfig command")
             watchdog_obj.inc_watchdog_count()
-            self.adapter_obj.bounce_error_exit(lockf_obj)  # exit here
+            self.adapter_obj.bounce_error_exit(lockf_obj, poll_obj)  # exit here
 
         self.file_logger.info("Checking we have an IP address.")
         # if we have no IP address, no point in proceeding...
         if self.adapter_obj.get_adapter_ip() == False:
             self.file_logger.error("Unable to get ethernet adapter IP info")
             watchdog_obj.inc_watchdog_count()
-            self.adapter_obj.bounce_error_exit(lockf_obj)  # exit here
+            self.adapter_obj.bounce_error_exit(lockf_obj, poll_obj)  # exit here
 
         # TODO: Fix this. Currently breaks when we have Eth & Wireless ports both up
         '''
@@ -45,7 +45,7 @@ class EthernetConnectionTester(object):
         if self.adapter_obj.get_ipaddr() == 'NA':
             self.file_logger.error("Problem with ethernet connection: no valid IP address")
             watchdog_obj.inc_watchdog_count()
-            self.adapter_obj.bounce_error_exit(lockf_obj) # exit here
+            self.adapter_obj.bounce_error_exit(lockf_obj, poll_obj) # exit here
 
         # final connectivity check: see if we can resolve an address
         # (network connection and DNS must be up)
@@ -56,7 +56,7 @@ class EthernetConnectionTester(object):
             self.file_logger.error(
                 "DNS seems to be failing, bouncing ethernet interface. Err msg: {}".format(ex))
             watchdog_obj.inc_watchdog_count()
-            self.adapter_obj.bounce_error_exit(lockf_obj)  # exit here
+            self.adapter_obj.bounce_error_exit(lockf_obj, poll_obj)  # exit here
         
         # check we are going to the Internet over the correct interface
         ip_address = gethostbyname(config_vars['connectivity_lookup'])
@@ -75,6 +75,7 @@ class EthernetConnectionTester(object):
                     self.file_logger.warning("We still have a routing issue. Will have to exit as testing over correct interface not possible")
                     self.file_logger.warning("Suggest making static routing additions or adding an additional metric to the interface causing the issue.")
                     lockf_obj.delete_lock_file()
+                    poll_obj.dump()
                     sys.exit()
 
         # Check we can get to the mgt platform (function will exit script if no connectivity)

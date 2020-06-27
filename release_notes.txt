@@ -1,3 +1,7 @@
+v0.18
+1. Improved bad route detection & route injection
+2. Added polled status data 
+
 v0.17
 1. Added more checked to detect bad routing due to multiple interfaces updated
 

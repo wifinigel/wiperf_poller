@@ -4,6 +4,7 @@ A simple class to perform a DHCP release & renew and return the renewal time
 import time
 import subprocess
 from wiperf_poller.helpers.wirelessadapter import WirelessAdapter
+from wiperf_poller.helpers.os_cmds import DHCLIENT_CMD
 
 
 class DhcpTester(object):
@@ -59,7 +60,7 @@ class DhcpTester(object):
             try:
                 # also includes zombie process tidy-up
                 release_output = subprocess.check_output(
-                    "sudo /sbin/dhclient -r -v {} -pf /tmp/dhclient.pid 2>&1 && sudo kill $(cat /tmp/dhclient.pid) 2> /dev/null".format(self.interface), shell=True).decode()
+                    "{} -r -v {} -pf /tmp/dhclient.pid 2>&1 && sudo kill $(cat /tmp/dhclient.pid) 2> /dev/null".format(DHCLIENT_CMD, self.interface), shell=True).decode()
                 # TODO: pattern search of: "DHCPRELEASE of 192.168.1.89 on wlan0"
                 self.file_logger.info("Address released.")
             except Exception as ex:
@@ -76,7 +77,7 @@ class DhcpTester(object):
             # includes zombie process cleanup
             start = time.time()
             subprocess.check_output(
-                "sudo /sbin/dhclient -v {} -pf /tmp/dhclient.pid 2>&1 && sudo kill $(cat /tmp/dhclient.pid) 2> /dev/null".format(self.interface), shell=True).decode()
+                "{} -v {} -pf /tmp/dhclient.pid 2>&1 && sudo kill $(cat /tmp/dhclient.pid) 2> /dev/null".format(DHCLIENT_CMD, self.interface), shell=True).decode()
             end = time.time()
             # TODO: pattern search for "bound to 192.168.1.89"
             self.file_logger.info("Address renewed.")

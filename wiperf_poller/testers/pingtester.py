@@ -7,6 +7,7 @@ import time
 import re
 import subprocess
 from sys import stderr
+from wiperf_poller.helpers.os_cmds import PING_CMD
 
 class PingTester(object):
     '''
@@ -52,7 +53,7 @@ class PingTester(object):
 
         # Execute the ping
         try:
-            cmd_string = "/bin/ping -q -c {} -W {} {}".format(count, ping_timeout, host)
+            cmd_string = "{} -q -c {} -W {} {}".format(PING_CMD, count, ping_timeout, host)
             ping_output = subprocess.check_output(cmd_string, stderr=subprocess.STDOUT, shell=True).decode().splitlines()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()

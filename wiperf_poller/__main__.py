@@ -25,6 +25,8 @@ from wiperf_poller.helpers.route import check_correct_mode_interface
 from wiperf_poller.helpers.statusfile import StatusFile
 from wiperf_poller.helpers.lockfile import LockFile
 from wiperf_poller.helpers.watchdog import Watchdog
+from wiperf_poller.helpers.os_cmds import CMDS
+from wiperf_poller.helpers.poll_status import PollStatus 
 
 from wiperf_poller.exporters.exportresults import ResultsExporter
 
@@ -58,6 +60,12 @@ if DEBUG or (config_vars['debug'] == 'on'):
     file_logger.setLevel('DEBUG')
     file_logger.info("(Note: logging set to debug level.)")
 
+# check all our os-level cmds are available
+for cmd in CMDS:
+    if not os.path.isfile(cmd):
+        file_logger.error("Unable to find the following OS command....exiting: {}".format(cmd))
+        sys.exit()
+
 # Lock file object
 lockf_obj = LockFile(lock_file, file_logger)
 
@@ -72,6 +80,20 @@ bouncer_obj = Bouncer(bounce_file, config_vars, file_logger)
 
 # exporter object
 exporter_obj = ResultsExporter(file_logger, config_vars['platform'])
+
+# adapter object
+adapter_obj = ''
+probe_mode = config_vars['probe_mode']
+wlan_if = config_vars['wlan_if']
+eth_if = config_vars['eth_if']
+platform = config_vars['platform']
+
+if probe_mode == "ethernet":
+    adapter_obj = EthernetAdapter(eth_if, file_logger, platform=platform)
+elif probe_mode == "wireless":
+    adapter_obj = WirelessAdapter(wlan_if, file_logger, platform=platform)
+else:
+    file_logger.info("Unknown probe mode: {} (exiting)".format(probe_mode))
 
 ###############################################################################
 # Main
@@ -95,10 +117,6 @@ def main():
 
     else:
         file_logger.info("No remote cfg file confgured...using current local ini file.")
-
-    wlan_if = config_vars['wlan_if']
-    eth_if = config_vars['eth_if']
-    platform = config_vars['platform']
 
     # create watchdog if doesn't exist
     watchdog_obj.create_watchdog()
@@ -137,6 +155,9 @@ def main():
     config_vars['test_issue'] = False
     config_vars['test_issue_descr'] = ""
 
+    # set up poll health obj
+    poll_obj = PollStatus(config_vars, file_logger)
+    
     #############################################
     # Run network checks
     #############################################
@@ -147,13 +168,17 @@ def main():
     status_file_obj.write_status_file("network check")
 
     if config_vars['probe_mode'] == 'ethernet':
-        file_logger.info("Checking ethernet connection is good...")
+        file_logger.info("Checking ethernet connection is good...(layer 1 &2)")
         connection_obj = EthernetConnectionTester(file_logger, eth_if, platform)
     else:
-        file_logger.info("Checking wireless connection is good...")
+        file_logger.info("Checking wireless connection is good...(layer 1 &2)")
         connection_obj = WirelessConnectionTester(file_logger, wlan_if, platform)
     
     connection_obj.run_tests(watchdog_obj, lockf_obj, config_vars, exporter_obj)
+    poll_obj.network('OK') 
+    
+    # update poll summary with IP
+    poll_obj.ip(adapter_obj.get_adapter_ip())
  
     #############################################
     # Run speedtest (if enabled)
@@ -161,13 +186,15 @@ def main():
 
     file_logger.info("########## speedtest ##########")
     if config_vars['speedtest_enabled'] == 'yes':
+        poll_obj.speedtest('Failed')
 
         speedtest_obj = Speedtester(file_logger, platform)
         speedtest_obj.run_tests(status_file_obj, check_correct_mode_interface, config_vars, exporter_obj)
+        poll_obj.speedtest('Completed')
 
     else:
-        file_logger.info(
-            "Speedtest not enabled in config file.")
+        file_logger.info("Speedtest not enabled in config file.")
+        poll_obj.speedtest('Not enabled')
 
     #############################
     # Run ping test (if enabled)
@@ -175,25 +202,23 @@ def main():
     file_logger.info("########## ping tests ##########")
     if config_vars['ping_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
+        poll_obj.ping('Failed')
+
         # run ping test
         ping_obj = PingTester(file_logger, platform=platform)
-        adapter_obj = ''
-        probe_mode = config_vars['probe_mode']
 
-        if probe_mode == "ethernet":
-            adapter_obj = EthernetAdapter(eth_if, file_logger, platform=platform)
-        elif probe_mode == "wireless":
-            adapter_obj = WirelessAdapter(wlan_if, file_logger, platform=platform)
-        else:
-            file_logger.info("Unknown probe mode: {} (exiting)".format(probe_mode))
-
+        # run test
         ping_obj.run_tests(status_file_obj, config_vars, adapter_obj, check_correct_mode_interface, exporter_obj, watchdog_obj)
+
+        poll_obj.ping('Completed')
 
     else:
         if config_vars['test_issue'] == True:
             file_logger.info("Previous test failed: {}".format(config_vars['test_issue_descr']))
+            poll_obj.ping('Not run')
         else:
             file_logger.info("Ping test not enabled in config file, bypassing this test...")
+            poll_obj.ping('Not enabled')
 
     ###################################
     # Run DNS lookup tests (if enabled)
@@ -201,14 +226,20 @@ def main():
     file_logger.info("########## dns tests ##########")
     if config_vars['dns_test_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
+        poll_obj.dns('Failed')
+
         dns_obj = DnsTester(file_logger, platform=platform)
         dns_obj.run_tests(status_file_obj, config_vars, exporter_obj)
+
+        poll_obj.dns('Completed')
 
     else:
         if config_vars['test_issue'] == True:
             file_logger.info("Previous test failed: {}".format(config_vars['test_issue_descr']))
+            poll_obj.dns('Not run')
         else:
             file_logger.info("DNS test not enabled in config file, bypassing this test...")
+            poll_obj.dns('Not enabled')
 
     #####################################
     # Run HTTP lookup tests (if enabled)
@@ -216,14 +247,20 @@ def main():
     file_logger.info("########## http tests ##########")
     if config_vars['http_test_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
+        poll_obj.http('Failed')
+
         http_obj = HttpTester(file_logger, platform=platform)
         http_obj.run_tests(status_file_obj, config_vars, exporter_obj, watchdog_obj)
+
+        poll_obj.http('Completed')
 
     else:
         if config_vars['test_issue'] == True:
             file_logger.info("Previous test failed: {}".format(config_vars['test_issue_descr']))
+            poll_obj.http('Not run')
         else:
             file_logger.info("HTTP test not enabled in config file, bypassing this test...")
+            poll_obj.http('Not enabled')
     
     ###################################
     # Run iperf3 tcp test (if enabled)
@@ -231,14 +268,20 @@ def main():
     file_logger.info("########## iperf3 tcp test ##########")
     if config_vars['iperf3_tcp_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
+        poll_obj.iperf_tcp('Failed')
+
         iperf3_tcp_obj = IperfTester(file_logger, platform)
         iperf3_tcp_obj.run_tcp_test(config_vars, status_file_obj, check_correct_mode_interface, exporter_obj)
+
+        poll_obj.iperf_tcp('Completed')
 
     else:
         if config_vars['test_issue'] == True:
             file_logger.info("Previous test failed: {}".format(config_vars['test_issue_descr']))
+            poll_obj.iperf_tcp('Not run')
         else:
             file_logger.info("Iperf3 tcp test not enabled in config file, bypassing this test...")
+            poll_obj.iperf_tcp('Not enabled')
 
     ###################################
     # Run iperf3 udp test (if enabled)
@@ -246,14 +289,20 @@ def main():
     file_logger.info("########## iperf3 udp test ##########")
     if config_vars['iperf3_udp_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
+        poll_obj.iperf_udp('Failed')
+
         iperf3_udp_obj = IperfTester(file_logger, platform)
         iperf3_udp_obj.run_udp_test(config_vars, status_file_obj, check_correct_mode_interface, exporter_obj)
+
+        poll_obj.iperf_udp('Completed')
 
     else:
         if config_vars['test_issue'] == True:
             file_logger.info("Previous test failed: {}".format(config_vars['test_issue_descr']))
+            poll_obj.iperf_udp('Not run')
         else:
             file_logger.info("Iperf3 udp test not enabled in config file, bypassing this test...")
+            poll_obj.iperf_udp('Not enabled')
 
     #####################################
     # Run DHCP renewal test (if enabled)
@@ -261,14 +310,20 @@ def main():
     file_logger.info("########## dhcp test ##########")
     if config_vars['dhcp_test_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
+        poll_obj.dhcp('Failed')
+
         dhcp_obj = DhcpTester(file_logger, platform=platform)
         dhcp_obj.run_tests(status_file_obj, config_vars, exporter_obj)
+
+        poll_obj.dhcp('Completed')
 
     else:
         if config_vars['test_issue'] == True:
             file_logger.info("Previous test failed: {}".format(config_vars['test_issue_descr']))
+            poll_obj.dhcp('Not run')
         else:
             file_logger.info("DHCP test not enabled in config file, bypassing this test...")
+            poll_obj.dhcp('Not enabled')
 
     #####################################
     # Tidy up before exit
@@ -277,7 +332,13 @@ def main():
     # get rid of log file
     status_file_obj.write_status_file("")
     lockf_obj.delete_lock_file()
+    
+    # dump poller status info
+    poll_obj.dump()
+
     file_logger.info("########## end ##########")
+
+
 
     # decrement watchdog as we ran OK
     if config_vars['test_issue'] == False:

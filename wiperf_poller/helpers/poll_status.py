@@ -1,6 +1,7 @@
 """
 Poll status class - reports status messages of current poll cycle to mgt platform
 """
+import time
 from wiperf_poller.exporters.exportresults import ResultsExporter
 
 class PollStatus():
@@ -22,8 +23,12 @@ class PollStatus():
             'http': 'N/A',
             'iperf_tcp': 'N/A',
             'iperf_udp': 'N/A',
-            'dhcp': 'N/A'
+            'dhcp': 'N/A',
+            'probe_mode': 'N/A',
+            'mgt_if': 'N/A'
         }
+
+        self.start_time = time.time()
 
         # exporter object
         self. exporter_obj = ResultsExporter(file_logger, config_vars['platform'])
@@ -55,11 +60,21 @@ class PollStatus():
     def dhcp(self, value):
         self.status_dict['dhcp'] = value
     
+    def probe_mode(self, value):
+        self.status_dict['probe_mode'] = value
+    
+    def mgt_if(self, value):
+        self.status_dict['mgt_if'] = value
+    
     def dump(self):
+
+        # calc run time
+        self.status_dict['run_time'] = round(time.time() - self.start_time)
 
         self.file_logger.info("Sending poll status info to mgt platform")
 
-        column_headers = ['ip', 'network', 'speedtest', 'ping', 'dns', 'iperf_tcp', 'iperf_udp', 'dhcp']
+        column_headers = ['ip', 'network', 'speedtest', 'ping', 'dns', 'iperf_tcp', 
+            'iperf_udp', 'dhcp', 'probe_mode', 'mgt_if', 'run_time']
 
         results_dict =  self.status_dict
 

@@ -157,6 +157,8 @@ def main():
 
     # set up poll health obj
     poll_obj = PollStatus(config_vars, file_logger)
+    poll_obj.probe_mode(probe_mode)
+    poll_obj.mgt_if(config_vars['mgt_if'])
     
     #############################################
     # Run network checks

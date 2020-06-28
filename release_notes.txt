@@ -1,3 +1,6 @@
+v0.19
+1. Enhanced poll status data with cycle time & mode info
+
 v0.18
 1. Improved bad route detection & route injection
 2. Added polled status data 

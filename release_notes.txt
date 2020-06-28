@@ -1,14 +1,17 @@
-v0.19
+v0.1.10
+1. Fixed data types for wlan data
+
+v0.1.9
 1. Enhanced poll status data with cycle time & mode info
 
-v0.18
+v0.1.8
 1. Improved bad route detection & route injection
 2. Added polled status data 
 
-v0.17
+v0.1.7
 1. Added more checked to detect bad routing due to multiple interfaces updated
 
-v0.16
+v0.1.6
 1. fixed integer/float issue for lost_percent data in to influx
 
 v0.1.5

@@ -188,12 +188,14 @@ def main():
 
     file_logger.info("########## speedtest ##########")
     if config_vars['speedtest_enabled'] == 'yes':
-        poll_obj.speedtest('Failed')
 
         speedtest_obj = Speedtester(file_logger, platform)
-        speedtest_obj.run_tests(status_file_obj, check_correct_mode_interface, config_vars, exporter_obj)
-        poll_obj.speedtest('Completed')
+        test_passed = speedtest_obj.run_tests(status_file_obj, check_correct_mode_interface, config_vars, exporter_obj)
 
+        if test_passed:
+            poll_obj.speedtest('Completed')
+        else:
+            poll_obj.speedtest('Failure')
     else:
         file_logger.info("Speedtest not enabled in config file.")
         poll_obj.speedtest('Not enabled')
@@ -204,15 +206,16 @@ def main():
     file_logger.info("########## ping tests ##########")
     if config_vars['ping_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
-        poll_obj.ping('Failed')
-
         # run ping test
         ping_obj = PingTester(file_logger, platform=platform)
 
         # run test
-        ping_obj.run_tests(status_file_obj, config_vars, adapter_obj, check_correct_mode_interface, exporter_obj, watchdog_obj)
+        tests_passed = ping_obj.run_tests(status_file_obj, config_vars, adapter_obj, check_correct_mode_interface, exporter_obj, watchdog_obj)
 
-        poll_obj.ping('Completed')
+        if tests_passed:
+            poll_obj.ping('Completed')
+        else:
+            poll_obj.ping('Failure')
 
     else:
         if config_vars['test_issue'] == True:
@@ -228,12 +231,13 @@ def main():
     file_logger.info("########## dns tests ##########")
     if config_vars['dns_test_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
-        poll_obj.dns('Failed')
-
         dns_obj = DnsTester(file_logger, platform=platform)
-        dns_obj.run_tests(status_file_obj, config_vars, exporter_obj)
+        tests_passed = dns_obj.run_tests(status_file_obj, config_vars, exporter_obj)
 
-        poll_obj.dns('Completed')
+        if tests_passed:
+            poll_obj.dns('Completed')
+        else:
+            poll_obj.dns('Failure')
 
     else:
         if config_vars['test_issue'] == True:
@@ -249,12 +253,13 @@ def main():
     file_logger.info("########## http tests ##########")
     if config_vars['http_test_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
-        poll_obj.http('Failed')
-
         http_obj = HttpTester(file_logger, platform=platform)
-        http_obj.run_tests(status_file_obj, config_vars, exporter_obj, watchdog_obj)
+        tests_passed = http_obj.run_tests(status_file_obj, config_vars, exporter_obj, watchdog_obj)
 
-        poll_obj.http('Completed')
+        if tests_passed:
+            poll_obj.http('Completed')
+        else:
+            poll_obj.http('Failure')
 
     else:
         if config_vars['test_issue'] == True:
@@ -270,12 +275,13 @@ def main():
     file_logger.info("########## iperf3 tcp test ##########")
     if config_vars['iperf3_tcp_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
-        poll_obj.iperf_tcp('Failed')
-
         iperf3_tcp_obj = IperfTester(file_logger, platform)
-        iperf3_tcp_obj.run_tcp_test(config_vars, status_file_obj, check_correct_mode_interface, exporter_obj)
+        test_result = iperf3_tcp_obj.run_tcp_test(config_vars, status_file_obj, check_correct_mode_interface, exporter_obj)
 
-        poll_obj.iperf_tcp('Completed')
+        if test_result:
+            poll_obj.iperf_tcp('Completed')
+        else:
+            poll_obj.iperf_tcp('Failed')
 
     else:
         if config_vars['test_issue'] == True:
@@ -291,13 +297,13 @@ def main():
     file_logger.info("########## iperf3 udp test ##########")
     if config_vars['iperf3_udp_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
-        poll_obj.iperf_udp('Failed')
-
         iperf3_udp_obj = IperfTester(file_logger, platform)
-        iperf3_udp_obj.run_udp_test(config_vars, status_file_obj, check_correct_mode_interface, exporter_obj)
+        test_result = iperf3_udp_obj.run_udp_test(config_vars, status_file_obj, check_correct_mode_interface, exporter_obj)
 
-        poll_obj.iperf_udp('Completed')
-
+        if test_result:
+            poll_obj.iperf_udp('Completed')
+        else:
+            poll_obj.iperf_udp('Failed')
     else:
         if config_vars['test_issue'] == True:
             file_logger.info("Previous test failed: {}".format(config_vars['test_issue_descr']))
@@ -312,12 +318,13 @@ def main():
     file_logger.info("########## dhcp test ##########")
     if config_vars['dhcp_test_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
-        poll_obj.dhcp('Failed')
-
         dhcp_obj = DhcpTester(file_logger, platform=platform)
-        dhcp_obj.run_tests(status_file_obj, config_vars, exporter_obj)
+        tests_passed = dhcp_obj.run_tests(status_file_obj, config_vars, exporter_obj)
 
-        poll_obj.dhcp('Completed')
+        if tests_passed:
+            poll_obj.dhcp('Completed')
+        else:
+            poll_obj.dhcp('Failure')
 
     else:
         if config_vars['test_issue'] == True:

@@ -65,6 +65,7 @@ class DnsTester(object):
 
         dns_index = 0
         delete_file = True
+        tests_passed = True
 
         for dns_target in dns_targets:
 
@@ -107,6 +108,9 @@ class DnsTester(object):
 
             else:
                 self.file_logger.error("DNS test error - no results (check logs) - exiting DNS tests")
+                tests_passed = False
+
+        return tests_passed
 
 
     def get_dns_result(self):

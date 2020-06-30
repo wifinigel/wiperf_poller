@@ -104,6 +104,8 @@ class DhcpTester(object):
         else:
             interface = config_vars['eth_if']
 
+        tests_passed = True
+
         self.file_logger.info("Interface under test: {}".format(interface))
         renewal_result = self.dhcp_renewal(interface, mode=config_vars['dhcp_test_mode'])
 
@@ -125,6 +127,9 @@ class DhcpTester(object):
 
         else:
             self.file_logger.error("DHCP test error - no results (check logs)")
+            tests_passed = False
+    
+        return tests_passed
 
     def get_duration(self):
         """

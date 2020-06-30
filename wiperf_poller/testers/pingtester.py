@@ -156,6 +156,8 @@ class PingTester(object):
         # define colum headers for CSV
         column_headers = ['time', 'ping_index', 'ping_host', 'pkts_tx', 'pkts_rx',
                             'percent_loss', 'test_time_ms', 'rtt_min_ms', 'rtt_avg_ms', 'rtt_max_ms', 'rtt_mdev_ms']
+        
+        tests_passed = True
 
         # initial ping to populate arp cache and avoid arp timeput for first test ping
         for ping_host in ping_hosts:
@@ -174,6 +176,7 @@ class PingTester(object):
                         "Unable to ping {} as route to destination not over wireless interface...bypassing ping tests".format(ping_host))
                     # we will break here if we have an issue as something bad has happened...don't want to run more tests
                     config_vars['test_issue'] = True
+                    tests_passed = False
                     break
 
         # run actual ping tests
@@ -233,12 +236,14 @@ class PingTester(object):
 
             else:
                 self.file_logger.error("Ping test failed.")
+                tests_passed = False
             
         # if all tests fail, and there are more than 2 tests, signal a possible issue
         if all_tests_fail and (ping_index > 1):
             self.file_logger.error("Looks like quite a few pings failed, incrementing watchdog.")
             watchd.inc_watchdog_count()
-    
+        
+        return tests_passed
 
     def get_host(self):
         ''' Get host name/address '''

@@ -149,9 +149,12 @@ class Speedtester(object):
                 data_file = config_vars['speedtest_data_file']
                 test_name = "Speedtest"
                 exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger)
+                return True
             else:
                 self.file_logger.error("Error running speedtest - check logs for info.")
+                return False
         else:
             self.file_logger.error("Unable to run Speedtest as route to Internet not correct interface for more - we have a routing issue of some type.")
             config_vars['test_issue'] = True
             config_vars['test_issue_descr'] = "Speedtest test failure"
+            return False

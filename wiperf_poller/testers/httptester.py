@@ -79,6 +79,7 @@ class HttpTester(object):
         http_index = 0
         delete_file = True
         all_tests_fail = True
+        tests_passed = True
 
         for http_target in http_targets:
 
@@ -126,6 +127,7 @@ class HttpTester(object):
 
                 else:
                     self.file_logger.error("HTTP test had issue and failed, check agent.log")
+                    tests_passed = False
 
                 self.file_logger.info("HTTP test ended.")
 
@@ -137,12 +139,15 @@ class HttpTester(object):
                     "HTTP test error - no results (check logs) - exiting HTTP tests")
                 config_vars['test_issue'] = True
                 config_vars['test_issue_descr'] = "HTTP test failure"
+                tests_passed = False
                 break
 
         # if all tests fail, and there are more than 2 tests, signal a possible issue
         if all_tests_fail and (http_index > 1):
             self.file_logger.error("Looks like quite a few http tests failed, incrementing watchdog.")
             watchd.inc_watchdog_count()
+        
+        return tests_passed
 
     def get_http_duration(self):
         ''' Get DNS lookup results '''

@@ -163,7 +163,7 @@ def inject_default_route(ip_address, config_vars, file_logger):
     file_logger.info("  [Route Injection] Route injection complete")
     return True
 
-def inject_static_route(mgt_ip_address, config_vars, file_logger):
+def _inject_static_route(ip_address, req_interace, config_vars, file_logger):
 
     """
     This function will attempt to inject a static route to correct
@@ -174,21 +174,47 @@ def inject_static_route(mgt_ip_address, config_vars, file_logger):
     matched traffic over a specific interface
     """
 
-    # get the default route to our destination
-    route_to_dest = get_route_to_dest(mgt_ip_address, file_logger)
-
-    # inject a new route with the required interface
-    mgt_interface = config_vars['mgt_if']
-
-    file_logger.info("  [Mgt Route Injection] Attempting static route insertion to fix routing issue (note this may not take effect until the next test cycle)")
+    file_logger.info("  [Route Injection] Attempting static route insertion to fix routing issue (note this may not take effect until the next test cycle)")
     try:
-        new_route = "{} dev {}".format(mgt_ip_address, mgt_interface)
+        new_route = "{} dev {}".format(ip_address, req_interace)
         add_route_cmd = "{} route add  ".format(IP_CMD) + new_route
         subprocess.run(add_route_cmd, shell=True)
         file_logger.info("  [Mgt Route Injection] Adding new mgt traffic route: {}".format(new_route))
     except subprocess.CalledProcessError as proc_exc:
-        file_logger.error('  [Mgt Route Injection] Route addition failed!')
+        output = proc_exc.output.decode()
+        file_logger.error('  [Mgt Route Injection] Route addition failed! ({})'.format(output))
         return False
 
     file_logger.info("  [Mgt Route Injection] Route injection complete")
     return True
+
+
+def inject_mgt_static_route(ip_address, config_vars, file_logger):
+
+    mgt_interface = config_vars['mgt_if']
+
+    return _inject_static_route(ip_address, mgt_interface, config_vars, file_logger)
+
+
+def inject_test_traffic_static_route(ip_address, config_vars, file_logger):
+
+    probe_mode = config_vars['probe_mode']
+
+    file_logger.info("  [Route Injection] Checking probe mode: '{}' ".format(probe_mode))
+    internet_interface = ''
+
+    if probe_mode == "wireless":
+        internet_interface = config_vars['wlan_if']
+    
+    elif probe_mode == "ethernet":
+        internet_interface = config_vars['eth_if']
+    else:
+        file_logger.error("  [Route Injection] Unknown probe mode: {} (exiting)".format(probe_mode))
+        sys.exit()
+
+    return _inject_static_route(ip_address, internet_interface, config_vars, file_logger)
+
+
+
+
+

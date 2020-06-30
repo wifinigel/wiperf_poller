@@ -1,3 +1,6 @@
+v0.1.11
+1. Fixed routing issues
+
 v0.1.10
 1. Fixed data types for wlan data
 

@@ -1,3 +1,6 @@
+v0.1.12
+1. Implemented bail on tests on Influx auth failure
+
 v0.1.11
 1. Fixed routing issues
 

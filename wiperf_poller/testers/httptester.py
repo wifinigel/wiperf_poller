@@ -121,7 +121,11 @@ class HttpTester(object):
                     # dump the results
                     data_file = config_vars['http_data_file']
                     test_name = "HTTP"
-                    exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger, delete_data_file=delete_file)
+                    if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger, delete_data_file=delete_file):
+                        self.file_logger.info("HTTP results sent OK.")
+                    else:
+                        self.file_logger.error("Issue sending HTTP results")
+                        tests_passed = False
 
                     all_tests_fail = False
 

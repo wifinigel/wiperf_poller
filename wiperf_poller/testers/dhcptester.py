@@ -121,10 +121,12 @@ class DhcpTester(object):
             # dump the results
             data_file = config_vars['dhcp_data_file']
             test_name = "DHCP"
-            exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger)
 
-            self.file_logger.info("DHCP test ended.")
-
+            if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger):
+                self.file_logger.info("DHCP test ended.")
+            else:
+                self.file_logger.error("Error sending DHCP results")
+                tests_passed = False
         else:
             self.file_logger.error("DHCP test error - no results (check logs)")
             tests_passed = False

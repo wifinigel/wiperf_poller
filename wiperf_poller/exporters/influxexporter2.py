@@ -39,6 +39,7 @@ def influxexporter2(localhost, url, token, bucket, org, dict_data, source, file_
         write_api = client.write_api(write_options=SYNCHRONOUS)
     except Exception as err:
         file_logger.error("Error creating InfluxDB2 API client: {}".format(err))
+        return False
 
     now = time_lookup()
 
@@ -66,4 +67,7 @@ def influxexporter2(localhost, url, token, bucket, org, dict_data, source, file_
         file_logger.info("Data sent to InfluxDB2. (bucket: {})".format(bucket))
     except Exception as err:
         file_logger.error("Error sending data to InfluxDB2: {}".format(err))
+        return False
+    
+    return True
     

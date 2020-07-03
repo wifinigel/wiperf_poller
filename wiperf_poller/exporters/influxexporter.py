@@ -27,7 +27,6 @@ def influxexporter(localhost, host, port, username, password, database, dict_dat
         file_logger.error(import_err)
         sys.exit()
 
-    #client = InfluxDBClient(host, port, database, username, password, timeout=100, ssl=True, verify_ssl=True)
     client = InfluxDBClient(host, port, username, password, database, timeout=100)
     file_logger.debug("Creating InfluxDB API client...")
     file_logger.debug("Remote host: -{}-".format(host))
@@ -59,11 +58,15 @@ def influxexporter(localhost, host, port, username, password, database, dict_dat
             file_logger.info("Data sent to influx OK")
         else:
             file_logger.info("Issue with sending data sent to influx...")
+            return False
 
     except Exception as err:
         file_logger.error("Issue sending data to Influx: {}".format(err))
+        return False
     
     file_logger.debug("Data structure sent to Influx:")
     file_logger.debug(data_point)
+
+    return True
 
     

@@ -190,7 +190,7 @@ def main():
     if config_vars['speedtest_enabled'] == 'yes':
 
         speedtest_obj = Speedtester(file_logger, platform)
-        test_passed = speedtest_obj.run_tests(status_file_obj, check_correct_mode_interface, config_vars, exporter_obj)
+        test_passed = speedtest_obj.run_tests(status_file_obj, check_correct_mode_interface, config_vars, exporter_obj, lockf_obj)
 
         if test_passed:
             poll_obj.speedtest('Completed')

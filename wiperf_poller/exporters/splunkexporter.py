@@ -15,6 +15,7 @@ except ImportError as error:
     import_err = error
 
 # TODO: convert to class
+# TODO: error trap
 
 def splunkexporter(host, token, port, dict_data, source, file_logger):
     '''

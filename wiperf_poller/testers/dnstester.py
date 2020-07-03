@@ -98,10 +98,11 @@ class DnsTester(object):
                 # dump the results
                 data_file = config_vars['dns_data_file']
                 test_name = "DNS"
-                exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name,
-                             self.file_logger, delete_data_file=delete_file)
-
-                self.file_logger.info("DNS test ended.")
+                if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger, delete_data_file=delete_file):
+                    self.file_logger.info("DNS test ended.")
+                else:
+                    self.file_logger.error("Issue sending DNS results.")
+                    tests_passed = False
 
                 # Make sure we don't delete data file next time around
                 delete_file = False

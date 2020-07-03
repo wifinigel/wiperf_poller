@@ -119,4 +119,10 @@ class WirelessConnectionTester(object):
         # dump the results
         data_file = config_vars['network_data_file']
         test_name = "Network Tests"
-        exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger) 
+        if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger):
+            self.file_logger.info("Connection results sent OK.")
+            return True
+        else:
+            self.file_logger.error("Issue sending connection results. Exiting")
+            lockf_obj.delete_lock_file()
+            sys.exit()

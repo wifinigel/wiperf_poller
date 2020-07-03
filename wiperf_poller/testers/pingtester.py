@@ -221,9 +221,11 @@ class PingTester(object):
                 # dump the results
                 data_file = config_vars['ping_data_file']
                 test_name = "Ping"
-                exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger, delete_data_file=delete_file)
-
-                self.file_logger.info("Ping test ended.")
+                if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger, delete_data_file=delete_file):
+                    self.file_logger.info("Ping test ended.")
+                else:
+                    self.file_logger.error("Issue sending ping results.")
+                    tests_passed = False
 
                 # Make sure we don't delete data file next time around
                 delete_file = False

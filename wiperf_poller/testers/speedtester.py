@@ -115,7 +115,7 @@ class Speedtester(object):
         return {'ping_time': ping_time, 'download_rate': download_rate, 'upload_rate': upload_rate, 'server_name': server_name}
 
 
-    def run_tests(self, status_file_obj, check_correct_mode_interface, config_vars, exporter_obj):
+    def run_tests(self, status_file_obj, check_correct_mode_interface, config_vars, exporter_obj, lockf_obj):
 
         column_headers = ['time', 'server_name', 'ping_time', 'download_rate_mbps', 'upload_rate_mbps']
 
@@ -148,8 +148,13 @@ class Speedtester(object):
                 # dump the results
                 data_file = config_vars['speedtest_data_file']
                 test_name = "Speedtest"
-                exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger)
-                return True
+                if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger):
+                    self.file_logger.info("Speedtest results sent OK.")
+                    return True
+                else:
+                    self.file_logger.error("Error sending speedtest results. Exiting")
+                    lockf_obj.delete_lock_file()
+                    sys.exit()
             else:
                 self.file_logger.error("Error running speedtest - check logs for info.")
                 return False

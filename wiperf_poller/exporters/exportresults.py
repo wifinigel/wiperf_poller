@@ -37,6 +37,9 @@ class ResultsExporter(object):
                     writer.writerow(dict_data)
         except IOError as err:
             file_logger.error("CSV I/O error: {}".format(err))
+            return False
+        
+        return True
 
 
     def send_results_to_json(self, data_file, dict_data, file_logger, delete_data_file=True):
@@ -51,22 +54,25 @@ class ResultsExporter(object):
                 json.dump(dict_data, json_file)
         except IOError as err:
             file_logger.error("JSON I/O error: {}".format(err))
+            return False
+        
+        return True
 
 
     def send_results_to_hec(self, host, token, port, dict_data, file_logger, source):
 
         file_logger.info("Sending event to HEC: {} (dest host: {}, dest port: {})".format(source, host, port))
-        splunkexporter(host, token, port, dict_data, source, file_logger)
+        return splunkexporter(host, token, port, dict_data, source, file_logger)
 
     def send_results_to_influx(self, localhost, host, port, username, password, database, dict_data, source, file_logger):
 
         file_logger.info("Sending data to Influx host: {}, port: {}, database: {})".format(host, port, database))
-        influxexporter(localhost, host, port, username, password, database, dict_data, source, file_logger)
+        return influxexporter(localhost, host, port, username, password, database, dict_data, source, file_logger)
     
     def send_results_to_influx2(self, localhost, url, token, bucket, org, dict_data, source, file_logger):
 
         file_logger.info("Sending data to Influx url: {}, bucket: {}, source: {})".format(url, bucket, source))
-        influxexporter2(localhost, url, token, bucket, org, dict_data, source, file_logger)
+        return influxexporter2(localhost, url, token, bucket, org, dict_data, source, file_logger)
 
 
     def send_results(self, config_vars, results_dict, column_headers, data_file, test_name, file_logger, delete_data_file=False):
@@ -78,7 +84,7 @@ class ResultsExporter(object):
             # Check if we are using the Splunk HEC (https transport)
             if config_vars['data_transport'] == 'hec':
                 file_logger.info("HEC update: {}, source={}".format(data_file, test_name))
-                self.send_results_to_hec(config_vars['data_host'], config_vars['splunk_token'], config_vars['data_port'],
+                return self.send_results_to_hec(config_vars['data_host'], config_vars['splunk_token'], config_vars['data_port'],
                     results_dict, file_logger, data_file)
             
             # Create files if we are using the Splunk universal forwarder
@@ -87,13 +93,13 @@ class ResultsExporter(object):
                 # CSV file format for forwarder
                 if config_vars['data_format'] == 'csv':
                     data_file = "{}/{}.csv".format(config_vars['data_dir'], data_file)
-                    self.send_results_to_csv(data_file, results_dict, column_headers,file_logger, delete_data_file=delete_data_file)
+                    return self.send_results_to_csv(data_file, results_dict, column_headers,file_logger, delete_data_file=delete_data_file)
                 
                 # JSON format for the forwarder
                 elif config_vars['data_format'] == 'json':
                 
                     data_file = "{}/{}.json".format(config_vars['data_dir'], data_file)
-                    self.send_results_to_json(data_file, results_dict, file_logger, delete_data_file=delete_data_file)
+                    return self.send_results_to_json(data_file, results_dict, file_logger, delete_data_file=delete_data_file)
                 
                 else:                
                     file_logger.info("Unknown file format type in config file: {}".format(config_vars['data_format']))
@@ -108,7 +114,7 @@ class ResultsExporter(object):
             
             file_logger.info("InfluxDB update: {}, source={}".format(data_file, test_name))
 
-            self.send_results_to_influx(gethostname(), config_vars['data_host'], config_vars['data_port'], 
+            return self.send_results_to_influx(gethostname(), config_vars['data_host'], config_vars['data_port'], 
                 config_vars['influx_username'], config_vars['influx_password'], config_vars['influx_database'], results_dict, data_file, file_logger)
         
         elif config_vars['exporter_type'] == 'influxdb2':
@@ -118,7 +124,7 @@ class ResultsExporter(object):
             # construct url
             influx_url = "https://{}:{}".format(config_vars['data_host'], config_vars['data_port'])
 
-            self.send_results_to_influx2(gethostname(), influx_url, config_vars['influx2_token'],
+            return self.send_results_to_influx2(gethostname(), influx_url, config_vars['influx2_token'],
                     config_vars['influx2_bucket'], config_vars['influx2_org'], results_dict, data_file, file_logger)
         
         else:

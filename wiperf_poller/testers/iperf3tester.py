@@ -220,11 +220,12 @@ class IperfTester(object):
                     # dump the results
                     data_file = config_vars['iperf3_tcp_data_file']
                     test_name = "iperf3_tcp"
-                    exporter_obj.send_results(config_vars, results_dict, column_headers,
-                                data_file, test_name, self.file_logger)
-
-                    self.file_logger.info("Iperf3 tcp test ended.")
-                    return True
+                    if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger):
+                        self.file_logger.info("Iperf3 tcp test ended.")
+                        return True
+                    else:
+                        self.file_logger.error("Error sending iperf3 tcp test result.")
+                        return False
 
                 else:
                     self.file_logger.error("Error with iperf3 tcp test, check logs")
@@ -293,10 +294,12 @@ class IperfTester(object):
                 # dump the results
                 data_file = config_vars['iperf3_udp_data_file']
                 test_name = "iperf_udp"
-                exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger)
-
-                self.file_logger.info("Iperf3 udp test ended.")
-                return True
+                if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger):
+                    self.file_logger.info("Iperf3 udp test ended.")
+                    return True
+                else:
+                    self.file_logger.error("Issue sending iperf3 UDP results.")
+                    return False
 
             else:
                 self.file_logger.error("Error with iperf3 udp test, check logs")

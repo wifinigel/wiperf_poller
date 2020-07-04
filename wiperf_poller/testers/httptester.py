@@ -6,7 +6,7 @@ import socket
 import warnings
 import requests
 from requests.exceptions import HTTPError
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
+import urllib3
 
 class HttpTester(object):
     '''
@@ -19,8 +19,8 @@ class HttpTester(object):
         self.file_logger = file_logger
 
         self.http_target = ''
-        self.target_ip = ''
         self.http_get_duration = 0
+        self.http_server_response_time = 0
         self.http_status_code = 0
 
     def http_get(self, http_target):
@@ -37,14 +37,12 @@ class HttpTester(object):
         # TODO: Perform 3 tests and avg best 2 to remove anomalies?
         start = time.time()
         try:
-            #response = requests.get(target_url, verify=False)
-            warnings.simplefilter('ignore',InsecureRequestWarning)
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
             response = requests.get(http_target, verify=False, timeout=5)
             self.http_status_code = response.status_code
 
-            # TODO: add server response time, which is just time to receive
-            # http headers, not full page load
-            # server_response_time = response.elapsed.microseconds
+            # server reposnse time (uS , converted to mS)- http headers, not full page load
+            self.http_server_response_time = int(response.elapsed.microseconds/1000)
 
             # If the response was successful, no Exception will be raised
             response.raise_for_status()
@@ -62,11 +60,12 @@ class HttpTester(object):
         if self.http_status_code == 0:
             self.http_status_code = False
             self.http_get_duration = False
+            self.http_server_response_time = False
 
-        self.file_logger.debug("http get for: {} : {}mS (code: {}).".format(http_target, self.http_get_duration, self.http_get_duration))
+        self.file_logger.debug("http get for: {} : {}mS, server repsonse time: {}ms (code: {}).".format(http_target, self.http_get_duration, self.http_server_response_time, self.http_status_code))
 
         # return status code & elapsed duration in mS
-        return (self.http_status_code, self.http_get_duration)
+        return (self.http_status_code, self.http_get_duration, self.http_server_response_time)
     
     def run_tests(self, status_file_obj, config_vars, exporter_obj, watchd):
 
@@ -95,17 +94,16 @@ class HttpTester(object):
 
             if http_result:
 
-                column_headers = [
-                    'time', 'http_index', 'http_target', 'lookup_time_ms', 'http_status_code']
+                column_headers = ['time', 'http_index', 'http_target', 'http_get_time_ms', 'http_status_code', 'http_server_response_time_ms']
 
                 http_status_code = http_result[0]
-                duration = http_result[1]
+                http_get_time = http_result[1]
+                http_server_response_time = http_result[2]
 
                 # test if http get returned a code - False = bad http get test
                 if http_status_code:
                     # summarise result for log
-                    result_str = ' {}: {}ms (status code: {})'.format(
-                        http_target, duration, http_status_code)
+                    result_str = ' {}: {}ms (status code: {})'.format(http_target, http_get_time, http_status_code)
 
                     # drop abbreviated results in log file
                     self.file_logger.info("HTTP results: {}".format(result_str))
@@ -114,8 +112,9 @@ class HttpTester(object):
                         'time': int(time.time()),
                         'http_index': http_index,
                         'http_target': http_target,
-                        'lookup_time_ms': duration,
-                        'http_status_code': http_status_code
+                        'http_get_time_ms': http_get_time,
+                        'http_status_code': http_status_code,
+                        'http_server_response_time_ms': http_server_response_time
                     }
 
                     # dump the results
@@ -154,8 +153,12 @@ class HttpTester(object):
         return tests_passed
 
     def get_http_duration(self):
-        ''' Get DNS lookup results '''
+        ''' Get http page load result '''
         return self.http_get_duration
+
+    def get_http_server_response(self):
+        ''' Get http server response time '''
+        return self.http_server_response_time
 
     def get_status_code(self):
         ''' Get http status code '''

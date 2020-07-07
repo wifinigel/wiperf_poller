@@ -475,7 +475,7 @@ class WirelessAdapter(object):
 
         try:
             self.file_logger.error("Taking interface down...")
-            if_bounce = subprocess.check_output(if_down_cmd, stderr=subprocess.STDOUT, shell=True).decode()
+            subprocess.check_output(if_down_cmd, stderr=subprocess.STDOUT, shell=True).decode()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
             error_descr = "i/f down command appears to have failed. Error: {} (signalling error)".format(str(output))
@@ -487,7 +487,7 @@ class WirelessAdapter(object):
 
         try:
             self.file_logger.error("Bringing interface up...")
-            if_bounce = subprocess.check_output(if_up_cmd, stderr=subprocess.STDOUT, shell=True).decode()
+            subprocess.check_output(if_up_cmd, stderr=subprocess.STDOUT, shell=True).decode()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
             error_descr = "i/f up command appears to have failed. Error: {} (signalling error)".format(str(output))

@@ -53,34 +53,48 @@ class DhcpTester(object):
         if mode == 'active':
 
             # only do this if running active test
-            self.file_logger.debug("Releasing dhcp address on {}...".format(self.interface))
+            self.file_logger.info("Releasing dhcp address on {}...".format(self.interface))
 
-            self.file_logger.info(
-                "Releasing dhcp address on {}...".format(self.interface))
             try:
-                # also includes zombie process tidy-up
-                release_output = subprocess.check_output(
-                    "{} -r -v {} -pf /tmp/dhclient.pid 2>&1 && sudo kill $(cat /tmp/dhclient.pid) 2> /dev/null".format(DHCLIENT_CMD, self.interface), shell=True).decode()
-                # TODO: pattern search of: "DHCPRELEASE of 192.168.1.89 on wlan0"
-                self.file_logger.info("Address released.")
-            except Exception as ex:
-                self.file_logger.error("Issue releasing IP on interface: {}, issue {}".format(self.interface, ex))
+                subprocess.check_output("{} -r -v {} -pf /tmp/dhclient.pid".format(DHCLIENT_CMD, self.interface), shell=True)
+            except subprocess.CalledProcessError as exc:
+                output = exc.output.decode()
+                self.file_logger.error("Issue releasing IP on interface: {}, issue {}".format(self.interface, output))
                 # If release fails, bounce interface to recover - script will exit
                 self.bounce_interface(self.interface, self.file_logger)
 
+            # zombie process cleanup
+            try:
+                subprocess.check_output("sudo kill $(cat /tmp/dhclient.pid)", shell=True)
+            except subprocess.CalledProcessError as exc:
+                output = exc.output.decode()
+                self.file_logger.info("Output from killing possible dhcp zombie processes after dhcp release: {}".format(output))
+            
         start = 0.0
         end = 0.0
 
-        self.file_logger.info(
-            "Renewing dhcp address...(mode = {}, interface= {})".format(mode, self.interface))
+        self.file_logger.info("Renewing dhcp address...(mode = {}, interface= {})".format(mode, self.interface))
         try:
-            # includes zombie process cleanup
+            # renew address
             start = time.time()
-            subprocess.check_output(
-                "{} -v {} -pf /tmp/dhclient.pid 2>&1 && sudo kill $(cat /tmp/dhclient.pid) 2> /dev/null".format(DHCLIENT_CMD, self.interface), shell=True).decode()
+            try:
+                subprocess.check_output("{} -v {} -pf /tmp/dhclient.pid".format(DHCLIENT_CMD, self.interface), shell=True)
+            except subprocess.CalledProcessError as exc:
+                output = exc.output.decode()
+                self.file_logger.error("Issue renewing IP on interface: {}, issue {}".format(self.interface, output))
+                self.bounce_interface(self.interface, self.file_logger)
+
             end = time.time()
-            # TODO: pattern search for "bound to 192.168.1.89"
+
+            # zombie process cleanup
+            try:
+                subprocess.check_output("sudo kill $(cat /tmp/dhclient.pid)", shell=True)
+            except subprocess.CalledProcessError as exc:
+                output = exc.output.decode()
+                self.file_logger.info("Output from possible dhcp zombie processes: {}".format(output))
+            
             self.file_logger.info("Address renewed.")
+        
         except Exception as ex:
             self.file_logger.error("Issue renewing IP address: {}".format(ex))
 

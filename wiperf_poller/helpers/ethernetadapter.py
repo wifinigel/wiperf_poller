@@ -191,7 +191,7 @@ class EthernetAdapter(object):
         if_up_cmd = "{} {}".format(IF_UP_CMD, self.eth_if_name)
 
         try:
-            self.file_logger.error("Taking interface down...")
+            self.file_logger.warning("Taking interface down...")
             if_bounce = subprocess.check_output(if_down_cmd, stderr=subprocess.STDOUT, shell=True).decode()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
@@ -203,7 +203,7 @@ class EthernetAdapter(object):
         time.sleep(10)
 
         try:
-            self.file_logger.error("Bringing interface up...")
+            self.file_logger.warning("Bringing interface up...")
             if_bounce = subprocess.check_output(if_up_cmd, stderr=subprocess.STDOUT, shell=True).decode()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()

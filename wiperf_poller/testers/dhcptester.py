@@ -49,26 +49,6 @@ class DhcpTester(object):
         """
 
         self.interface = interface
-
-        if mode == 'active':
-
-            # only do this if running active test
-            self.file_logger.info("Releasing dhcp address on {}...".format(self.interface))
-
-            try:
-                subprocess.check_output("{} -r -v {} -pf /tmp/dhclient.pid".format(DHCLIENT_CMD, self.interface), shell=True)
-            except subprocess.CalledProcessError as exc:
-                output = exc.output.decode()
-                self.file_logger.error("Issue releasing IP on interface: {}, issue {}".format(self.interface, output))
-                # If release fails, bounce interface to recover - script will exit
-                self.bounce_interface(self.interface, self.file_logger)
-
-            # zombie process cleanup
-            try:
-                subprocess.check_output("sudo kill $(cat /tmp/dhclient.pid)", shell=True)
-            except subprocess.CalledProcessError as exc:
-                output = exc.output.decode()
-                self.file_logger.info("Output from killing possible dhcp zombie processes after dhcp release: {}".format(output))
             
         start = 0.0
         end = 0.0
@@ -77,23 +57,26 @@ class DhcpTester(object):
         try:
             # renew address
             start = time.time()
-            try:
-                subprocess.check_output("{} -v {} -pf /tmp/dhclient.pid".format(DHCLIENT_CMD, self.interface), shell=True)
-            except subprocess.CalledProcessError as exc:
-                output = exc.output.decode()
-                self.file_logger.error("Issue renewing IP on interface: {}, issue {}".format(self.interface, output))
-                self.bounce_interface(self.interface, self.file_logger)
 
-            end = time.time()
+            p = subprocess.Popen([DHCLIENT_CMD, '-v', self.interface, '-pf', '/tmp/dhclient.pid'], stderr=subprocess.PIPE)
+            while True:
+                line = p.stderr.readline()
+                self.file_logger.debug("dhcp:", line.rstrip())
+                if b'DHCPACK' in line:
+                    break
+                
+                # If we get here, DHCP ACK not seen - issue warning
+                if not line:
+                    self.file_logger.warning("dhcp: DHCP ACK not detected in renewal output.")
+                    break
 
-            # zombie process cleanup
-            try:
-                subprocess.check_output("sudo kill $(cat /tmp/dhclient.pid)", shell=True)
-            except subprocess.CalledProcessError as exc:
-                output = exc.output.decode()
-                self.file_logger.info("Output from possible dhcp zombie processes: {}".format(output))
-            
+            end = time.time()          
             self.file_logger.info("Address renewed.")
+
+            try:
+                subprocess.check_output("pkill -9 -f 'dhclient.pid'", shell=True)
+            except subprocess.CalledProcessError as exc:
+                self.file_logger.info("Output from zombie processes kill: {}".format(exc))
         
         except Exception as ex:
             self.file_logger.error("Issue renewing IP address: {}".format(ex))

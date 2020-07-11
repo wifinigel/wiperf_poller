@@ -35,8 +35,10 @@ def read_local_config(config_file, file_logger):
     config_vars['wlan_if'] = gen_sect.get('wlan_if', 'wlan0')
     # Interface name to send mgt traffic over (default wlan0)
     config_vars['mgt_if'] = gen_sect.get('mgt_if', 'wlan0')
-    # Get platform architecture
-    config_vars['platform'] = gen_sect.get('platform', 'wlanpi')
+    # Get platform architecture (derived automatically, not read from cfg file)
+    config_vars['platform'] = 'rpi'
+    if os.path.exists("/etc/wlanpi-state"):
+        config_vars['platform'] = 'wlanpi'
     # data exporter type for results
     config_vars['exporter_type'] = gen_sect.get('exporter_type', 'splunk')
     # format of output data (csv/json)
@@ -123,8 +125,6 @@ def read_local_config(config_file, file_logger):
             sys.exit()
     """
     
-    file_logger.debug("Platform = {}".format(config_vars.get('General', 'platform')))
-
     # Get network test config params
     network_sect = config['Network_Test']
     config_vars['network_data_file'] = network_sect.get('networkd', 'wiperf-network')

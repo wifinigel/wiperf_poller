@@ -1,3 +1,6 @@
+v0.15
+1. Added platform detection (removed from cfg file)
+
 v0.1.14
 1. Fixed DHCP timing issues
 

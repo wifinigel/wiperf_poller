@@ -25,7 +25,7 @@ from wiperf_poller.helpers.route import check_correct_mode_interface
 from wiperf_poller.helpers.statusfile import StatusFile
 from wiperf_poller.helpers.lockfile import LockFile
 from wiperf_poller.helpers.watchdog import Watchdog
-from wiperf_poller.helpers.os_cmds import CMDS
+from wiperf_poller.helpers.os_cmds import check_os_cmds
 from wiperf_poller.helpers.poll_status import PollStatus 
 
 from wiperf_poller.exporters.exportresults import ResultsExporter
@@ -61,10 +61,9 @@ if DEBUG or (config_vars['debug'] == 'on'):
     file_logger.info("(Note: logging set to debug level.)")
 
 # check all our os-level cmds are available
-for cmd in CMDS:
-    if not os.path.isfile(cmd):
-        file_logger.error("Unable to find the following OS command....exiting: {}".format(cmd))
-        sys.exit()
+if not check_os_cmds(file_logger):
+    file_logger.error("Missing OS command....exiting.")
+    sys.exit()
 
 # Lock file object
 lockf_obj = LockFile(lock_file, file_logger)

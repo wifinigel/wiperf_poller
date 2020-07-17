@@ -1,3 +1,6 @@
+v0.16
+1. Added improved os command checking with attempt to find if hard coded filename not found
+
 v0.15
 1. Added platform detection (removed from cfg file)
 

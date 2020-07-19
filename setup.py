@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="wiperf_poller",
-    version="0.1.18",
+    version="0.1.19",
     author="Nigel Bowden",
     author_email="wifinigel@gmail.com",
     description="Poller for the wiperf utlity",
@@ -20,7 +20,7 @@ setuptools.setup(
         "Operating System :: POSIX :: Linux",
     ],
     include_package_data=True,
-    python_requires='>=3',
+    python_requires='>=3.6',
     entry_points={
         "console_scripts": [
             "wiperf_poller=wiperf_poller.__main__:main",

@@ -1,3 +1,6 @@
+v0.18
+1. Fixed min req version designation error
+
 v0.17
 1. Fixed min req for python to 3.3 in setup file
 

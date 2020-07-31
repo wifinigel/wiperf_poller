@@ -5,31 +5,46 @@ import re
 import sys
 from wiperf_poller.helpers.os_cmds import IP_CMD
 
-def get_route_to_dest(ip_address, file_logger, routing_entry=True):
+def resolve_name(ip_address, file_logger):
 
-    # If ip address is a hostname rather than an IP, do a lookup and substitute IP
-    if re.search(r'[a-z]|[A-Z]', ip_address):
+    is_ipv4 = re.search(r'\d+.\d+.\d+.\d+', ip_address)
+    is_ipv6 = re.search(r'[abcdf0123456789]+::', ip_address)
+
+    if is_ipv4 or is_ipv6:
+        pass
+    else:
         hostname = ip_address
-        # watch out for DNS Issues
         try:
             ip_address = gethostbyname(hostname)
-            file_logger.info(
-                "  DNS hostname lookup : {}. Result: {}".format(hostname, ip_address))
+            file_logger.info("  DNS hostname lookup : {}. Result: {}".format(hostname, ip_address))
         except Exception as ex:
-            file_logger.error(
-                "  Issue looking up host {} (DNS Issue?): {}".format(hostname, ex))
+            file_logger.error("  Issue looking up host {} (DNS Issue?): {}".format(hostname, ex))
             return False
 
-    ip_route_cmd = ''
+    return ip_address
 
-    # by default, get first raw routing entry, otherwise show route that will actually be chosen by kernel
-    if routing_entry:
-        # get routing table entries
-        ip_route_cmd = "{} route show to match ".format(IP_CMD) + ip_address + " | head -n 1"
-    else:     
-        # get specific route details of path that will be used (cannot be used to
-        # modify routing entry)
-        ip_route_cmd = "{} route get ".format(IP_CMD) + ip_address + " | head -n 1"
+def get_first_route_to_dest(ip_address, file_logger):
+
+    ip_address = resolve_name(ip_address, file_logger)
+
+    # get specific route details of path that will be used by kernel (cannot be used to modify routing entry)
+    ip_route_cmd = "{} route get ".format(IP_CMD) + ip_address + " | head -n 1"
+
+    try:
+        route_detail = subprocess.check_output(ip_route_cmd, stderr=subprocess.STDOUT, shell=True).decode()
+        file_logger.info("  Checked interface route to : {}. Result: {}".format(ip_address, route_detail.strip()))
+        return route_detail.strip()
+    except subprocess.CalledProcessError as exc:
+        output = exc.output.decode()
+        file_logger.error("  Issue looking up route (route cmd syntax?): {} (command used: {})".format(str(output), ip_route_cmd))
+        return ''
+
+def get_route_used_to_dest(ip_address, file_logger):
+
+    ip_address = resolve_name(ip_address, file_logger)
+
+    # get first raw routing entry, otherwise show route that will actually be chosen by kernel
+    ip_route_cmd = "{} route show to match ".format(IP_CMD) + ip_address + " | head -n 1"
 
     try:
         route_detail = subprocess.check_output(ip_route_cmd, stderr=subprocess.STDOUT, shell=True).decode()
@@ -50,7 +65,7 @@ def check_correct_mgt_interface(ip_address, config_vars, file_logger):
     
     # check which interface the mgt server is reached over
     file_logger.info("  Checking we will send mgt traffic over configured interface '{}' mode.".format(mgt_interface))
-    route_to_dest = get_route_to_dest(mgt_ip, file_logger, routing_entry=False)
+    route_to_dest = get_first_route_to_dest(mgt_ip, file_logger)
 
     if mgt_interface in route_to_dest:
         file_logger.info("  Interface mgt interface route looks good.")
@@ -75,25 +90,25 @@ def check_correct_mode_interface(ip_address, config_vars, file_logger):
         file_logger: file logger object so that we can log operations
     """
 
-    # check test to Internet will go via correct interface depending on mode
-    internet_interface = ''
+    # check test traffic will go via correct interface depending on mode
+    test_traffic_interface= ''
     probe_mode = config_vars['probe_mode']
 
     file_logger.info("  Checking we are going to Internet on correct interface as we are in '{}' mode.".format(probe_mode))
     
     if probe_mode == "wireless":
-        internet_interface = config_vars['wlan_if']
+        test_traffic_interface= config_vars['wlan_if']
     
     elif probe_mode == "ethernet":
-        internet_interface = config_vars['eth_if']
+        test_traffic_interface= config_vars['eth_if']
     else:
         file_logger.error("  Unknown probe mode: {} (exiting)".format(probe_mode))
         sys.exit()
 
     # get i/f name for route
-    route_to_dest = get_route_to_dest(ip_address, file_logger, routing_entry=False)
+    route_to_dest = get_first_route_to_dest(ip_address, file_logger)
 
-    if internet_interface in route_to_dest:
+    if test_traffic_interfacein route_to_dest:
         return True
     else:
         return False
@@ -107,7 +122,7 @@ def inject_default_route(ip_address, config_vars, file_logger):
     """
 
     # get the default route to our destination
-    route_to_dest = get_route_to_dest(ip_address, file_logger)
+    route_to_dest = get_route_used_to_dest(ip_address, file_logger)
 
     # This fix relies on the retrieved route being a default route in the 
     # format: default via 192.168.0.1 dev eth0
@@ -138,13 +153,13 @@ def inject_default_route(ip_address, config_vars, file_logger):
     # figure out what our required interface is
     probe_mode = config_vars['probe_mode']
     file_logger.info("  [Route Injection] Checking probe mode: '{}' ".format(probe_mode))
-    internet_interface = ''
+    test_traffic_interface= ''
 
     if probe_mode == "wireless":
-        internet_interface = config_vars['wlan_if']
+        test_traffic_interface= config_vars['wlan_if']
     
     elif probe_mode == "ethernet":
-        internet_interface = config_vars['eth_if']
+        test_traffic_interface= config_vars['eth_if']
     else:
         file_logger.error("  [Route Injection] Unknown probe mode: {} (exiting)".format(probe_mode))
         sys.exit()
@@ -152,7 +167,7 @@ def inject_default_route(ip_address, config_vars, file_logger):
 
     # inject a new route with the required interface
     try:
-        new_route = "default dev {}".format(internet_interface)
+        new_route = "default dev {}".format(test_traffic_interface)
         add_route_cmd = "{} route add  ".format(IP_CMD) + new_route
         subprocess.run(add_route_cmd, shell=True)
         file_logger.info("  [Route Injection] Adding new route: {}".format(new_route))
@@ -201,18 +216,18 @@ def inject_test_traffic_static_route(ip_address, config_vars, file_logger):
     probe_mode = config_vars['probe_mode']
 
     file_logger.info("  [Route Injection] Checking probe mode: '{}' ".format(probe_mode))
-    internet_interface = ''
+    test_traffic_interface= ''
 
     if probe_mode == "wireless":
-        internet_interface = config_vars['wlan_if']
+        test_traffic_interface= config_vars['wlan_if']
     
     elif probe_mode == "ethernet":
-        internet_interface = config_vars['eth_if']
+        test_traffic_interface= config_vars['eth_if']
     else:
         file_logger.error("  [Route Injection] Unknown probe mode: {} (exiting)".format(probe_mode))
         sys.exit()
 
-    return _inject_static_route(ip_address, internet_interface, config_vars, file_logger)
+    return _inject_static_route(ip_address, test_traffic_interface, config_vars, file_logger)
 
 
 

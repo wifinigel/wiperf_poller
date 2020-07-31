@@ -258,7 +258,7 @@ def main():
     if config_vars['http_test_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
         http_obj = HttpTester(file_logger, platform=platform)
-        tests_passed = http_obj.run_tests(status_file_obj, config_vars, exporter_obj, watchdog_obj)
+        tests_passed = http_obj.run_tests(status_file_obj, config_vars, exporter_obj, watchdog_obj, check_correct_mode_interface,)
 
         if tests_passed:
             poll_obj.http('Completed')

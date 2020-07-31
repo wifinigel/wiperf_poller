@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import os.path
+import os
 import logging
 
 # our local ...

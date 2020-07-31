@@ -78,7 +78,8 @@ def check_correct_mode_interface(ip_address, config_vars, file_logger):
 
     """
     This function checks whether we use the expected interface to get to the Internet, 
-    depending on which mode the probe is operating.
+    depending on which mode the probe is operating. (May not be internet if testing
+    internally only, but will ensure tests go over correct interface for supplied host)
 
     Modes:
         ethernet : we expect to get to the Internet over the eth interface (usually eth0)
@@ -94,7 +95,7 @@ def check_correct_mode_interface(ip_address, config_vars, file_logger):
     test_traffic_interface= ''
     probe_mode = config_vars['probe_mode']
 
-    file_logger.info("  Checking we are going to Internet on correct interface as we are in '{}' mode.".format(probe_mode))
+    file_logger.info("  Checking we are testing on correct interface as we are in '{}' mode.".format(probe_mode))
     
     if probe_mode == "wireless":
         test_traffic_interface= config_vars['wlan_if']

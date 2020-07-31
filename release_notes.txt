@@ -1,3 +1,6 @@
+v0.1.21
+1. Fixed broken http route lookup
+
 v0.1.20
 1. Added http route tests
 2. Added root user check

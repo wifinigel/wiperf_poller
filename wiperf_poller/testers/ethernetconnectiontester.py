@@ -6,6 +6,7 @@ from socket import gethostbyname
 from wiperf_poller.helpers.ethernetadapter import EthernetAdapter
 from wiperf_poller.testers.mgtconnectiontester import MgtConnectionTester
 from wiperf_poller.helpers.route import check_correct_mode_interface, inject_default_route
+from wiperf_poller.testers.pingtester import PingTester
 
 class EthernetConnectionTester(object):
     """
@@ -50,6 +51,11 @@ class EthernetConnectionTester(object):
         # final connectivity check: see if we can resolve an address
         # (network connection and DNS must be up)
         self.file_logger.info("Checking we can do a DNS lookup to {}".format(config_vars['connectivity_lookup']))
+
+        # Run a ping to seed arp cache
+        ping_obj = PingTester(self.file_logger, platform=self.platform)
+        ping_obj.ping_host(config_vars['connectivity_lookup'], 1)
+
         try:
             gethostbyname(config_vars['connectivity_lookup'])
         except Exception as ex:

@@ -1,16 +1,22 @@
-v0.19
+v0.1.20
+1. Added http route tests
+2. Added root user check
+3. Added searches for missing prog files (for platforms using non-std locations)
+4. Removed non-required configurator code
+
+v0.1.19
 1. Reverted to previous min of v3.6 due to influx client req
 
-v0.18
+v0.1.18
 1. Fixed min req version designation error
 
-v0.17
+v0.1.17
 1. Fixed min req for python to 3.3 in setup file
 
-v0.16
+v0.1.16
 1. Added improved os command checking with attempt to find if hard coded filename not found
 
-v0.15
+v0.1.15
 1. Added platform detection (removed from cfg file)
 
 v0.1.14

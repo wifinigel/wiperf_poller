@@ -168,12 +168,12 @@ class PingTester(object):
                 if ping_host == 'def_gw':
                     ping_host = adapter.get_def_gw()
 
-                # check test to Intenet will go via wlan interface
+                # check tests will go over correct interface
                 if check_correct_mode_interface(ping_host, config_vars, self.file_logger):
                     self.ping_host(ping_host, 1)
                 else:
                     self.file_logger.error(
-                        "Unable to ping {} as route to destination not over wireless interface...bypassing ping tests".format(ping_host))
+                        "Unable to ping {} as route to destination not over correct interface...bypassing ping tests".format(ping_host))
                     # we will break here if we have an issue as something bad has happened...don't want to run more tests
                     config_vars['test_issue'] = True
                     tests_passed = False

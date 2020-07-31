@@ -60,6 +60,11 @@ if DEBUG or (config_vars['debug'] == 'on'):
     file_logger.setLevel('DEBUG')
     file_logger.info("(Note: logging set to debug level.)")
 
+# check we are running as root user (sudo)
+if os.geteuid() != 0:
+    file_logger.error("Not running as root. Run using 'sudo' if running on CLI, or add to crontab using 'sudo crontab -e' for normal, schduled operation...exiting.")
+    sys.exit()
+
 # check all our os-level cmds are available
 if not check_os_cmds(file_logger):
     file_logger.error("Missing OS command....exiting.")

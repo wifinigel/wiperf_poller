@@ -108,7 +108,7 @@ def check_correct_mode_interface(ip_address, config_vars, file_logger):
     # get i/f name for route
     route_to_dest = get_first_route_to_dest(ip_address, file_logger)
 
-    if test_traffic_interfacein route_to_dest:
+    if test_traffic_interface in route_to_dest:
         return True
     else:
         return False

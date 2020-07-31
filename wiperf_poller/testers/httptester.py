@@ -89,7 +89,8 @@ class HttpTester(object):
                 continue
 
             # check test will go over correct interface
-            if check_correct_mode_interface(http_target, config_vars, self.file_logger):
+            target_hostname = http_target.split('/')[2]
+            if check_correct_mode_interface(target_hostname, config_vars, self.file_logger):
                 pass
             else:
                 self.file_logger.error(

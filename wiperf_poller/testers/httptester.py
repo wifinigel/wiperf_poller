@@ -67,7 +67,7 @@ class HttpTester(object):
         # return status code & elapsed duration in mS
         return (self.http_status_code, self.http_get_duration, self.http_server_response_time)
     
-    def run_tests(self, status_file_obj, config_vars, exporter_obj, watchd):
+    def run_tests(self, status_file_obj, config_vars, exporter_obj, watchd, check_correct_mode_interface,):
 
         self.file_logger.info("Starting HTTP tests...")
         status_file_obj.write_status_file("HTTP tests")
@@ -87,6 +87,17 @@ class HttpTester(object):
             # move on to next if no HTTP entry data
             if http_target == '':
                 continue
+
+            # check test will go over correct interface
+            if check_correct_mode_interface(http_target, config_vars, self.file_logger):
+                pass
+            else:
+                self.file_logger.error(
+                    "Unable to test http to {} as route to destination not over correct interface...bypassing http tests".format(http_target))
+                # we will break here if we have an issue as something bad has happened...don't want to run more tests
+                config_vars['test_issue'] = True
+                tests_passed = False
+                break
 
             self.file_logger.info("Starting http test to : {}".format(http_target))
 

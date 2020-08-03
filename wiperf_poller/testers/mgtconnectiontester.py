@@ -25,9 +25,10 @@ class MgtConnectionTester(object):
         exporter_type = self.config_vars['exporter_type']
         data_host = self.config_vars['data_host']
         data_port = self.config_vars['data_port']
+        mgt_interface = self.config_vars['mgt_if']
 
         # check if the route to the mgt server is over the correct interface...fix with route injection if not
-        if not check_correct_mgt_interface(data_host, self.config_vars, self.file_logger):
+        if not check_correct_mgt_interface(data_host, mgt_interface, self.file_logger):
 
             self.file_logger.warning("  We are not using the interface required for mgt traffic due to a routing issue in this unit - attempt route addition to fix issue")
 
@@ -35,7 +36,7 @@ class MgtConnectionTester(object):
 
                 self.file_logger.info("  Checking if route injection worked...")
 
-                if check_correct_mgt_interface(data_host, self.config_vars, self.file_logger):
+                if check_correct_mgt_interface(data_host, mgt_interface, self.file_logger):
                     self.file_logger.info("  Routing issue corrected OK.")
                 else:
                     self.file_logger.warning("  We still have a routing issue. Will have to exit as mgt traffic over correct interface not possible")

@@ -5,7 +5,7 @@ from socket import gethostbyname
 import requests
 
 from wiperf_poller.helpers.ethernetadapter import EthernetAdapter
-from wiperf_poller.helpers.route import check_correct_mgt_interface, inject_mgt_static_route
+from wiperf_poller.helpers.route import check_correct_mgt_interface, inject_mgt_static_route, is_ipv6
 from wiperf_poller.helpers.os_cmds import NC_CMD
 
 class MgtConnectionTester(object):
@@ -63,6 +63,7 @@ class MgtConnectionTester(object):
             response = dict()
             token = self.config_vars.get('splunk_token')    
             headers = {'Authorization':'Splunk '+ token}
+            if is_ipv6(data_host): data_host = "[{}]".format(data_host)
             url = "https://{}:{}/services/collector/event".format(data_host, data_port)
 
             # send auth request

@@ -16,7 +16,7 @@ def is_ipv6(ip_address):
     """
     Check if an address is in ivp6 format
     """
-    return re.search(r'[abcdf0123456789]+::', ip_address)
+    return re.search(r'[abcdf0123456789]+:', ip_address)
 
 
 def resolve_name(hostname, file_logger):

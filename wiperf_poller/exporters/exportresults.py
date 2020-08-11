@@ -10,6 +10,7 @@ from socket import gethostname
 from wiperf_poller.exporters.splunkexporter import splunkexporter
 from wiperf_poller.exporters.influxexporter2 import influxexporter2
 from wiperf_poller.exporters.influxexporter import influxexporter
+from wiperf_poller.helpers.route import is_ipv6
 #TODO: conditional import of influxexporter if Influx module available
 
 class ResultsExporter(object):
@@ -62,11 +63,13 @@ class ResultsExporter(object):
     def send_results_to_hec(self, host, token, port, dict_data, file_logger, source):
 
         file_logger.info("Sending event to HEC: {} (dest host: {}, dest port: {})".format(source, host, port))
+        if is_ipv6(host): host = "[{}]".format(host)
         return splunkexporter(host, token, port, dict_data, source, file_logger)
 
     def send_results_to_influx(self, localhost, host, port, username, password, database, dict_data, source, file_logger):
 
         file_logger.info("Sending data to Influx host: {}, port: {}, database: {})".format(host, port, database))
+        if is_ipv6(host): host = "[{}]".format(host)
         return influxexporter(localhost, host, port, username, password, database, dict_data, source, file_logger)
     
     def send_results_to_influx2(self, localhost, url, token, bucket, org, dict_data, source, file_logger):
@@ -122,7 +125,9 @@ class ResultsExporter(object):
             file_logger.info("InfluxDB2 update: {}, source={}".format(data_file, test_name))
 
             # construct url
-            influx_url = "https://{}:{}".format(config_vars['data_host'], config_vars['data_port'])
+            host = config_vars['data_host']
+            if is_ipv6(host): host = "[{}]".format(host)
+            influx_url = "https://{}:{}".format(host, config_vars['data_port'])
 
             return self.send_results_to_influx2(gethostname(), influx_url, config_vars['influx2_token'],
                     config_vars['influx2_bucket'], config_vars['influx2_org'], results_dict, data_file, file_logger)

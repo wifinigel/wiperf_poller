@@ -71,6 +71,8 @@ class PollStatus():
         # calc run time
         self.status_dict['run_time'] = round(time.time() - self.start_time)
 
+        self.file_logger.info("########## poll status ##########")
+
         self.file_logger.info("Sending poll status info to mgt platform")
 
         column_headers = ['ip', 'network', 'speedtest', 'ping', 'dns', 'iperf_tcp', 

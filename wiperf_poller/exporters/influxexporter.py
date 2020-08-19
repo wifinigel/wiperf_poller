@@ -64,6 +64,9 @@ def influxexporter(localhost, host, port, username, password, database, dict_dat
         file_logger.error("Issue sending data to Influx: {}".format(err))
         return False
     
+    # close the http session
+    client.close()
+    
     file_logger.debug("Data structure sent to Influx:")
     file_logger.debug(data_point)
 

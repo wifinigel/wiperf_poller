@@ -62,14 +62,25 @@ class IperfTester(object):
 
         self.file_logger.debug("TCP iperf server test params: server: {}, port: {}, protocol: {}, duration: {}, --connect-timeout {}".format(
             server_hostname, port, protocol, duration, timeout))
+        
+        # some iperf3 clients sometimes hang around...lets tidy up 
+        # just in case
+        try:
+            subprocess.check_output("pkill -9 -f 'iperf3 -c'", shell=True)
+            self.file_logger.warning("Killed zombie iperf3 client process that was hanging around.")
+        except subprocess.CalledProcessError:
+            pass
 
         # run the test
+        self.file_logger.info("...iperf test initiating ")
         try:
             output = subprocess.check_output(
-                iperf_cmd_string, stderr=subprocess.STDOUT, shell=True).decode()
+                iperf_cmd_string, stderr=subprocess.STDOUT, shell=True, timeout=90).decode()
+        except subprocess.TimeoutExpired:
+            self.file_logger.error("iperf TCP process timeout error ({}:{}): process execution timed out".format(server_hostname, port))
+            return False
         except subprocess.CalledProcessError as exc:
-            iperf_json = json.loads(exc.output.decode())
-            err_msg = iperf_json['error']
+            err_msg = exc.output.decode()
             self.file_logger.error("iperf TCP test error ({}:{}): {}".format(server_hostname, port, err_msg))
             return False
 
@@ -144,18 +155,28 @@ class IperfTester(object):
 
         self.file_logger.debug("UDP iperf server test params: server: {}, port: {}, protocol: {}, duration: {}, bandwidth: {} --connect-timeout {}".format(
             server_hostname, port, protocol, duration, bandwidth, timeout))
+        
+        # some iperf3 clients sometimes hang around...lets tidy up 
+        # just in case
+        try:
+            subprocess.check_output("pkill -9 -f 'iperf3 -c'", shell=True)
+            self.file_logger.warning("Killed zombie iperf3 client process that was hanging around.")
+        except subprocess.CalledProcessError:
+            pass
 
         iperf_cmd_string = "{} -c {} -u -t {} -p {} -b {} --connect-timeout {} -J".format(iperf, server_hostname, duration, port, bandwidth, timeout)
 
         # run the test
+        self.file_logger.info("...iperf test initiating ")
         try:
             output = subprocess.check_output(
-                iperf_cmd_string, stderr=subprocess.STDOUT, shell=True).decode()
+                iperf_cmd_string, stderr=subprocess.STDOUT, shell=True, timeout=90).decode()
+        except subprocess.TimeoutExpired:
+            self.file_logger.error("iperf UDP process timeout error ({}:{}): process execution timed out".format(server_hostname, port))
+            return False
         except subprocess.CalledProcessError as exc:
-            iperf_json = json.loads(exc.output.decode())
-            err_msg = iperf_json['error']
-            self.file_logger.error("iperf UDP test error ({}:{}): {}".format(
-                server_hostname, port, err_msg))
+            err_msg = exc.output.decode()
+            self.file_logger.error("iperf UDP test error ({}:{}): {}".format(server_hostname, port, err_msg))
             return False
 
         iperf_json = json.loads(output)

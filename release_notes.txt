@@ -1,3 +1,8 @@
+v0.1.23
+1. Minor fix to close influx client sessions
+2. Additional log header msg for poll status info
+3. Added tidy up code for stuck iperf3 tests
+
 v0.1.22
 1. Added support for ipv6 for mgt traffic
 

@@ -1,3 +1,9 @@
+v0.1.24
+1. Moved iperf3 tests to use python module rather than wrapper
+2. Include config mods to limit UDP test block sizes, streams=1 and to use
+   zerocopy (whatever that does...)
+3. Explicit destroy of iperf test instances to kill of processes that might hang around.
+
 v0.1.23
 1. Minor fix to close influx client sessions
 2. Additional log header msg for poll status info

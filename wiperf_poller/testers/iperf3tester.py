@@ -9,6 +9,7 @@ import os
 import json
 import subprocess
 import time
+import signal
 from iperf3 import Client
 
 from wiperf_poller.testers.pingtester import PingTester
@@ -25,25 +26,41 @@ class IperfTester(object):
         self.file_logger = file_logger
 
 
+    def tcp_signal_handler(self, signum, frame):
+        raise Exception("TCP iperf test timed out!") 
+
+    def udp_signal_handler(self, signum, frame):
+        raise Exception("UDP iperf test timed out!") 
+
     def tcp_iperf_client_test(self, server_hostname, duration=10, port=5201, debug=False):
 
-        protocol = 'tcp'
         result= ''
 
         iperf_client = Client()
 
         iperf_client.server_hostname = server_hostname
         iperf_client.port = port
-        iperf_client.protocol = protocol
+        iperf_client.protocol = 'tcp'
         iperf_client.duration = duration
 
         if debug:
             self.file_logger.debug("TCP iperf server test params: server: {}, port: {}, protocol: {}, duration: {}".format(server_hostname, port, protocol, duration))
 
+        self.file_logger.info("Starting tcp iperf3 test...")
+
+        signal.signal(signal.SIGALRM, self.tcp_signal_handler)
+        signal.alarm(int(duration) + 10)
+        result = False
         try:
             result = iperf_client.run()
-        except Exception as ex:
-            self.file_logger.error("iperf TCP test error: {}".format(ex))
+        except Exception as msg:
+            self.file_logger.error(msg)
+            del iperf_client
+            return False
+
+        #result = iperf_client.run()
+        if result.error:
+            self.file_logger.error("iperf TCP test error: {}".format(result.error))
             result = False
 
         del iperf_client
@@ -94,14 +111,24 @@ class IperfTester(object):
         if debug:
             self.file_logger.debug("UDP iperf server test params: server: {}, port: {}, protocol: {}, duration: {}, bandwidth: {}".format(server_hostname, port, 'udp', duration, bandwidth))
 
+        self.file_logger.info("Starting udp iperf3 test...")
+
+        signal.signal(signal.SIGALRM, self.udp_signal_handler)
+        signal.alarm(int(duration) + 10)
+        result = False
         try:
             result = iperf_client.run()
-        except Exception as ex:
-            self.file_logger.error("iperf UDP test error: {}".format(ex))
+        except Exception as msg:
+            self.file_logger.error(msg)
+            del iperf_client
+            return False
+
+        #result = iperf_client.run()
+        if result.error:
+            self.file_logger.error("iperf UDP test error: {}".format(result.error))
             result = False
 
         del iperf_client
-
         return result
 
     def run_tcp_test(self, config_vars, status_file_obj, check_correct_mode_interface, exporter_obj):
@@ -119,12 +146,8 @@ class IperfTester(object):
                 # run iperf test
                 result = self.tcp_iperf_client_test(server_hostname, duration=duration, port=port, debug=False)
 
-                if result.error:
+                if result:
 
-                    self.file_logger.error("Error with iperf3 tcp test: {}".format(result.error))
-                    return False
-
-                else:
                     results_dict = {}
 
                     column_headers = ['time', 'sent_mbps', 'received_mbps', 'sent_bytes', 'received_bytes', 'retransmits']
@@ -150,6 +173,10 @@ class IperfTester(object):
                     else:
                         self.file_logger.error("Error sending iperf3 tcp test result.")
                         return False
+
+                else:
+                    self.file_logger.error("iperf3 tcp test failed.")
+                    return False        
                     
             else:
                 self.file_logger.error("Unable to run iperf test to {} as route to destination not over correct interface...bypassing test".format(server_hostname))
@@ -185,12 +212,8 @@ class IperfTester(object):
             # Run the iperf test
             result = self.udp_iperf_client_test(server_hostname, duration=duration, port=port, bandwidth=bandwidth, debug=False)
 
-            if result.error:
-
-                self.file_logger.error("Error with iperf3 udp test: {}".format(result.error))
-                return False
-
-            else:
+            if result:
+                
                 results_dict = {}
 
                 column_headers = ['time', 'bytes', 'mbps', 'jitter_ms', 'packets', 'lost_packets', 'lost_percent']
@@ -224,6 +247,10 @@ class IperfTester(object):
                     self.file_logger.error("Issue sending iperf3 UDP results.")
                     return False
 
+            else:
+                self.file_logger.error("iperf3 udp test failed.")
+                return False
+                
         else:
             self.file_logger.error("Unable to run iperf test to {} as route to destination not over correct interface...bypassing test".format(server_hostname))
             inject_test_traffic_static_route(server_hostname, config_vars, self.file_logger)

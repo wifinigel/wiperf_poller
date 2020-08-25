@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="wiperf_poller",
-    version="0.1.24",
+    version="0.1.25",
     author="Nigel Bowden",
     author_email="wifinigel@gmail.com",
     description="Poller for the wiperf utlity",
@@ -13,7 +13,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/wifinigel/wiperf_poller",
     packages=setuptools.find_packages(),
-    install_requires=['speedtest-cli', 'influxdb', 'influxdb_client', 'iperf3'],
+    install_requires=['speedtest-cli', 'influxdb', 'influxdb_client', 'iperf3', 'timeout_decorator'],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: Free for non-commercial use",

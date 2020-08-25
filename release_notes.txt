@@ -1,3 +1,6 @@
+v0.1.25
+1. Using timeout_decorator module to timeout iperf3 sessions that hang whole poller process
+
 v0.1.24
 1. Moved iperf3 tests to use python module rather than wrapper
 2. Include config mods to limit UDP test block sizes, streams=1 and to use

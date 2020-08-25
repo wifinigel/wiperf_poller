@@ -11,6 +11,7 @@ import subprocess
 import time
 import signal
 from iperf3 import Client
+import timeout_decorator
 
 from wiperf_poller.testers.pingtester import PingTester
 from wiperf_poller.helpers.route import inject_test_traffic_static_route
@@ -26,12 +27,7 @@ class IperfTester(object):
         self.file_logger = file_logger
 
 
-    def tcp_signal_handler(self, signum, frame):
-        raise Exception("TCP iperf test timed out!") 
-
-    def udp_signal_handler(self, signum, frame):
-        raise Exception("UDP iperf test timed out!") 
-
+    @timeout_decorator.timeout(60, use_signals=False)
     def tcp_iperf_client_test(self, server_hostname, duration=10, port=5201, debug=False):
 
         result= ''
@@ -44,21 +40,11 @@ class IperfTester(object):
         iperf_client.duration = duration
 
         if debug:
-            self.file_logger.debug("TCP iperf server test params: server: {}, port: {}, protocol: {}, duration: {}".format(server_hostname, port, protocol, duration))
+            self.file_logger.debug("TCP iperf server test params: server: {}, port: {}, protocol: {}, duration: {}".format(server_hostname, port, "TCP", duration))
 
         self.file_logger.info("Starting tcp iperf3 test...")
 
-        signal.signal(signal.SIGALRM, self.tcp_signal_handler)
-        signal.alarm(int(duration) + 10)
-        result = False
-        try:
-            result = iperf_client.run()
-        except Exception as msg:
-            self.file_logger.error(msg)
-            del iperf_client
-            return False
-
-        #result = iperf_client.run()
+        result = iperf_client.run()
         if result.error:
             self.file_logger.error("iperf TCP test error: {}".format(result.error))
             result = False
@@ -95,6 +81,7 @@ class IperfTester(object):
         
         return mos_score
 
+    @timeout_decorator.timeout(60, use_signals=False)
     def udp_iperf_client_test(self, server_hostname, duration=10, port=5201, bandwidth=10000000, debug=False):
 
         iperf_client = Client()
@@ -113,17 +100,7 @@ class IperfTester(object):
 
         self.file_logger.info("Starting udp iperf3 test...")
 
-        signal.signal(signal.SIGALRM, self.udp_signal_handler)
-        signal.alarm(int(duration) + 10)
-        result = False
-        try:
-            result = iperf_client.run()
-        except Exception as msg:
-            self.file_logger.error(msg)
-            del iperf_client
-            return False
-
-        #result = iperf_client.run()
+        result = iperf_client.run()
         if result.error:
             self.file_logger.error("iperf UDP test error: {}".format(result.error))
             result = False
@@ -144,7 +121,11 @@ class IperfTester(object):
             if check_correct_mode_interface(server_hostname, config_vars, self.file_logger):
 
                 # run iperf test
-                result = self.tcp_iperf_client_test(server_hostname, duration=duration, port=port, debug=False)
+                result = False
+                try:
+                    result = self.tcp_iperf_client_test(server_hostname, duration=duration, port=port, debug=False)
+                except:
+                    self.file_logger.info("TCP iperf3 test process timed out.")
 
                 if result:
 
@@ -210,7 +191,11 @@ class IperfTester(object):
                 rtt_avg_ms=0
 
             # Run the iperf test
-            result = self.udp_iperf_client_test(server_hostname, duration=duration, port=port, bandwidth=bandwidth, debug=False)
+            result = False
+            try:
+                result = self.udp_iperf_client_test(server_hostname, duration=duration, port=port, bandwidth=bandwidth, debug=False)
+            except:
+                self.file_logger.info("UDP iperf3 test process timed out")
 
             if result:
                 

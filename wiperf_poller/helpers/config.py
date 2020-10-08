@@ -81,8 +81,8 @@ def read_local_config(config_file, file_logger):
         config_vars['data_host'] = config_vars['influx_host']
         config_vars['data_port'] = config_vars['influx_port']
     elif config_vars['exporter_type'] == 'influxdb2':
-        config_vars['data_host'] = config_vars['influx_host2']
-        config_vars['data_port'] = config_vars['influx_port2']
+        config_vars['data_host'] = config_vars['influx2_host']
+        config_vars['data_port'] = config_vars['influx_2port']
     else:
         print("Unknown exporter type: {}".format(config_vars['exporter_type']))
         sys.exit()

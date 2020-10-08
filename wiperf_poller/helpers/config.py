@@ -60,6 +60,7 @@ def read_local_config(config_file, file_logger):
     ####### Influx1 config ########
     config_vars['influx_host'] = gen_sect.get('influx_host')
     config_vars['influx_port'] = gen_sect.get('influx_port', '8086')
+    config_vars['influx_ssl'] = gen_sect.get('influx_ssl', True)
     config_vars['influx_username'] = gen_sect.get('influx_username', 'admin')
     config_vars['influx_password'] = gen_sect.get('influx_password', 'admin')
     config_vars['influx_database'] = gen_sect.get('influx_database', 'wiperf')
@@ -68,6 +69,7 @@ def read_local_config(config_file, file_logger):
     ####### Influx2 config ########
     config_vars['influx2_host'] = gen_sect.get('influx2_host')
     config_vars['influx2_port'] = gen_sect.get('influx2_port', '8086')
+    config_vars['influx2_ssl'] = gen_sect.get('influx2_ssl', True)
     config_vars['influx2_token'] = gen_sect.get('influx2_token', '')
     config_vars['influx2_bucket'] = gen_sect.get('influx2_bucket', '')
     config_vars['influx2_org'] = gen_sect.get('influx2_org', '')

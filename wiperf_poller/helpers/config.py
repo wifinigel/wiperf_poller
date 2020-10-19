@@ -197,6 +197,31 @@ def read_local_config(config_file, file_logger):
     config_vars['dhcp_test_mode'] = dhcp_sect.get('mode', 'passive')
     config_vars['dhcp_data_file'] = dhcp_sect.get('dhcp_data_file', 'wiperf-dhcp')
 
+    # Get SMB test config params
+    smb_sect = config['SMB_Test']
+    config_vars['SMB_enabled'] = smb_sect.get('enabled', 'no')
+    config_vars['SMB_data_file'] = smb_sect.get('SMB_data_file', 'wiperf-SMB')
+    config_vars['SMB_user'] = smb_sect.get('SMB_user', ' ')
+    config_vars['SMB_password'] = smb_sect.get('SMB_password', ' ')
+    config_vars['smb_host1'] = smb_sect.get('smb_host1', '')
+    config_vars['smb_host2'] = smb_sect.get('smb_host2', '')
+    config_vars['smb_host3'] = smb_sect.get('smb_host3', '')
+    config_vars['smb_host4'] = smb_sect.get('smb_host4', '')
+    config_vars['smb_host5'] = smb_sect.get('smb_host5', '')
+    config_vars['smb_path1'] = smb_sect.get('smb_path1', '')
+    config_vars['smb_path2'] = smb_sect.get('smb_path2', '')
+    config_vars['smb_path3'] = smb_sect.get('smb_path3', '')
+    config_vars['smb_path4'] = smb_sect.get('smb_path4', '')
+    config_vars['smb_path5'] = smb_sect.get('smb_path5', '')
+    config_vars['smb_filename1'] = smb_sect.get('smb_filename1','')
+    config_vars['smb_filename2'] = smb_sect.get('smb_filename2', '')
+    config_vars['smb_filename3'] = smb_sect.get('smb_filename3', '')
+    config_vars['smb_filename4'] = smb_sect.get('smb_filename4', '')
+    config_vars['smb_filename5'] = smb_sect.get('smb_filename5', '')
+
+
+
+
     '''
     # Check all entered config.ini values to see if valid
     for key in config_vars: 

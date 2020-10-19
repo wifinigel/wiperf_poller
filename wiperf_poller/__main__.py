@@ -14,6 +14,7 @@ from wiperf_poller.testers.iperf3tester import IperfTester
 from wiperf_poller.testers.dnstester import DnsTester
 from wiperf_poller.testers.httptester import HttpTester
 from wiperf_poller.testers.dhcptester import DhcpTester
+from wiperf_poller.testers.smbtester import SmbTester
 
 from wiperf_poller.helpers.wirelessadapter import WirelessAdapter
 from wiperf_poller.helpers.ethernetadapter import EthernetAdapter
@@ -337,6 +338,28 @@ def main():
         else:
             file_logger.info("DHCP test not enabled in config file, bypassing this test...")
             poll_obj.dhcp('Not enabled')
+
+
+    #####################################
+    # Run SMB renewal test (if enabled)
+    #####################################
+    file_logger.info("########## SMB test ##########")
+    if config_vars['smb_test_enabled'] == 'yes' and config_vars['test_issue'] == False:
+
+        smb_obj = SmbTester(file_logger, platform=platform)
+        tests_passed = smb_obj.run_tests(status_file_obj, config_vars, adapter_obj, check_correct_mode_interface, exporter_obj, watchdog_obj)
+        if tests_passed:
+            poll_obj.smb('Completed')
+        else:
+            poll_obj.smb('Failure')
+
+    else:
+        if config_vars['test_issue'] == True:
+            file_logger.info("Previous test failed: {}".format(config_vars['test_issue_descr']))
+            poll_obj.smb('Not run')
+        else:
+            file_logger.info("smb test not enabled in config file, bypassing this test...")
+            poll_obj.smb('Not enabled')
 
     #####################################
     # Tidy up before exit

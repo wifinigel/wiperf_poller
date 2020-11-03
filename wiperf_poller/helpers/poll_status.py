@@ -72,6 +72,9 @@ class PollStatus():
     
     def mgt_if(self, value):
         self.status_dict['mgt_if'] = value
+
+    def smb(self, value):
+        self.status_dict['smb'] = value
     
     def dump(self):
 

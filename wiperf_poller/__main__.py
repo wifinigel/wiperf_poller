@@ -344,7 +344,7 @@ def main():
     # Run SMB renewal test (if enabled)
     #####################################
     file_logger.info("########## SMB test ##########")
-    if config_vars['smb_enabled'] == 'yes' and config_vars['test_issue'] == False:
+    if config_vars['SMB_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
         smb_obj = SmbTester(file_logger, platform=platform)
         tests_passed = smb_obj.run_tests(status_file_obj, config_vars, adapter_obj, check_correct_mode_interface, exporter_obj, watchdog_obj)

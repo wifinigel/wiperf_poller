@@ -57,13 +57,6 @@ class PollStatus():
     def iperf_udp(self, value):
         self.status_dict['iperf_udp'] = value
     
-    def smb(self, value):
-        self.status_dict['iperf_udp'] = value
-    
-    def AuthTester(self, value):
-        self.status_dict['iperf_udp'] = value
-
-
     def dhcp(self, value):
         self.status_dict['dhcp'] = value
     
@@ -72,10 +65,12 @@ class PollStatus():
     
     def mgt_if(self, value):
         self.status_dict['mgt_if'] = value
-
+    
     def smb(self, value):
         self.status_dict['smb'] = value
     
+
+
     def dump(self):
 
         # calc run time
@@ -100,6 +95,3 @@ class PollStatus():
         else:
             self.file_logger.error("Issue sending poll status info.")
             return False
-
-
-    

@@ -57,6 +57,13 @@ class PollStatus():
     def iperf_udp(self, value):
         self.status_dict['iperf_udp'] = value
     
+    def smb(self, value):
+        self.status_dict['iperf_udp'] = value
+    
+    def AuthTester(self, value):
+        self.status_dict['iperf_udp'] = value
+
+
     def dhcp(self, value):
         self.status_dict['dhcp'] = value
     

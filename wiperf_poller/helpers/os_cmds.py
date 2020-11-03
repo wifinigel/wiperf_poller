@@ -43,7 +43,10 @@ OS_CMDS = {
     'ROUTE_CMD': _find_cmd('/sbin/route'),
     'LS_CMD': _find_cmd('/sbin/ls'),
     'UMOUNT_CMD': _find_cmd('/bin/umount'),
+    'GREP_CMD': _find_cmd('/bin/grep'),
+    'WPA_CMD': _find_cmd('/sbin/wpa_cli'),
 }
+
 
 # define exportable vars
 DHCLIENT_CMD = OS_CMDS['DHCLIENT_CMD']
@@ -61,6 +64,8 @@ SMB_CP = OS_CMDS['SMB_CP']
 SMB_MOUNT = OS_CMDS['SMB_MOUNT']
 LS_CMD = OS_CMDS['LS_CMD']
 UMOUNT_CMD = OS_CMDS['UMOUNT_CMD']
+GREP_CMD = OS_CMDS['GREP_CMD']
+WPA_CMD = OS_CMDS['WPA_CMD']
 def check_os_cmds(file_logger):
     """
     This function checks is all expected OS commands are avaiable.

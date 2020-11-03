@@ -380,7 +380,7 @@ def main():
             file_logger.info("Previous test failed: {}".format(config_vars['test_issue_descr']))
             poll_obj.AuthTester('Not run')
         else:
-            file_logger.info("smb test not enabled in config file, bypassing this test...")
+            file_logger.info("Authentication test not enabled in config file, bypassing this test...")
             poll_obj.AuthTester('Not enabled')
 
 

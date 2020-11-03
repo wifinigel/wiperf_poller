@@ -69,8 +69,9 @@ class PollStatus():
     def smb(self, value):
         self.status_dict['smb'] = value
     
-
-
+    def AuthTester(self, value):
+        self.status_dict['Auth_tester'] = value
+        
     def dump(self):
 
         # calc run time

@@ -46,13 +46,13 @@ class SmbTester(object):
 
         # Execute the Smb mount
         try:
-            cmd_string = "{} //{}{} /mnt/shares/share1 -o user={},pass={}".format(SMB_MOUNT,host,path,username,password)
+            cmd_string = "{} //{}{} /mnt/shares/share1 -o user={},pass=\'{}\'".format(SMB_MOUNT,host,path,username,password)
+            print ("commande ",cmd_string)
             Smb_output = subprocess.check_output(cmd_string, stderr=subprocess.STDOUT, shell=True).decode().splitlines()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
             error = "Hit an error when Smb mount {} : {}".format(str(host), str(output))
             self.file_logger.error(error)
-
             stderr.write(str(error))
 
             # Things have gone bad - we just return a false status
@@ -60,11 +60,11 @@ class SmbTester(object):
 
         self.file_logger.debug("Smb command output:")
         self.file_logger.debug(Smb_output)
-
         # Execute the cp mount
         self.file_logger.debug("Smb cp: " + str(filename)) 
         try:
             cmd_string = "{} -f /mnt/shares/share1/{} ~/.".format(SMB_CP,filename)
+            print ("commande ",cmd_string)
             start_time= time.time()
             Smb_output = subprocess.check_output(cmd_string, stderr=subprocess.STDOUT, shell=True).decode().splitlines()
             end_time=time.time()
@@ -83,16 +83,14 @@ class SmbTester(object):
             stderr.write(str(error))
             # Things have gone bad - we just return a false status
             return False
-
-
         self.time_to_transfer = end_time-start_time
         cmd_string = "{} -l ~/{} ".format(LS_CMD,filename)
+        print ("commande ",cmd_string)
         Smb_output = subprocess.check_output(cmd_string, stderr=subprocess.STDOUT, shell=True).decode().splitlines()
         byte=int(Smb_output[0].split()[4])
         self.transfert_rate= ((byte*8)/self.time_to_transfer)/1024/1024
         self.file_logger.info('Smb_host: {}, filename {} Time to transfert: {} rate in Mbps {}'.format(
             self.host, self.filename,self.time_to_transfer, self.transfert_rate))
-
         return {
             'host': self.host,
             'filename': self.filename,
@@ -106,8 +104,8 @@ class SmbTester(object):
 
 
 
-        username = config_vars['smb_user']
-        password = config_vars['smb_password']
+        username = config_vars['SMB_user']
+        password = config_vars['SMB_password']
 
         Smb_hosts={}
         Smb_filename={}
@@ -180,7 +178,7 @@ class SmbTester(object):
                 results_dict['Smb_time'] = Smb_result['Time to Transfer']
                 results_dict['Smb_Rate'] = Smb_result['rate']
                 # dump the results
-                data_file = config_vars['smb_data_file']
+                data_file = config_vars['SMB_data_file']
                 test_name = "Smb"
                 if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger, delete_data_file=delete_file):
                     self.file_logger.info("Smb test ended.")

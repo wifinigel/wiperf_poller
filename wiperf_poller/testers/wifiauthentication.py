@@ -64,12 +64,12 @@ class AuthTester(object):
             error = "Hit an error with wpa_cli reconnect : {}".format( str(output))
             self.file_logger.error(error)
             stderr.write(str(error))
-
+        time.sleep(2)
         cmd_string = "{} \"wlan0: Trying to associate with \" /var/log/daemon.log ".format(GREP_CMD)
         Smb_output = subprocess.check_output(cmd_string, stderr=subprocess.STDOUT, shell=True).decode().splitlines()
         result=Smb_output[len(Smb_output)-1].split()
         start_date_time = datetime.datetime.strptime(result[0] + " " + result[1], '%Y-%m-%d %H:%M:%S.%f')
- 
+
         end_date_time=start_date_time
         while end_date_time<=start_date_time:
             cmd_string = "{} \"wlan0: CTRL-EVENT-CONNECTED\" /var/log/daemon.log ".format(GREP_CMD)
@@ -78,7 +78,6 @@ class AuthTester(object):
             end_date_time = datetime.datetime.strptime(result[0] + " " + result[1], '%Y-%m-%d %H:%M:%S.%f')
 
         elapse_time = (end_date_time-start_date_time).total_seconds()
-
         self.file_logger.info('Time to authenticate : {}, start time {} end time: {}'.format(
             elapse_time, start_date_time,end_date_time))
 
@@ -109,6 +108,7 @@ class AuthTester(object):
             test_name = "Time to authenticate"
             if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger, delete_data_file=delete_file):
                 self.file_logger.info("time to authenticate test ended.")
+                tests_passed = True                
             else:                    
                 self.file_logger.error("Issue sending time to authenticate results.")
                 tests_passed = False

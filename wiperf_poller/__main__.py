@@ -118,7 +118,7 @@ def main():
         
         # if able to get cfg file, re-read params in case updated
         if check_last_cfg_read(config_file, check_cfg_file, config_vars, file_logger):
-            config_vars = read_local_config(config_file, file_logger)
+            (config_vars, config_obj) = read_local_config(config_file, file_logger)
 
     else:
         file_logger.info("No remote cfg file confgured...using current local ini file.")

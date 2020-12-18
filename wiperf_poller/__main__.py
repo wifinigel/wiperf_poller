@@ -14,6 +14,7 @@ from wiperf_poller.testers.iperf3tester import IperfTester
 from wiperf_poller.testers.dnstester import DnsTester
 from wiperf_poller.testers.httptester import HttpTester
 from wiperf_poller.testers.dhcptester import DhcpTester
+from wiperf_poller.testers.bluetoothscannertester import BluetoothScannerTester
 
 from wiperf_poller.helpers.wirelessadapter import WirelessAdapter
 from wiperf_poller.helpers.ethernetadapter import EthernetAdapter
@@ -337,6 +338,28 @@ def main():
         else:
             file_logger.info("DHCP test not enabled in config file, bypassing this test...")
             poll_obj.dhcp('Not enabled')
+
+    ###################################
+    # Run Bluetoothscanner tests (if enabled)
+    ###################################
+    file_logger.info("########## bluetooth scanner tests ##########")
+    if config_vars['bluetoothscanner_test_enabled'] == 'yes' and config_vars['test_issue'] == False:
+
+        bt_scanner_obj = BluetoothScannerTester(file_logger, platform=platform)
+        tests_passed = bt_scanner_obj.run_tests(status_file_obj, config_vars, exporter_obj)
+
+        if tests_passed:
+            poll_obj.bluetoothscanner('Completed')
+        else:
+            poll_obj.bluetoothscanner('Failure')
+
+    else:
+        if config_vars['test_issue'] == True:
+            file_logger.info("Previous test failed: {}".format(config_vars['test_issue_descr']))
+            poll_obj.bluetoothscanner('Not run')
+        else:
+            file_logger.info("Bluetooth scanner test not enabled in config file, bypassing this test...")
+            poll_obj.bluetoothscanner('Not enabled')
 
     #####################################
     # Tidy up before exit

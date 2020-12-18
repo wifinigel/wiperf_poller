@@ -197,6 +197,11 @@ def read_local_config(config_file, file_logger):
     config_vars['dhcp_test_mode'] = dhcp_sect.get('mode', 'passive')
     config_vars['dhcp_data_file'] = dhcp_sect.get('dhcp_data_file', 'wiperf-dhcp')
 
+    # Get Bluetooth scanner test params
+    bluetooth_sect = config['BLUETOOTH_SCANNER_test']
+    config_vars['bluetoothscanner_test_enabled'] = bluetooth_sect.get('enabled', 'no')
+    config_vars['bluetoothscanner_data_file'] = bluetooth_sect.get('bluetoothscanner_data_file', 'wiperf-bluetooth')
+    
     '''
     # Check all entered config.ini values to see if valid
     for key in config_vars: 

@@ -25,7 +25,8 @@ class PollStatus():
             'iperf_udp': 'N/A',
             'dhcp': 'N/A',
             'probe_mode': 'N/A',
-            'mgt_if': 'N/A'
+            'mgt_if': 'N/A',
+            'bluetoothscanner':'N/A',
         }
 
         self.start_time = time.time()
@@ -66,6 +67,9 @@ class PollStatus():
     def mgt_if(self, value):
         self.status_dict['mgt_if'] = value
     
+    def bluetoothscanner(self, value):
+        self.status_dict['bluetooth'] = value
+    
     def dump(self):
 
         # calc run time
@@ -76,7 +80,7 @@ class PollStatus():
         self.file_logger.info("Sending poll status info to mgt platform")
 
         column_headers = ['ip', 'network', 'speedtest', 'ping', 'dns', 'iperf_tcp', 
-            'iperf_udp', 'dhcp', 'probe_mode', 'mgt_if', 'run_time']
+            'iperf_udp', 'dhcp', 'probe_mode', 'mgt_if', 'run_time', 'bluetoothscanner']
 
         results_dict =  self.status_dict
 

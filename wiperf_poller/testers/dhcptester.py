@@ -61,6 +61,7 @@ class DhcpTester(object):
             p = subprocess.Popen([DHCLIENT_CMD, '-v', self.interface, '-pf', '/tmp/dhclient.pid'], stderr=subprocess.PIPE)
             while True:
                 line = p.stderr.readline()
+                #TODO: fix type error that this generates when debugging enabled. 
                 self.file_logger.debug("dhcp:", line.rstrip())
                 if b'DHCPACK' in line:
                     break

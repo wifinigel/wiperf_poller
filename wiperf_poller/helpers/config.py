@@ -201,10 +201,10 @@ def read_local_config(config_file, file_logger):
 
     # Get SMB test config params
     smb_sect = config['SMB_Test']
-    config_vars['SMB_enabled'] = smb_sect.get('enabled', 'no')
-    config_vars['SMB_data_file'] = smb_sect.get('SMB_data_file', 'wiperf-SMB')
-    config_vars['SMB_user'] = smb_sect.get('SMB_user', ' ')
-    config_vars['SMB_password'] = smb_sect.get('SMB_password', ' ')
+    config_vars['smb_enabled'] = smb_sect.get('enabled', 'no')
+    config_vars['smb_data_file'] = smb_sect.get('smb_data_file', 'wiperf-smb')
+    config_vars['smb_user'] = smb_sect.get('smb_user', ' ')
+    config_vars['smb_password'] = smb_sect.get('smb_password', ' ')
     config_vars['smb_host1'] = smb_sect.get('smb_host1', '')
     config_vars['smb_host2'] = smb_sect.get('smb_host2', '')
     config_vars['smb_host3'] = smb_sect.get('smb_host3', '')

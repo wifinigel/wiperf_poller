@@ -24,6 +24,7 @@ class PollStatus():
             'iperf_tcp': 'N/A',
             'iperf_udp': 'N/A',
             'dhcp': 'N/A',
+            'smb': 'N/A',
             'probe_mode': 'N/A',
             'mgt_if': 'N/A'
         }
@@ -60,6 +61,9 @@ class PollStatus():
     def dhcp(self, value):
         self.status_dict['dhcp'] = value
     
+    def smb(self, value):
+        self.status_dict['smb'] = value
+    
     def probe_mode(self, value):
         self.status_dict['probe_mode'] = value
     
@@ -76,7 +80,7 @@ class PollStatus():
         self.file_logger.info("Sending poll status info to mgt platform")
 
         column_headers = ['ip', 'network', 'speedtest', 'ping', 'dns', 'iperf_tcp', 
-            'iperf_udp', 'dhcp', 'probe_mode', 'mgt_if', 'run_time']
+            'iperf_udp', 'dhcp', 'smb', 'probe_mode', 'mgt_if', 'run_time']
 
         results_dict =  self.status_dict
 

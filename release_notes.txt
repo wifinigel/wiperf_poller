@@ -1,3 +1,8 @@
+v0.2
+1. Added fix for bad read of remote config file when downloaded (thanks Ben Roeder)
+2. Fixed bad config var names for InfluxDB2 in config.py (thanks Konstantin)
+3. 
+
 v0.1.25
 1. Using timeout_decorator module to timeout iperf3 sessions that hang whole poller process
 

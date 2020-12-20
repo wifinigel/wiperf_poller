@@ -5,8 +5,9 @@ result characteristics
 
 import time
 import re
+import os
 import subprocess
-from sys import stderr
+import timeout_decorator
 from wiperf_poller.helpers.os_cmds import SMB_CP,SMB_MOUNT,LS_CMD,UMOUNT_CMD
 from wiperf_poller.helpers.route import inject_test_traffic_static_route
 
@@ -28,6 +29,18 @@ class SmbTester(object):
         self.time_to_transfer = ''
         self.mount_point = '/tmp/share'
 
+    def _create_mount_point(self, mount_point):
+
+        try:
+            self.file_logger.info("Creating mount point: {}".format(mount_point))
+            os.makedirs(mount_point)
+        except Exception as ex:
+            self.file_logger.error("Error creating mount point: {}".format(ex))
+
+        self.file_logger.info("Created mount point OK")
+        return True
+
+    @timeout_decorator.timeout(30, use_signals=False)
     def smb_copy(self, host, filename, path, username, password,smb_timeout=1):
         '''
         This function will run mount a SMB volume and copy a file from it to the local 
@@ -43,14 +56,20 @@ class SmbTester(object):
         '''
 
         self.host = host
-        self.filename=filename
+        self.filename = filename
 
-        self.file_logger.debug("Smb mount: " + str(host) + " share " + str(path))
+        self.file_logger.debug("SMB mount: " + str(host) + " share " + str(path))
+
+        # create mount point if does not exist
+        if not os.path.exists(self.mount_point):
+
+            if not self._create_mount_point(self.mount_point):
+                self.file_logger.error("Unable to create mount point for SMB tests: {}".format(self.mount_point))
+                return False
 
         # SMB mount the remote volume
         try:
             self.file_logger.info("Mounting remote volume...")
-            #TODO: Need existing dir to mount to - /tmp/share does not exist by default
             cmd_string = "{} //{}{} {} -o user={},pass={}".format(SMB_MOUNT,host,path,self.mount_point,username,password)
             smb_output = subprocess.check_output(cmd_string, stderr=subprocess.STDOUT, shell=True).decode().splitlines()
         except subprocess.CalledProcessError as exc:
@@ -88,7 +107,6 @@ class SmbTester(object):
             output = exc.output.decode()
             error = "Hit an error when unmounting volume {} : {}".format(str(host), str(output))
             self.file_logger.error(error)
-            stderr.write(str(error))
             # Things have gone bad - we just return a false status
             return False
 
@@ -107,7 +125,7 @@ class SmbTester(object):
         return {
             'host': self.host,
             'filename': self.filename,
-            'Time to Transfer': self.time_to_transfer,
+            'transfer_time': self.time_to_transfer,
             'rate':self.transfert_rate}
 
     def run_tests(self, status_file_obj, config_vars, adapter, check_correct_mode_interface, exporter_obj, watchd):
@@ -115,8 +133,8 @@ class SmbTester(object):
         self.file_logger.info("Starting SMB test...")
         status_file_obj.write_status_file("SMB tests")
 
-        username = config_vars['smb_user']
-        password = config_vars['smb_password']
+        global_username = config_vars['smb_global_username']
+        global_password = config_vars['smb_global_password']
 
         # define column headers for CSV
         column_headers = ['time', 'smb_index', 'smb_host', 'filename','file_size', 'transfer_time', 'avg_mbps']
@@ -135,7 +153,13 @@ class SmbTester(object):
                 break
 
             smb_host = config_vars['smb_host'+ str(smb_index)]
-            server_hostname = smb_host
+            smb_username = config_vars['smb_username'+ str(smb_index)]
+            smb_password = config_vars['smb_password'+ str(smb_index)]
+
+            # if we have no per-test credental, use global credential
+            if not smb_username:
+                smb_username = global_username
+                smb_password = global_password
 
             if smb_host == '':
                 continue
@@ -144,21 +168,21 @@ class SmbTester(object):
             path = config_vars['smb_path'+ str(smb_index)]
 
             # Check we have the correct route to the host under test
-            if not check_correct_mode_interface(server_hostname, config_vars, self.file_logger):
+            if not check_correct_mode_interface(smb_host, config_vars, self.file_logger):
 
                 # if route looks wrong, try to fix it
-                self.file_logger.warning("Unable to run SMB test to {} as route to destination not over correct interface...injecting static route".format(server_hostname))
+                self.file_logger.warning("Unable to run SMB test to {} as route to destination not over correct interface...injecting static route".format(smb_host))
 
-                if not inject_test_traffic_static_route(server_hostname, config_vars, self.file_logger):
+                if not inject_test_traffic_static_route(smb_host, config_vars, self.file_logger):
 
                     # route injection appears to have failed
-                    self.file_logger.error("Unable to run SMB test to {} as route to destination not over correct interface...bypassing test".format(server_hostname))
+                    self.file_logger.error("Unable to run SMB test to {} as route to destination not over correct interface...bypassing test".format(smb_host))
                     config_vars['test_issue'] = True
                     config_vars['test_issue_descr'] = "SMB test failure (routing issue)"
                     tests_passed = False
                     break               
 
-            smb_result=self.smb_copy(smb_host,filename,path,username,password, 1)
+            smb_result=self.smb_copy(smb_host, filename, path, smb_username, smb_password, 1)
             
             # Send SMB results to exporter
             if smb_result:
@@ -166,11 +190,13 @@ class SmbTester(object):
                 results_dict['smb_index'] = smb_index
                 results_dict['smb_host'] = smb_result['host']
                 results_dict['filename'] = smb_result['filename']
-                results_dict['smb_time'] = smb_result['Time to Transfer']
-                results_dict['smb_Rate'] = smb_result['rate']
+                results_dict['smb_time'] = smb_result['transfer_time']
+                results_dict['smb_rate'] = smb_result['rate']
+                
                 # dump the results
                 data_file = config_vars['smb_data_file']
                 test_name = "SMB"
+
                 if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger, delete_data_file=delete_file):
                     self.file_logger.info("SMB test ended.")
                 else:

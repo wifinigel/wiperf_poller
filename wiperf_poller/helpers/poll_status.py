@@ -25,6 +25,7 @@ class PollStatus():
             'iperf_udp': 'N/A',
             'dhcp': 'N/A',
             'smb': 'N/A',
+            'auth': 'N/A',
             'probe_mode': 'N/A',
             'mgt_if': 'N/A'
         }

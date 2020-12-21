@@ -371,17 +371,17 @@ def main():
         Auth_obj = AuthTester(file_logger, platform=platform)
         tests_passed = Auth_obj.run_tests(status_file_obj, config_vars, adapter_obj, check_correct_mode_interface, exporter_obj, watchdog_obj)
         if tests_passed:
-            poll_obj.AuthTester('Completed')
+            poll_obj.auth('Completed')
         else:
-            poll_obj.AuthTester('Failure')
+            poll_obj.auth('Failure')
 
     else:
         if config_vars['test_issue'] == True:
             file_logger.info("Previous test failed: {}".format(config_vars['test_issue_descr']))
-            poll_obj.AuthTester('Not run')
+            poll_obj.auth('Not run')
         else:
             file_logger.info("Authentication test not enabled in config file, bypassing this test...")
-            poll_obj.AuthTester('Not enabled')
+            poll_obj.auth('Not enabled')
 
 
     #####################################

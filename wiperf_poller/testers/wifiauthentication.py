@@ -33,6 +33,7 @@ class AuthTester(object):
 
         # Execute the wpa_cli disconnect
         try:
+            self.file_logger.info("Disconnecting...")
             cmd_string = "{} disconnect".format(WPA_CMD)
             auth_output = subprocess.check_output(cmd_string, stderr=subprocess.STDOUT, shell=True).decode().splitlines()
         except subprocess.CalledProcessError as exc:
@@ -47,6 +48,7 @@ class AuthTester(object):
         self.file_logger.debug(auth_output)
 
         # Execute reconnect
+        self.file_logger.info("Reconnecting...")
         self.file_logger.debug("wpa_cli reconnect: ") 
         try:
             cmd_string = "{} reconnect".format(WPA_CMD)

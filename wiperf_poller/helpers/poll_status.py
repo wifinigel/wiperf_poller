@@ -64,6 +64,9 @@ class PollStatus():
     def smb(self, value):
         self.status_dict['smb'] = value
     
+    def auth(self, value):
+        self.status_dict['auth'] = value
+    
     def probe_mode(self, value):
         self.status_dict['probe_mode'] = value
     
@@ -80,7 +83,7 @@ class PollStatus():
         self.file_logger.info("Sending poll status info to mgt platform")
 
         column_headers = ['ip', 'network', 'speedtest', 'ping', 'dns', 'iperf_tcp', 
-            'iperf_udp', 'dhcp', 'smb', 'probe_mode', 'mgt_if', 'run_time']
+            'iperf_udp', 'dhcp', 'smb', 'auth', 'probe_mode', 'mgt_if', 'run_time']
 
         results_dict =  self.status_dict
 

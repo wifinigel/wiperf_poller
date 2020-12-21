@@ -64,6 +64,10 @@ class AuthTester(object):
             self.file_logger.error(error)
             stderr.write(str(error))
 
+        # sleep to allow loggin to complete
+        time.sleep(2)
+
+        # grep for association log info
         cmd_string = "{} \"wlan0: Trying to associate with \" /var/log/daemon.log ".format(GREP_CMD)
         auth_output = subprocess.check_output(cmd_string, stderr=subprocess.STDOUT, shell=True).decode().splitlines()
         result = auth_output[len(auth_output)-1].split()
@@ -111,6 +115,7 @@ class AuthTester(object):
 
             if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger, delete_data_file=delete_file):
                 self.file_logger.info("time to authenticate test ended.")
+                tests_passed = True
             else:                    
                 self.file_logger.error("Issue sending time to authenticate results.")
                 tests_passed = False
@@ -121,6 +126,7 @@ class AuthTester(object):
             self.file_logger.debug(test_result)    
             # signal that at least one test passed
             all_tests_fail = False
+        
         else:
             self.file_logger.error("Time to authenticate test failed.")
             tests_passed = False

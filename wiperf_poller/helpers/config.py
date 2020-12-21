@@ -231,7 +231,10 @@ def read_local_config(config_file, file_logger):
     config_vars['smb_filename4'] = smb_sect.get('smb_filename4', '')
     config_vars['smb_filename5'] = smb_sect.get('smb_filename5', '')
 
-
+    # Get Authentication test config params
+    smb_sect = config['Auth_Test']
+    config_vars['auth_test_enabled'] = smb_sect.get('enabled', 'no')
+    config_vars['auth_test_data_file'] = smb_sect.get('auth_test_data_file', 'wiperf-auth-test')
 
 
     '''

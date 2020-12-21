@@ -200,7 +200,7 @@ def read_local_config(config_file, file_logger):
     config_vars['dhcp_data_file'] = dhcp_sect.get('dhcp_data_file', 'wiperf-dhcp')
 
     # Get SMB test config params
-    smb_sect = config['SMB_Test']
+    smb_sect = config['SMB_test']
     config_vars['smb_enabled'] = smb_sect.get('enabled', 'no')
     config_vars['smb_data_file'] = smb_sect.get('smb_data_file', 'wiperf-smb')
     config_vars['smb_global_username'] = smb_sect.get('smb_global_username', ' ')
@@ -232,9 +232,9 @@ def read_local_config(config_file, file_logger):
     config_vars['smb_filename5'] = smb_sect.get('smb_filename5', '')
 
     # Get Authentication test config params
-    smb_sect = config['Auth_Test']
-    config_vars['auth_test_enabled'] = smb_sect.get('enabled', 'no')
-    config_vars['auth_test_data_file'] = smb_sect.get('auth_test_data_file', 'wiperf-auth-test')
+    auth_sect = config['Auth_test']
+    config_vars['auth_enabled'] = auth_sect.get('enabled', 'no')
+    config_vars['auth_data_file'] = auth_sect.get('auth_data_file', 'wiperf-auth')
 
 
     '''

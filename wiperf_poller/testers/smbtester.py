@@ -70,7 +70,8 @@ class SmbTester(object):
         # SMB mount the remote volume
         try:
             self.file_logger.info("Mounting remote volume...")
-            cmd_string = "{} //{}{} {} -o user={},pass={}".format(SMB_MOUNT,host,path,self.mount_point,username,password)
+            cmd_string = "{} //{}{} {} -o user={},pass=\'{}\'".format(SMB_MOUNT,host,path,self.mount_point,username,password)
+            self.file_logger.debug("SMB mount cmd: {}".format(cmd_string))
             smb_output = subprocess.check_output(cmd_string, stderr=subprocess.STDOUT, shell=True).decode().splitlines()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
@@ -88,6 +89,7 @@ class SmbTester(object):
         try:
             self.file_logger.info("Copying file to mounted volume...")
             cmd_string = "{} -f {}/{} ~/.".format(SMB_CP, self.mount_point, filename)
+            self.file_logger.debug("SMB copy cmd: {}".format(cmd_string))
 
             # time the file transfer
             start_time= time.time()
@@ -114,6 +116,7 @@ class SmbTester(object):
         self.time_to_transfer = end_time-start_time
 
         cmd_string = "{} -l ~/{} ".format(LS_CMD,filename)
+        self.file_logger.debug("ls cmd: {}".format(cmd_string))
         smb_output = subprocess.check_output(cmd_string, stderr=subprocess.STDOUT, shell=True).decode().splitlines()
         byte=int(smb_output[0].split()[4])
 

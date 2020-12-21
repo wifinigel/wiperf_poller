@@ -366,7 +366,7 @@ def main():
     # Run WIFI time to authenticate test (if enabled)
     #####################################
     file_logger.info("########## wireless time to authenticate test ##########")
-    if config_vars['auth_test_enabled'] == 'yes' and config_vars['test_issue'] == False:
+    if config_vars['auth_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
         Auth_obj = AuthTester(file_logger, platform=platform)
         tests_passed = Auth_obj.run_tests(status_file_obj, config_vars, adapter_obj, check_correct_mode_interface, exporter_obj, watchdog_obj)

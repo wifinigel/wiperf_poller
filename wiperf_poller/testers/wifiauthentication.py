@@ -6,7 +6,6 @@ result characteristics
 import time
 import re
 import subprocess
-from sys import stderr
 from wiperf_poller.helpers.os_cmds import GREP_CMD,WPA_CMD
 import datetime
 
@@ -20,16 +19,14 @@ class AuthTester(object):
 
         self.platform = platform
         self.file_logger = file_logger
-        self.test_starttime = ''
-        self.test_endtime = ''
-        self.time_to_transfer = ''
 
-    def time_to_authenticate(self):
+
+    def time_to_authenticate(self, interface="wlan0"):
         '''
         This function will disconnect and reconnect to the wifi network and measure elapsed time from logs
         If the reconnect failed, a False condition is returned with no further
         information. If the auth succeeds, the following dictionary is returned:
-        {  'test_time': self.test_time,
+        { 'auth_time': auth_time }
         '''
 
         self.file_logger.debug("wpa_cli disconnected: ")
@@ -40,14 +37,12 @@ class AuthTester(object):
             auth_output = subprocess.check_output(cmd_string, stderr=subprocess.STDOUT, shell=True).decode().splitlines()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
-            error = "Hit an error when wpa_cli disconnect : {} ".format( str(output))
+            error = "Hit an error with wpa_cli disconnect : {} ".format( str(output))
             self.file_logger.error(error)
-            stderr.write(str(error))
 
             # Things have gone bad - we just return a false status
             return False
         
-        time_reference=time.time
         self.file_logger.debug("wpa_cli disconnect:")
         self.file_logger.debug(auth_output)
 
@@ -55,20 +50,17 @@ class AuthTester(object):
         self.file_logger.debug("wpa_cli reconnect: ") 
         try:
             cmd_string = "{} reconnect".format(WPA_CMD)
-            start_time= time.time()
             auth_output = subprocess.check_output(cmd_string, stderr=subprocess.STDOUT, shell=True).decode().splitlines()
-            end_time=time.time()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
             error = "Hit an error with wpa_cli reconnect : {}".format( str(output))
             self.file_logger.error(error)
-            stderr.write(str(error))
 
-        # sleep to allow loggin to complete
+        # sleep to allow logging to complete
         time.sleep(2)
 
         # grep for association log info
-        cmd_string = "{} \"wlan0: Trying to associate with \" /var/log/daemon.log ".format(GREP_CMD)
+        cmd_string = "{} \"{}: Trying to associate with \" /var/log/daemon.log ".format(GREP_CMD, interface)
         auth_output = subprocess.check_output(cmd_string, stderr=subprocess.STDOUT, shell=True).decode().splitlines()
         result = auth_output[len(auth_output)-1].split()
         start_date_time = datetime.datetime.strptime(result[0] + " " + result[1], '%Y-%m-%d %H:%M:%S.%f')
@@ -76,29 +68,26 @@ class AuthTester(object):
         end_date_time = start_date_time
 
         while end_date_time<=start_date_time:
-            cmd_string = "{} \"wlan0: CTRL-EVENT-CONNECTED\" /var/log/daemon.log ".format(GREP_CMD)
+            cmd_string = "{} \"{}: CTRL-EVENT-CONNECTED\" /var/log/daemon.log ".format(GREP_CMD, interface)
             auth_output = subprocess.check_output(cmd_string, stderr=subprocess.STDOUT, shell=True).decode().splitlines()
             result = auth_output[len(auth_output)-1].split()
             end_date_time = datetime.datetime.strptime(result[0] + " " + result[1], '%Y-%m-%d %H:%M:%S.%f')
 
-        elapse_time = (end_date_time-start_date_time).total_seconds()
+        elapsed_time = (end_date_time-start_date_time).total_seconds()
 
         self.file_logger.info('Time to authenticate : {}, start time {} end time: {}'.format(
-            elapse_time, start_date_time,end_date_time))
+            elapsed_time, start_date_time,end_date_time))
 
-        return {
-            'time_to_connect':elapse_time}
+        return { 'auth_time': elapsed_time }
 
     def run_tests(self, status_file_obj, config_vars, adapter, check_correct_mode_interface, exporter_obj, watchd):
 
         self.file_logger.info("Starting Authentication benchmark...")
-        status_file_obj.write_status_file("Authentication tests")
-
+        status_file_obj.write_status_file("Auth tests")
 
         # define colum headers for CSV
-        column_headers = ['time to authenticate']
+        column_headers = ['auth_time']
 
-        all_tests_fail = True
         results_dict = {}
         delete_file=True
         test_result=self.time_to_authenticate()
@@ -106,15 +95,15 @@ class AuthTester(object):
         # Time to authenticate results
         if test_result:
             results_dict['time'] = int(time.time())
-            results_dict['time_to_authenticate'] = test_result['time_to_connect']
+            results_dict['auth_time'] = test_result['auth_time']
             time.sleep(2)
 
             # dump the results
-            data_file = config_vars['auth_test_data_file']
+            data_file = config_vars['auth_data_file']
             test_name = "Time to authenticate"
 
             if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger, delete_data_file=delete_file):
-                self.file_logger.info("time to authenticate test ended.")
+                self.file_logger.info("Time to authenticate test ended.")
                 tests_passed = True
             else:                    
                 self.file_logger.error("Issue sending time to authenticate results.")
@@ -124,12 +113,12 @@ class AuthTester(object):
             delete_file = False
             self.file_logger.debug("Main: time to authenticate results:")
             self.file_logger.debug(test_result)    
-            # signal that at least one test passed
-            all_tests_fail = False
         
         else:
             self.file_logger.error("Time to authenticate test failed.")
             tests_passed = False
+            # increment watchdog
+            watchd.inc_watchdog_count()
 
         # if all tests fail, and there are more than 2 tests, signal a possible issue
 

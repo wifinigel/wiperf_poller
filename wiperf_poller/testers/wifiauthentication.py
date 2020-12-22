@@ -65,7 +65,26 @@ class AuthTester(object):
         cmd_string = "{} \"{}: Trying to associate with \" /var/log/daemon.log ".format(GREP_CMD, interface)
         auth_output = subprocess.check_output(cmd_string, stderr=subprocess.STDOUT, shell=True).decode().splitlines()
         result = auth_output[len(auth_output)-1].split()
-        start_date_time = datetime.datetime.strptime(result[0] + " " + result[1], '%Y-%m-%d %H:%M:%S.%f')
+        try:
+            start_date_time = datetime.datetime.strptime(result[0] + " " + result[1], '%Y-%m-%d %H:%M:%S.%f')
+        except:
+            self.file_logger.error("""
+    
+    Conversion of timestamp failed. Have you applied the recommended update to the 
+    log format of rsyslog:
+    
+    - Rsyslogd must log with rfc3339 date format.
+    - modify /etc/rsyslogd.conf with the following line
+    - Comment out the line $ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
+        #$ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
+    - Add the following lines:
+        $template CustomFormat,"%timegenerated:1:10:date-rfc3339% %timegenerated:12:24:date-rfc3339% %syslogtag%%msg%\\n"
+        $ActionFileDefaultTemplate CustomFormat
+    - Restart rsyslog with this CLI command: systemctl restart rsyslog
+    """
+            )
+            return False
+
 
         end_date_time = start_date_time
 
@@ -91,8 +110,8 @@ class AuthTester(object):
         column_headers = ['auth_time']
 
         results_dict = {}
-        delete_file=True
-        test_result=self.time_to_authenticate()
+        delete_file = True
+        test_result = self.time_to_authenticate()
 
         # Time to authenticate results
         if test_result:

@@ -42,7 +42,7 @@ class DhcpTester(object):
         The renewal duration is timed and the result (in mS) returned
 
         Usage:
-            tester_obj = DhcpTester(logger, debug=False)
+            tester_obj = DhcpTester(logger, platform)
             tester_obj.dhcp_renewal("wlan0")
 
         If the renewal fails, the wlan interface will be bounced and the whole script will exit
@@ -59,10 +59,10 @@ class DhcpTester(object):
             start = time.time()
 
             p = subprocess.Popen([DHCLIENT_CMD, '-v', self.interface, '-pf', '/tmp/dhclient.pid'], stderr=subprocess.PIPE)
+
             while True:
                 line = p.stderr.readline()
-                #TODO: fix type error that this generates when debugging enabled. 
-                self.file_logger.debug("dhcp:", line.rstrip())
+                self.file_logger.debug("dhcp: {}".format(line.decode().strip()))
                 if b'DHCPACK' in line:
                     break
                 

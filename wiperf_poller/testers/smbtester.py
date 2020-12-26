@@ -185,7 +185,11 @@ class SmbTester(object):
                     tests_passed = False
                     break               
 
-            smb_result=self.smb_copy(smb_host, filename, path, smb_username, smb_password, 1)
+            smb_result = False
+            try:
+                smb_result=self.smb_copy(smb_host, filename, path, smb_username, smb_password, 1)
+            except:
+                self.file_logger.error("SMB copy process timed out.")
             
             # Send SMB results to exporter
             if smb_result:

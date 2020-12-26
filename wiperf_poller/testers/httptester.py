@@ -122,11 +122,11 @@ class HttpTester(object):
 
                     results_dict = {
                         'time': int(time.time()),
-                        'http_index': http_index,
-                        'http_target': http_target,
-                        'http_get_time_ms': http_get_time,
-                        'http_status_code': http_status_code,
-                        'http_server_response_time_ms': http_server_response_time
+                        'http_index': int(http_index),
+                        'http_target': str(http_target),
+                        'http_get_time_ms': int(http_get_time),
+                        'http_status_code': int(http_status_code),
+                        'http_server_response_time_ms': int(http_server_response_time)
                     }
 
                     # dump the results

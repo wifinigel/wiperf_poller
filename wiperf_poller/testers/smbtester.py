@@ -190,11 +190,11 @@ class SmbTester(object):
             # Send SMB results to exporter
             if smb_result:
                 results_dict['time'] = int(time.time())
-                results_dict['smb_index'] = smb_index
-                results_dict['smb_host'] = smb_result['host']
-                results_dict['filename'] = smb_result['filename']
-                results_dict['smb_time'] = smb_result['transfer_time']
-                results_dict['smb_rate'] = smb_result['rate']
+                results_dict['smb_index'] = int(smb_index)
+                results_dict['smb_host'] = str(smb_result['host'])
+                results_dict['filename'] = str(smb_result['filename'])
+                results_dict['smb_time'] = round(float(smb_result['transfer_time']), 2)
+                results_dict['smb_rate'] = round(smb_result['rate'], 2)
                 
                 # dump the results
                 data_file = config_vars['smb_data_file']

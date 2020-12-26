@@ -116,7 +116,7 @@ class AuthTester(object):
         # Time to authenticate results
         if test_result:
             results_dict['time'] = int(time.time())
-            results_dict['auth_time'] = test_result['auth_time']
+            results_dict['auth_time'] = float(test_result['auth_time'])
             time.sleep(2)
 
             # dump the results

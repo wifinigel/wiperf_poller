@@ -207,12 +207,12 @@ class PingTester(object):
             # ping results
             if ping_result:
                 results_dict['time'] = int(time.time())
-                results_dict['ping_index'] = ping_index
-                results_dict['ping_host'] = ping_result['host']
-                results_dict['pkts_tx'] = ping_result['pkts_tx']
-                results_dict['pkts_rx'] = ping_result['pkts_rx']
-                results_dict['percent_loss'] = ping_result['pkt_loss']
-                results_dict['test_time_ms'] = ping_result['test_time']
+                results_dict['ping_index'] = int(ping_index)
+                results_dict['ping_host'] = str(ping_result['host'])
+                results_dict['pkts_tx'] = int(ping_result['pkts_tx'])
+                results_dict['pkts_rx'] = int(ping_result['pkts_rx'])
+                results_dict['percent_loss'] = int(ping_result['pkt_loss'])
+                results_dict['test_time_ms'] = int(ping_result['test_time'])
                 results_dict['rtt_min_ms'] = round(float(ping_result['rtt_min']), 2)
                 results_dict['rtt_avg_ms'] = round(float(ping_result['rtt_avg']), 2)
                 results_dict['rtt_max_ms'] = round(float(ping_result['rtt_max']), 2)

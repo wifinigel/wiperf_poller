@@ -113,7 +113,7 @@ class DhcpTester(object):
 
             results_dict = {
                 'time': int(time.time()),
-                'renewal_time_ms': renewal_result,
+                'renewal_time_ms': int(renewal_result),
             }
 
             # dump the results

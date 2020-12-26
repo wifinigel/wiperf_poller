@@ -90,9 +90,9 @@ class DnsTester(object):
 
                 results_dict = {
                     'time': int(time.time()),
-                    'dns_index': dns_index,
-                    'dns_target': dns_target,
-                    'lookup_time_ms': dns_result
+                    'dns_index': int(dns_index),
+                    'dns_target': str(dns_target),
+                    'lookup_time_ms': int(dns_result)
                 }
 
                 # dump the results

@@ -1,7 +1,20 @@
 v0.2
 1. Added fix for bad read of remote config file when downloaded (thanks Ben Roeder)
 2. Fixed bad config var names for InfluxDB2 in config.py (thanks Konstantin)
-3. 
+3. Added SMB tests provided by Mario Gingras
+4. Added Auth test provided by Mario Gingras
+5. Improved route injection for tests when required interface not selected by default routing
+6. Fixed isue with incorrect data types in Influx DB for ping tests (some numeric values were created
+   as strings, preventing calcs on their values.)
+
+   This fixed isue will cause failures for ping test results on existing data. To correct the issue,
+   existing ping test data in the Influx DB must be dropped using the following command in the InfluxDB
+   CLI utility:
+
+   sudo influx -username admin -password letmein
+   use wiperf
+   drop series from "wiperf-ping"
+
 
 v0.1.25
 1. Using timeout_decorator module to timeout iperf3 sessions that hang whole poller process

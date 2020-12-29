@@ -15,6 +15,10 @@ v0.2
    use wiperf
    drop series from "wiperf-ping"
 
+7. Added support for librespeed to speedtest in addition to eisting Ookla support. Also
+   made more data points available to reports including latency, jitter & data volume for
+   upload/download
+
 
 v0.1.25
 1. Using timeout_decorator module to timeout iperf3 sessions that hang whole poller process

@@ -26,8 +26,8 @@ def _find_cmd(cmd):
     
     return cmd
 
-# define OS commands (attempt to find in path if not in hardcoded path)
-OS_CMDS = {
+# define mandatory OS commands (attempt to find in path if not in hardcoded path)
+OS_CORE_CMDS = {
     'DHCLIENT_CMD': _find_cmd('/sbin/dhclient'),
     'IF_CONFIG_CMD': _find_cmd('/sbin/ifconfig'),
     'IF_DOWN_CMD': _find_cmd('/sbin/ifdown'),
@@ -37,42 +37,57 @@ OS_CMDS = {
     'IW_CMD': _find_cmd('/sbin/iw'),
     'NC_CMD': _find_cmd('/bin/nc'),
     'PING_CMD': _find_cmd('/bin/ping'),
-    'SMB_CP': _find_cmd('/bin/cp'),
-    'SMB_MOUNT': _find_cmd('/sbin/mount.cifs'),
     'REBOOT_CMD': _find_cmd('/sbin/reboot'),
     'ROUTE_CMD': _find_cmd('/sbin/route'),
+}
+
+# define optional OS commands (attempt to find in path if not in hardcoded path)
+OS_OPT_CMDS = {
+    'SMB_CP': _find_cmd('/bin/cp'),
+    'SMB_MOUNT': _find_cmd('/sbin/mount.cifs'),
     'LS_CMD': _find_cmd('/sbin/ls'),
     'UMOUNT_CMD': _find_cmd('/bin/umount'),
     'GREP_CMD': _find_cmd('/bin/grep'),
     'WPA_CMD': _find_cmd('/sbin/wpa_cli'),
+    'LIBRESPEED_CMD': _find_cmd('/usr/local/bin/librespeed-cli'),
 }
 
 # define exportable vars
-DHCLIENT_CMD = OS_CMDS['DHCLIENT_CMD']
-IF_CONFIG_CMD = OS_CMDS['IF_CONFIG_CMD']
-IF_DOWN_CMD = OS_CMDS['IF_DOWN_CMD']
-IF_UP_CMD = OS_CMDS['IF_UP_CMD']
-IP_CMD = OS_CMDS['IP_CMD']
-IWCONFIG_CMD = OS_CMDS['IWCONFIG_CMD']
-IW_CMD = OS_CMDS['IW_CMD']
-NC_CMD = OS_CMDS['NC_CMD']
-PING_CMD = OS_CMDS['PING_CMD']
-REBOOT_CMD = OS_CMDS['REBOOT_CMD']
-ROUTE_CMD = OS_CMDS['ROUTE_CMD']
-SMB_CP = OS_CMDS['SMB_CP']
-SMB_MOUNT = OS_CMDS['SMB_MOUNT']
-LS_CMD = OS_CMDS['LS_CMD']
-UMOUNT_CMD = OS_CMDS['UMOUNT_CMD']
-GREP_CMD = OS_CMDS['GREP_CMD']
-WPA_CMD = OS_CMDS['WPA_CMD']
+DHCLIENT_CMD = OS_CORE_CMDS['DHCLIENT_CMD']
+IF_CONFIG_CMD = OS_CORE_CMDS['IF_CONFIG_CMD']
+IF_DOWN_CMD = OS_CORE_CMDS['IF_DOWN_CMD']
+IF_UP_CMD = OS_CORE_CMDS['IF_UP_CMD']
+IP_CMD = OS_CORE_CMDS['IP_CMD']
+IWCONFIG_CMD = OS_CORE_CMDS['IWCONFIG_CMD']
+IW_CMD = OS_CORE_CMDS['IW_CMD']
+NC_CMD = OS_CORE_CMDS['NC_CMD']
+PING_CMD = OS_CORE_CMDS['PING_CMD']
+REBOOT_CMD = OS_CORE_CMDS['REBOOT_CMD']
+ROUTE_CMD = OS_CORE_CMDS['ROUTE_CMD']
+
+
+SMB_CP = OS_OPT_CMDS['SMB_CP']
+SMB_MOUNT = OS_OPT_CMDS['SMB_MOUNT']
+LS_CMD = OS_OPT_CMDS['LS_CMD']
+UMOUNT_CMD = OS_OPT_CMDS['UMOUNT_CMD']
+GREP_CMD = OS_OPT_CMDS['GREP_CMD']
+WPA_CMD = OS_OPT_CMDS['WPA_CMD']
+LIBRESPEED_CMD = OS_OPT_CMDS['LIBRESPEED_CMD']
 
 def check_os_cmds(file_logger):
     """
     This function checks is all expected OS commands are avaiable.
     """
-    for cmd_name in OS_CMDS.keys():
+    # emit warning msg for missing optional commands
+    for cmd_name in OS_OPT_CMDS.keys():
 
-        if not OS_CMDS[cmd_name]:     
+        if not OS_OPT_CMDS[cmd_name]:     
+            file_logger.warning("Unable to find required OS command: {} (Some functionality may not be available)".format(cmd_name))
+    
+    # return failure for missing core command
+    for cmd_name in OS_CORE_CMDS.keys():
+
+        if not OS_CORE_CMDS[cmd_name]:     
             file_logger.error("Unable to find required OS command: {}".format(cmd_name))
             return False
     

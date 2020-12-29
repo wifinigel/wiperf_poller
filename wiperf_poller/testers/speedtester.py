@@ -81,35 +81,41 @@ class Speedtester(object):
                 self.file_logger.error("Speedtest error: unable to get best server, reason: {}".format(error))
                 return False
 
+        # run download test
         try:
-            download_rate = '%.2f' % (st.download()/1024000)
-            self.file_logger.debug("Download rate = " + str(download_rate) + " Mbps")
+            st.download()
         except Exception as error:
             self.file_logger.error("Download test error: {}".format(error))
             return False
 
         try:
-            upload_rate = '%.2f' % (st.upload(pre_allocate=False)/1024000)
-            self.file_logger.debug("Upload rate = " + str(upload_rate) + " Mbps")
+            st.upload(pre_allocate=False)
         except Exception as error:
             self.file_logger.error("Upload test error: {}".format(error))
             return False
 
         results_dict = st.results.dict()
+
+        download_rate_mbps = round(float(results_dict['download'])/1024000, 2)
+        upload_rate_mbps = round(float(results_dict['upload'])/1024000, 2)
         ping_time = int(results_dict['ping'])
-        server_name = results_dict['server']['host']
+        server_name = str(results_dict['server']['host'])
+        mbytes_sent = round(int(results_dict['bytes_sent'])/1024000, 2)
+        mbytes_received = round(int(results_dict['bytes_received'])/1024000, 2)
+        latency_ms = int(results_dict['ping'])
+        jitter_ms = None
 
-        self.file_logger.info('ping_time: {}, download_rate: {}, upload_rate: {}, server_name: {}'.format(
-            ping_time, download_rate, upload_rate, server_name))
+        self.file_logger.info('ping_time: {}, download_rate_mbps: {}, upload_rate_mbps: {}, server_name: {}, mbytes_sent: {}, mbytes_received: {}, latency_ms: {}, jitter_ms: {}'.format(
+            ping_time, download_rate_mbps, upload_rate_mbps, server_name, mbytes_sent, mbytes_received, latency_ms, jitter_ms))
 
-        return {'ping_time': ping_time, 'download_rate': download_rate, 'upload_rate': upload_rate, 'server_name': server_name}
+        return {'ping_time': ping_time, 'download_rate_mbps': download_rate_mbps, 'upload_rate_mbps': upload_rate_mbps, 'server_name': server_name, 
+            'mbytes_sent': mbytes_sent, 'mbytes_received': mbytes_received, 'latency_ms': latency_ms, 'jitter_ms': jitter_ms}
 
 
     def run_tests(self, status_file_obj, check_correct_mode_interface, config_vars, exporter_obj, lockf_obj):
 
-        column_headers = ['time', 'server_name', 'ping_time', 'download_rate_mbps', 'upload_rate_mbps']
-
-        results_dict = {}
+        column_headers = [ 'time', 'server_name', 'ping_time', 'download_rate_mbps', 'upload_rate_mbps', 
+            'mbytes_sent', 'mbytes_received', 'latency_ms', 'jitter_ms' ]
 
         self.file_logger.info("Starting speedtest...")
         status_file_obj.write_status_file("speedtest")
@@ -126,19 +132,15 @@ class Speedtester(object):
                 self.file_logger.debug("Main: Speedtest results:")
                 self.file_logger.debug(speedtest_results)
 
-                # speedtest results
-                results_dict['time'] = int(time.time())
-                results_dict['ping_time'] = int(speedtest_results['ping_time'])
-                results_dict['download_rate_mbps'] = float(speedtest_results['download_rate'])
-                results_dict['upload_rate_mbps'] = float(speedtest_results['upload_rate'])
-                results_dict['server_name'] = str(speedtest_results['server_name'])
+                # speedtest results - add timestamp
+                speedtest_results['time'] = int(time.time())
 
                 self.file_logger.info("Speedtest ended.")
 
                 # dump the results
                 data_file = config_vars['speedtest_data_file']
                 test_name = "Speedtest"
-                if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger):
+                if exporter_obj.send_results(config_vars, speedtest_results, column_headers, data_file, test_name, self.file_logger):
                     self.file_logger.info("Speedtest results sent OK.")
                     return True
                 else:

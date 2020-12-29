@@ -134,7 +134,9 @@ def read_local_config(config_file, file_logger):
     # Get Speedtest config params
     speed_sect = config['Speedtest']
     config_vars['speedtest_enabled'] = speed_sect.get('enabled', 'no')
+    config_vars['provider'] = speed_sect.get('provider', 'ookla')
     config_vars['server_id'] = speed_sect.get('server_id', '')
+    config_vars['librespeed_args'] = speed_sect.get('librespeed_args', '')
     config_vars['speedtest_data_file'] = speed_sect.get('speedtest_data_file', 'wiperf-speedtest')
     config_vars['http_proxy'] = speed_sect.get('http_proxy', '')
     config_vars['https_proxy'] = speed_sect.get('https_proxy', '')

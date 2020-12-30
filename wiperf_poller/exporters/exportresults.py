@@ -81,8 +81,13 @@ class ResultsExporter(object):
 
     def send_results(self, config_vars, results_dict, column_headers, data_file, test_name, file_logger, delete_data_file=False):
 
-        # dump the results to appropriate destination
+        # dump the results to local cache if enabled
+        if config_vars['cache_enabled'] =='yes':
+            file_logger.info("Sending results to local file cache.")
+            cache_exporter = CacheExporter(config_vars, file_logger)
+            cache_exporter.dump_cache_results(data_file, results_dict, column_headers)
 
+        # dump the results to appropriate destination
         if config_vars['exporter_type'] == 'splunk':
 
             # Check if we are using the Splunk HEC (https transport)
@@ -136,10 +141,5 @@ class ResultsExporter(object):
         else:
             file_logger.info("Unknown exporter type in config file: {}".format(config_vars['exporter_type']))
             sys.exit()
-        
-        if config_vars['cache_enabled'] =='yes':
-            file_logger.info("Sending results to local file cache.")
-            cache_exporter = CacheExporter(config_vars, file_logger)
-            cache_exporter.dump_cache_results(data_file, results_dict, column_headers)
 
         return True

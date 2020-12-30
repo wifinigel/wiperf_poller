@@ -41,10 +41,15 @@ def read_local_config(config_file, file_logger):
         config_vars['platform'] = 'wlanpi'
     # data exporter type for results
     config_vars['exporter_type'] = gen_sect.get('exporter_type', 'splunk')
-    # format of output data (csv/json)
-    config_vars['data_format'] = gen_sect.get('data_format', 'json')
-    # directory where data dumped
-    config_vars['data_dir'] = gen_sect.get('data_dir')
+
+    # local results caching enabled/disabled
+    config_vars['cache_enabled'] = gen_sect.get('cache_enabled', 'no')
+    # format of cache output data (csv/json)
+    config_vars['cache_data_format'] = gen_sect.get('cache_data_format', 'csv')
+    # root directory where cache data dumped
+    config_vars['cache_root'] = gen_sect.get('cache_root', "/var/cache/wiperf")
+    # retention period of cache files (in days)
+    config_vars['cache_retention_period'] = gen_sect.get('cache_retention_period', 3)
 
     ####### Splunk config ########
     # data transport

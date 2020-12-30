@@ -11,6 +11,7 @@ from wiperf_poller.exporters.splunkexporter import splunkexporter
 from wiperf_poller.exporters.influxexporter2 import influxexporter2
 from wiperf_poller.exporters.influxexporter import influxexporter
 from wiperf_poller.helpers.route import is_ipv6
+from wiperf_poller.exporters.cacheexporter import CacheExporter
 #TODO: conditional import of influxexporter if Influx module available
 
 class ResultsExporter(object):
@@ -135,5 +136,10 @@ class ResultsExporter(object):
         else:
             file_logger.info("Unknown exporter type in config file: {}".format(config_vars['exporter_type']))
             sys.exit()
+        
+        if config_vars['cache_enabled'] =='yes':
+            file_logger.info("Sending results to local file cache.")
+            cache_exporter = CacheExporter(config_vars, file_logger)
+            cache_exporter.dump_cache_results(data_file, results_dict, column_headers)
 
         return True

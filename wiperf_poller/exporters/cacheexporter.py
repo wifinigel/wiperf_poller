@@ -34,7 +34,7 @@ class CacheExporter(object):
         self.platform = platform
         self.file_logger = file_logger
         self.cache_root = config_vars['cache_root']
-        self.retention_period = config_vars['cache_retention_period']
+        self.retention_period = int(config_vars['cache_retention_period'])
         self.data_format = config_vars['cache_data_format']
         self.day_dir_name = ''
 
@@ -161,9 +161,11 @@ class CacheExporter(object):
         
         # dump data in configured format
         if self.data_format == 'json':
+            data_file = self.day_dir_name + "/" + data_file + ".json"
             self._dump_json_data(data_file, dict_data)
 
         elif self.data_format == 'csv':
+            self.day_dir_name + "/" + data_file + ".csv"
             self._dump_csv_data(data_file, dict_data, column_headers)
         
         else:

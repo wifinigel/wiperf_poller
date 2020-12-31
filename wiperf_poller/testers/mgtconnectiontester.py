@@ -49,7 +49,7 @@ class MgtConnectionTester(object):
             self.file_logger.info("  Checking port connection to Splunk server {}, port: {}".format(data_host, data_port))
 
             try:
-                portcheck_output = subprocess.check_output('{} -zvw10 {} {}'.format(NC_CMD, data_host, data_port), stderr=subprocess.STDOUT, shell=True).decode()
+                subprocess.check_output('{} -zvw10 {} {}'.format(NC_CMD, data_host, data_port), stderr=subprocess.STDOUT, shell=True).decode()
                 self.file_logger.info("  Port connection to server {}, port: {} checked OK.".format(data_host, data_port))
             except subprocess.CalledProcessError as exc:
                 output = exc.output.decode()

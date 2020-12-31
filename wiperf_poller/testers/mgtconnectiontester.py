@@ -21,7 +21,6 @@ class MgtConnectionTester(object):
 
     def check_connection(self, watchdog_obj, lockf_obj):
 
-        data_transport = self.config_vars['data_transport']
         exporter_type = self.config_vars['exporter_type']
         data_host = self.config_vars['data_host']
         data_port = self.config_vars['data_port']
@@ -41,11 +40,12 @@ class MgtConnectionTester(object):
                 else:
                     self.file_logger.warning("  We still have a routing issue. Will have to exit as mgt traffic over correct interface not possible")
                     self.file_logger.warning("  Suggest making static routing additions or adding an additional metric to the interface causing the issue.")
+                    self.file_logger.warning("  (*** Note ***: check you have configured the correct mgt interface if this message persists)")
                     lockf_obj.delete_lock_file()
                     sys.exit()
 
         # if we are using hec, make sure we can access the hec network port, otherwise we are wasting our time
-        if data_transport == 'hec' and exporter_type == 'splunk':
+        if exporter_type == 'splunk':
             self.file_logger.info("  Checking port connection to Splunk server {}, port: {}".format(data_host, data_port))
 
             try:

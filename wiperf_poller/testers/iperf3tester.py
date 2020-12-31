@@ -225,7 +225,7 @@ class IperfTester(object):
             results_dict['packets'] =  int(result.packets)
             results_dict['lost_packets'] =  int(result.lost_packets)
             results_dict['lost_percent'] =  float(round(result.lost_percent, 1))
-            results_dict['mos_score'] = float(self.calculate_mos(rtt_avg_ms,results_dict['jitter_ms'], results_dict['lost_percent']))
+            results_dict['mos_score'] = float(round(self.calculate_mos(rtt_avg_ms,results_dict['jitter_ms'], results_dict['lost_percent']), 2))
 
             # define column headers for CSV
             column_headers = list(results_dict.keys())
@@ -236,13 +236,14 @@ class IperfTester(object):
                 results_dict['jitter_ms'] = 0.0
 
             # drop results in log file
-            self.file_logger.info("Iperf3 udp results - mbps: {}, packets: {}, lost_packets: {}, lost_percent: {}, jitter: {}, bytes: {}".format(
+            self.file_logger.info("Iperf3 udp results - mbps: {}, packets: {}, lost_packets: {}, lost_percent: {}, jitter: {}, bytes: {}, mos_score: {}".format(
                 results_dict['mbps'], results_dict['packets'], results_dict['lost_packets'], results_dict['lost_percent'],
-                results_dict['jitter_ms'], results_dict['bytes']))
+                results_dict['jitter_ms'], results_dict['bytes'], results_dict['mos_score']))
 
             # dump the results
             data_file = config_vars['iperf3_udp_data_file']
             test_name = "iperf_udp"
+
             if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger):
                 self.file_logger.info("Iperf3 udp test ended.")
                 return True

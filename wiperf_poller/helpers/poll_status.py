@@ -83,9 +83,7 @@ class PollStatus():
 
         self.file_logger.info("Sending poll status info to mgt platform")
 
-        column_headers = ['ip', 'network', 'speedtest', 'ping', 'dns', 'iperf_tcp', 
-            'iperf_udp', 'dhcp', 'smb', 'auth', 'probe_mode', 'mgt_if', 'run_time']
-
+        column_headers = list(self.status_dict.keys())
         results_dict =  self.status_dict
 
         # dump the results

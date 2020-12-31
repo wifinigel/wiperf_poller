@@ -106,9 +106,6 @@ class AuthTester(object):
         self.file_logger.info("Starting Authentication benchmark...")
         status_file_obj.write_status_file("Auth tests")
 
-        # define colum headers for CSV
-        column_headers = ['auth_time']
-
         results_dict = {}
         delete_file = True
         test_result = self.time_to_authenticate()
@@ -118,6 +115,9 @@ class AuthTester(object):
             results_dict['time'] = int(time.time())
             results_dict['auth_time'] = float(test_result['auth_time'])
             time.sleep(2)
+
+            # define column headers for CSV
+            column_headers = list(results_dict.keys())
 
             # dump the results
             data_file = config_vars['auth_data_file']

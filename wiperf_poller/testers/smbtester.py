@@ -207,9 +207,6 @@ class SmbTester(object):
         global_username = config_vars['smb_global_username']
         global_password = config_vars['smb_global_password']
 
-        # define column headers for CSV
-        column_headers = ['time', 'smb_index', 'smb_host', 'filename','file_size', 'transfer_time', 'avg_mbps']
-        
         tests_passed = True
 
         delete_file = True
@@ -267,6 +264,9 @@ class SmbTester(object):
                 results_dict['filename'] = str(smb_result['filename'])
                 results_dict['smb_time'] = round(float(smb_result['transfer_time']), 2)
                 results_dict['smb_rate'] = round(smb_result['rate'], 2)
+
+                # define column headers for CSV
+                column_headers = list(results_dict.keys())
                 
                 # dump the results
                 data_file = config_vars['smb_data_file']

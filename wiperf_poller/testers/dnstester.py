@@ -79,9 +79,6 @@ class DnsTester(object):
 
             if dns_result:
 
-                column_headers = ['time', 'dns_index',
-                                  'dns_target', 'lookup_time_ms']
-
                 # summarise result for log
                 result_str = ' {}: {}ms'.format(dns_target, dns_result)
 
@@ -94,6 +91,9 @@ class DnsTester(object):
                     'dns_target': str(dns_target),
                     'lookup_time_ms': int(dns_result)
                 }
+
+                # define column headers for CSV
+                column_headers = list(results_dict.keys())
 
                 # dump the results
                 data_file = config_vars['dns_data_file']

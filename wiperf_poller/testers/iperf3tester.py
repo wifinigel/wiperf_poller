@@ -142,14 +142,15 @@ class IperfTester(object):
 
             results_dict = {}
 
-            column_headers = ['time', 'sent_mbps', 'received_mbps', 'sent_bytes', 'received_bytes', 'retransmits']
-
             results_dict['time'] = int(time.time())
             results_dict['sent_mbps'] =  float(round(result.sent_Mbps, 1))
             results_dict['received_mbps']   =  float(round(result.received_Mbps, 1))
             results_dict['sent_bytes'] =  int(result.sent_bytes)
             results_dict['received_bytes'] =  int(result.received_bytes)
             results_dict['retransmits'] =  int(result.retransmits)
+
+            # define column headers for CSV
+            column_headers = list(results_dict.keys())
 
             # drop abbreviated results in log file
             self.file_logger.info("Iperf3 tcp results - rx_mbps: {}, tx_mbps: {}, retransmits: {}, sent_bytes: {}, rec_bytes: {}".format(
@@ -217,8 +218,6 @@ class IperfTester(object):
             
             results_dict = {}
 
-            column_headers = ['time', 'bytes', 'mbps', 'jitter_ms', 'packets', 'lost_packets', 'lost_percent']
-
             results_dict['time'] = int(time.time())
             results_dict['bytes'] =  int(result.bytes)
             results_dict['mbps']   =  float(round(result.Mbps, 1))
@@ -227,6 +226,9 @@ class IperfTester(object):
             results_dict['lost_packets'] =  int(result.lost_packets)
             results_dict['lost_percent'] =  float(round(result.lost_percent, 1))
             results_dict['mos_score'] = float(self.calculate_mos(rtt_avg_ms,results_dict['jitter_ms'], results_dict['lost_percent']))
+
+            # define column headers for CSV
+            column_headers = list(results_dict.keys())
 
             # workaround for crazy jitter figures sometimes seen
             if results_dict['jitter_ms'] > 2000:

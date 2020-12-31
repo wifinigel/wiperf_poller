@@ -96,9 +96,6 @@ class WirelessConnectionTester(object):
         # hold all results in one place
         results_dict = {}
 
-        # define column headers
-        column_headers = ['time', 'ssid', 'bssid', 'freq_ghz', 'channel', 'phy_rate_mbps', 'signal_level_dbm', 'tx_retries', 'ip_address', 'location']
-
         results_dict['time'] = int(time.time())
         results_dict['ssid'] = self.adapter_obj.get_ssid()
         results_dict['bssid'] = self.adapter_obj.get_bssid()
@@ -114,6 +111,9 @@ class WirelessConnectionTester(object):
         results_dict['tx_retries'] = self.adapter_obj.get_tx_retries()
         results_dict['ip_address'] = self.adapter_obj.get_ipaddr()
         results_dict['location'] = config_vars['location']
+
+        # define column headers
+        column_headers = list(results_dict.keys())
 
         # dump out adapter info to log file
         self.file_logger.info("########## Wireless Connection ##########")

@@ -98,6 +98,7 @@ class Speedtester(object):
             self.file_logger.error("JSON decode of librespeed results failed - returning error")
             return False
         
+        test_time = int(time.time())
         download_rate_mbps = round(float(results_dict['download']), 2)
         upload_rate_mbps = round(float(results_dict['upload']), 2)
         ping_time = int(results_dict['ping'])
@@ -109,13 +110,13 @@ class Speedtester(object):
         client_ip = str(results_dict['client']['ip'])
         provider = 'Librespeed'
 
-        self.file_logger.info('ping_time: {}, download_rate_mbps: {}, upload_rate_mbps: {}, server_name: {}, mbytes_sent: {},  \
+        self.file_logger.info('time: {}, ping_time: {}, download_rate_mbps: {}, upload_rate_mbps: {}, server_name: {}, mbytes_sent: {},  \
 mbytes_received: {}, latency_ms: {}, jitter_ms: {}, client_ip: {}, provider: {}'.format(
-            ping_time, download_rate_mbps, upload_rate_mbps, server_name, mbytes_sent, mbytes_received, latency_ms, jitter_ms, client_ip, provider))
+            test_time, ping_time, download_rate_mbps, upload_rate_mbps, server_name, mbytes_sent, mbytes_received, latency_ms, jitter_ms, client_ip, provider))
 
-        return {'ping_time': ping_time, 'download_rate_mbps': download_rate_mbps, 'upload_rate_mbps': upload_rate_mbps, 'server_name': server_name, 
-            'mbytes_sent': mbytes_sent, 'mbytes_received': mbytes_received, 'latency_ms': latency_ms, 'jitter_ms': jitter_ms, 'client_ip': client_ip,
-            'provider': provider}
+        return {'time': test_time, 'ping_time': ping_time, 'download_rate_mbps': download_rate_mbps, 'upload_rate_mbps': upload_rate_mbps, 
+            'server_name': server_name, 'mbytes_sent': mbytes_sent, 'mbytes_received': mbytes_received, 'latency_ms': latency_ms, 
+            'jitter_ms': jitter_ms, 'client_ip': client_ip, 'provider': provider}
 
     def ooklaspeedtest(self, server_id='', DEBUG=False):
         '''
@@ -239,6 +240,7 @@ mbytes_received: {}, latency_ms: {}, jitter_ms: {}, client_ip: {}, provider: {}'
 
         results_dict = st.results.dict()
 
+        test_time = int(time.time())
         download_rate_mbps = round(float(results_dict['download'])/1024000, 2)
         upload_rate_mbps = round(float(results_dict['upload'])/1024000, 2)
         ping_time = int(results_dict['ping'])
@@ -250,19 +252,16 @@ mbytes_received: {}, latency_ms: {}, jitter_ms: {}, client_ip: {}, provider: {}'
         client_ip = str(results_dict['client']['ip'])
         provider = 'Ookla'
 
-        self.file_logger.info('ping_time: {}, download_rate_mbps: {}, upload_rate_mbps: {}, server_name: {}, mbytes_sent: {},  \
+        self.file_logger.info( 'time: {}, ping_time: {}, download_rate_mbps: {}, upload_rate_mbps: {}, server_name: {}, mbytes_sent: {},  \
 mbytes_received: {}, latency_ms: {}, jitter_ms: {}, client_ip: {}, provider: {}'.format(
-            ping_time, download_rate_mbps, upload_rate_mbps, server_name, mbytes_sent, mbytes_received, latency_ms, jitter_ms, client_ip, provider))
+            test_time, ping_time, download_rate_mbps, upload_rate_mbps, server_name, mbytes_sent, mbytes_received, latency_ms, jitter_ms, client_ip, provider))
 
-        return {'ping_time': ping_time, 'download_rate_mbps': download_rate_mbps, 'upload_rate_mbps': upload_rate_mbps, 'server_name': server_name, 
+        return {'time': test_time, 'ping_time': ping_time, 'download_rate_mbps': download_rate_mbps, 'upload_rate_mbps': upload_rate_mbps, 'server_name': server_name, 
             'mbytes_sent': mbytes_sent, 'mbytes_received': mbytes_received, 'latency_ms': latency_ms, 'jitter_ms': jitter_ms, 'client_ip': client_ip,
             'provider': provider}
 
 
     def run_tests(self, status_file_obj, check_correct_mode_interface, config_vars, exporter_obj, lockf_obj):
-
-        column_headers = [ 'time', 'server_name', 'ping_time', 'download_rate_mbps', 'upload_rate_mbps', 
-            'mbytes_sent', 'mbytes_received', 'latency_ms', 'jitter_ms' ]
 
         self.file_logger.info("Starting speedtest ({})...".format(config_vars['provider']))
         status_file_obj.write_status_file("speedtest")
@@ -291,8 +290,8 @@ mbytes_received: {}, latency_ms: {}, jitter_ms: {}, client_ip: {}, provider: {}'
                 self.file_logger.debug("Main: Speedtest results:")
                 self.file_logger.debug(speedtest_results)
 
-                # speedtest results - add timestamp
-                speedtest_results['time'] = int(time.time())
+                # define column headers for CSV
+                column_headers = list(speedtest_results.keys())
 
                 self.file_logger.info("Speedtest ended.")
 

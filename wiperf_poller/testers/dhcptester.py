@@ -109,12 +109,13 @@ class DhcpTester(object):
 
         if renewal_result:
 
-            column_headers = ['time', 'renewal_time_ms']
-
             results_dict = {
                 'time': int(time.time()),
                 'renewal_time_ms': int(renewal_result),
             }
+
+            # define column headers for CSV
+            column_headers = list(results_dict.keys())
 
             # dump the results
             data_file = config_vars['dhcp_data_file']

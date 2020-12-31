@@ -184,7 +184,7 @@ class CacheExporter(object):
             self._dump_json_data(data_file, dict_data)
 
         elif self.data_format == 'csv':
-            self.day_dir_name + "/" + data_file + ".csv"
+            data_file = self.day_dir_name + "/" + data_file + ".csv"
             self._dump_csv_data(data_file, dict_data, column_headers)
         
         else:

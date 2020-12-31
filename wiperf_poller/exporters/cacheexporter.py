@@ -52,7 +52,9 @@ class CacheExporter(object):
 
 
     def _check_cache_day_dir_exists(self):
-
+        """
+        Check if today's dir exists
+        """
         # Check if day dir already defined
         if not self.day_dir_name:
 
@@ -66,6 +68,9 @@ class CacheExporter(object):
 
 
     def _create_cache_day_dir(self):
+        """
+        Create today's cache dir
+        """
 
         try: 
             os.makedirs(self.day_dir_name, exist_ok = True) 
@@ -77,6 +82,9 @@ class CacheExporter(object):
 
 
     def _prune_cache_dirs(self):
+        """
+        Remove dirs that are older than the configured policy
+        """
 
         # get a list of cache dirs
         cache_dir_list = sorted(os.listdir(self.cache_root))
@@ -100,6 +108,9 @@ class CacheExporter(object):
 
 
     def _dump_json_data(self, data_file, dict_data):
+        """
+        Dump the results data in today's json file
+        """
 
         file_data = []
 
@@ -130,6 +141,9 @@ class CacheExporter(object):
 
     
     def _dump_csv_data(self, data_file, dict_data, column_headers):
+        """
+        Dump the results data in today's csv file
+        """
 
         try:
             # if False:
@@ -150,6 +164,9 @@ class CacheExporter(object):
 
 
     def dump_cache_results(self, data_file, dict_data, column_headers, data_filter=''):
+        """
+        Dump the results data in today's file
+        """
 
         # check if we want to limit cache dumping to specific data sources
         if data_filter:

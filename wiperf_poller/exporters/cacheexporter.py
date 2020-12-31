@@ -101,17 +101,30 @@ class CacheExporter(object):
 
     def _dump_json_data(self, data_file, dict_data):
 
-        try:
-            # change write/append mode depending on whether data file exists
-            file_mode = 'w'
-            if os.path.exists(data_file):
-                file_mode = 'a'
+        file_data = []
 
-            with open(data_file, file_mode) as json_file:
-                json.dump(dict_data, json_file)
+        # if json file exists, read it in and update data dict
+        if os.path.exists(data_file):
+
+            try:
+                with open(data_file) as json_file:
+                    file_data = json.load(json_file)
+            except IOError as err:
+                self.file_logger.error("JSON I/O file read error: {}".format(err))
+                return False
+            
+            file_data.append(dict_data)
+        else:
+            # no file, so prepare to write initial data
+            file_data = [ dict_data ]
+
+        # write out the json data
+        try:
+            with open (data_file, 'w') as json_file:
+                json.dump(file_data, json_file, indent=2)
         except IOError as err:
-            self.file_logger.error("JSON I/O error: {}".format(err))
-            return False
+                self.file_logger.error("JSON I/O update error: {}".format(err))
+                return False
         
         return True
 
@@ -136,7 +149,13 @@ class CacheExporter(object):
         return True
 
 
-    def dump_cache_results(self, data_file, dict_data, column_headers):
+    def dump_cache_results(self, data_file, dict_data, column_headers, data_filter=''):
+
+        # check if we want to limit cache dumping to specific data sources
+        if data_filter:
+            if data_file in data_filter:
+                self.file_logger.debug("Data source filtered {}, not dumped in cache".format(data_file))
+                return True
 
         # check cache checks, unless completed on previous iteration
         if not self.cache_checks_completed:

@@ -29,13 +29,13 @@ class CacheExporter(object):
     by alternative methods (user defined methods)
     """
 
-    def __init__(self, config_vars, file_logger, platform="rpi"):
+    def __init__(self, file_logger, platform="rpi"):
 
         self.platform = platform
         self.file_logger = file_logger
-        self.cache_root = config_vars['cache_root']
-        self.retention_period = int(config_vars['cache_retention_period'])
-        self.data_format = config_vars['cache_data_format']
+        self.cache_root = ''
+        self.retention_period = 0
+        self.data_format = ''
         self.day_dir_name = ''
 
         self.cache_checks_completed = False
@@ -163,10 +163,14 @@ class CacheExporter(object):
         return True
 
 
-    def dump_cache_results(self, data_file, dict_data, column_headers, data_filter=''):
+    def dump_cache_results(self, config_vars, data_file, dict_data, column_headers, data_filter=''):
         """
         Dump the results data in today's file
         """
+
+        self.cache_root = config_vars['cache_root']
+        self.retention_period = int(config_vars['cache_retention_period'])
+        self.data_format = config_vars['cache_data_format']
 
         # check if we want to limit cache dumping to specific data sources
         if data_filter:

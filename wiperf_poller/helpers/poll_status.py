@@ -2,12 +2,11 @@
 Poll status class - reports status messages of current poll cycle to mgt platform
 """
 import time
-from wiperf_poller.exporters.exportresults import ResultsExporter
 
 class PollStatus():
 
     '''
-    A class to implement a watchdog feature for the wiperf agent process
+    Poll status class - reports status messages of current poll cycle to mgt platform
     '''
 
     def __init__(self, config_vars, file_logger):
@@ -31,9 +30,6 @@ class PollStatus():
         }
 
         self.start_time = time.time()
-
-        # exporter object
-        self. exporter_obj = ResultsExporter(file_logger, config_vars['platform'])
 
     def ip(self, value):
         self.status_dict['ip'] = str(value)
@@ -74,7 +70,7 @@ class PollStatus():
     def mgt_if(self, value):
         self.status_dict['mgt_if'] = str(value)
     
-    def dump(self):
+    def dump(self, exporter_obj):
 
         # calc run time
         self.status_dict['run_time'] = int(time.time() - self.start_time)
@@ -90,7 +86,7 @@ class PollStatus():
         data_file = 'wiperf-poll-status'
         test_name = "wiperf-poll-status"
 
-        if self.exporter_obj.send_results(self.config_vars, results_dict, column_headers, data_file, test_name, self.file_logger):
+        if exporter_obj.send_results(self.config_vars, results_dict, column_headers, data_file, test_name, self.file_logger):
             self.file_logger.info("Poll status info sent.")
             return True
         else:

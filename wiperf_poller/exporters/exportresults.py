@@ -10,6 +10,7 @@ from socket import gethostname
 from wiperf_poller.exporters.splunkexporter import splunkexporter
 from wiperf_poller.exporters.influxexporter2 import influxexporter2
 from wiperf_poller.exporters.influxexporter import influxexporter
+from wiperf_poller.exporters.spoolexporter import SpoolExporter
 from wiperf_poller.helpers.route import is_ipv6
 from wiperf_poller.exporters.cacheexporter import CacheExporter
 #TODO: conditional import of influxexporter if Influx module available
@@ -19,28 +20,37 @@ class ResultsExporter(object):
     Class to implement universal resuts exporter for wiperf
     """
 
-    def __init__(self, file_logger, platform):
+    def __init__(self, file_logger, watchdog_obj, lockf_obj, platform):
 
         self.platform = platform
         self.file_logger = file_logger
+        self.watchdog_obj = watchdog_obj
+        self.lockf_obj = lockf_obj
+        self.cache_obj = CacheExporter(file_logger)
+        self.spooler_obj = SpoolExporter(file_logger)
 
     
     def send_results_to_splunk(self, host, token, port, dict_data, file_logger, source):
 
-        file_logger.info("Sending event to Splunk: {} (dest host: {}, dest port: {})".format(source, host, port))
+        file_logger.info("Sending results event to Splunk: {} (dest host: {}, dest port: {})".format(source, host, port))
         if is_ipv6(host): host = "[{}]".format(host)
         return splunkexporter(host, token, port, dict_data, source, file_logger)
 
     def send_results_to_influx(self, localhost, host, port, username, password, database, dict_data, source, file_logger):
 
-        file_logger.info("Sending data to Influx host: {}, port: {}, database: {})".format(host, port, database))
+        file_logger.info("Sending results data to Influx host: {}, port: {}, database: {})".format(host, port, database))
         if is_ipv6(host): host = "[{}]".format(host)
         return influxexporter(localhost, host, port, username, password, database, dict_data, source, file_logger)
     
     def send_results_to_influx2(self, localhost, url, token, bucket, org, dict_data, source, file_logger):
 
-        file_logger.info("Sending data to Influx url: {}, bucket: {}, source: {})".format(url, bucket, source))
+        file_logger.info("Sending results data to Influx url: {}, bucket: {}, source: {})".format(url, bucket, source))
         return influxexporter2(localhost, url, token, bucket, org, dict_data, source, file_logger)
+    
+    def send_results_to_spooler(self, config_vars, data_file, dict_data, file_logger):
+
+        file_logger.info("Sending results data to spooler: {} (as mgt platform not available)".format(data_file))
+        return self.spooler_obj.spool_results(config_vars, data_file, dict_data, self.watchdog_obj, self.lockf_obj)
 
 
     def send_results(self, config_vars, results_dict, column_headers, data_file, test_name, file_logger, delete_data_file=False):
@@ -48,8 +58,7 @@ class ResultsExporter(object):
         # dump the results to local cache if enabled
         if config_vars['cache_enabled'] =='yes':
             file_logger.info("Sending results to local file cache.")
-            cache_exporter = CacheExporter(config_vars, file_logger)
-            cache_exporter.dump_cache_results(data_file, results_dict, column_headers)
+            self.cache_obj.dump_cache_results(config_vars, data_file, results_dict, column_headers)
 
         # dump the results to appropriate destination
         if config_vars['exporter_type'] == 'splunk':
@@ -76,6 +85,10 @@ class ResultsExporter(object):
 
             return self.send_results_to_influx2(gethostname(), influx_url, config_vars['influx2_token'],
                     config_vars['influx2_bucket'], config_vars['influx2_org'], results_dict, data_file, file_logger)
+        
+        elif config_vars['exporter_type'] == 'spooler':
+            
+            return self.send_results_to_spooler(config_vars, data_file, results_dict, file_logger)
         
         else:
             file_logger.info("Unknown exporter type in config file: {}".format(config_vars['exporter_type']))

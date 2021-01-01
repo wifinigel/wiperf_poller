@@ -85,7 +85,7 @@ status_file_obj = StatusFile(status_file, file_logger)
 bouncer_obj = Bouncer(bounce_file, config_vars, file_logger)
 
 # exporter object
-exporter_obj = ResultsExporter(file_logger, config_vars['platform'])
+exporter_obj = ResultsExporter(file_logger, watchdog_obj, lockf_obj, config_vars['platform'])
 
 # adapter object
 adapter_obj = ''
@@ -387,13 +387,13 @@ def main():
     #####################################
     # Tidy up before exit
     #####################################
+  
+    # dump poller status info
+    poll_obj.dump(exporter_obj)
 
-    # get rid of log file
+    # get rid of lock file
     status_file_obj.write_status_file("")
     lockf_obj.delete_lock_file()
-    
-    # dump poller status info
-    poll_obj.dump()
 
     file_logger.info("########## end ##########")
 

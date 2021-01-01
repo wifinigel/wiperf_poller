@@ -146,7 +146,7 @@ class SpoolExporter(object):
             self.spool_checks_completed = True
         
         # derive spool filename in format YYYY-MM-DD-HHMMSSmmm-<data source>.json
-        file_timestamp = datetime.today().strftime("%Y-%m-%d-%H%M%S.%f")
+        file_timestamp = datetime.today().strftime("%Y-%m-%d-%H%M%S.%f")[:-3]
         data_file = "{}/{}-{}.json".format(self.spool_dir_root, file_timestamp, data_file)
 
         # dump data in to json format file

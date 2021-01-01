@@ -39,12 +39,16 @@ def read_local_config(config_file, file_logger):
     config_vars['platform'] = 'rpi'
     if os.path.exists("/etc/wlanpi-state"):
         config_vars['platform'] = 'wlanpi'
+    
     # data exporter type for results
     config_vars['exporter_type'] = gen_sect.get('exporter_type', 'splunk')
+
     # Results spooling enabled?
-    config_vars['results_spooling_enabled'] = gen_sect.get('results_spooling_enabled', 'yes')
+    config_vars['results_spool_enabled'] = gen_sect.get('results_spool_enabled', 'yes')
     # Max age of spooled results data (in minutes)
-    config_vars['results_spooling_max_age'] = gen_sect.get('results_spooling_max_age', 30)
+    config_vars['results_spool_max_age'] = gen_sect.get('results_spool_max_age', 30)
+    # Dir for spool files
+    config_vars['results_spool_dir'] = gen_sect.get('results_spool_dir', '/var/spool/wiperf')
 
     # local results caching enabled/disabled
     config_vars['cache_enabled'] = gen_sect.get('cache_enabled', 'no')

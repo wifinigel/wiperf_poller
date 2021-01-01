@@ -91,7 +91,10 @@ class WirelessConnectionTester(object):
         self.file_logger.info("Checking we can get to the management platform...")
 
         mgt_connection_obj = MgtConnectionTester(config_vars, self.file_logger, self.platform)
-        mgt_connection_obj.check_connection(watchdog_obj, lockf_obj)
+
+        # if we can't hit the mgt platform, set exporter to the local spooler
+        if not mgt_connection_obj.check_connection(lockf_obj):
+            config_vars['exporter_type'] = 'spooler'
 
         # hold all results in one place
         results_dict = {}

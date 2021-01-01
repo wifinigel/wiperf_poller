@@ -32,9 +32,9 @@ class SpoolExporter(object):
     def __init__(self, file_logger):
 
         self.file_logger = file_logger
-        self.spool_enabled = 'yes'
-        self.spool_dir_root = '/var/spool/wiperf'
-        self.spool_max_age = 60 
+        self.spool_enabled = ''
+        self.spool_dir_root = ''
+        self.spool_max_age = 0
 
         self.spool_checks_completed = False
     
@@ -145,8 +145,8 @@ class SpoolExporter(object):
 
             self.spool_checks_completed = True
         
-        # derive spool filename in format YYYY-MM-DD-HHMMSS-<data source>.json
-        file_timestamp = datetime.today().strftime("%Y-%m-%d-%H%M%S")
+        # derive spool filename in format YYYY-MM-DD-HHMMSSmmm-<data source>.json
+        file_timestamp = datetime.today().strftime("%Y-%m-%d-%H%M%S.%f")
         data_file = "{}/{}-{}.json".format(self.spool_dir_root, file_timestamp, data_file)
 
         # dump data in to json format file

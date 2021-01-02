@@ -20,14 +20,14 @@ class ResultsExporter(object):
     Class to implement universal resuts exporter for wiperf
     """
 
-    def __init__(self, file_logger, watchdog_obj, lockf_obj, platform):
+    def __init__(self, file_logger, watchdog_obj, lockf_obj, spooler_obj, platform):
 
         self.platform = platform
         self.file_logger = file_logger
         self.watchdog_obj = watchdog_obj
         self.lockf_obj = lockf_obj
         self.cache_obj = CacheExporter(file_logger)
-        self.spooler_obj = SpoolExporter(file_logger)
+        self.spooler_obj = spooler_obj
 
     
     def send_results_to_splunk(self, host, token, port, dict_data, file_logger, source):

@@ -28,7 +28,8 @@ from wiperf_poller.helpers.statusfile import StatusFile
 from wiperf_poller.helpers.lockfile import LockFile
 from wiperf_poller.helpers.watchdog import Watchdog
 from wiperf_poller.helpers.os_cmds import check_os_cmds
-from wiperf_poller.helpers.poll_status import PollStatus 
+from wiperf_poller.helpers.poll_status import PollStatus
+from wiperf_poller.exporters.spoolexporter import SpoolExporter
 
 from wiperf_poller.exporters.exportresults import ResultsExporter
 
@@ -84,8 +85,11 @@ status_file_obj = StatusFile(status_file, file_logger)
 # bouncer object
 bouncer_obj = Bouncer(bounce_file, config_vars, file_logger)
 
+# spooler object
+spooler_obj = SpoolExporter(config_vars, file_logger)
+
 # exporter object
-exporter_obj = ResultsExporter(file_logger, watchdog_obj, lockf_obj, config_vars['platform'])
+exporter_obj = ResultsExporter(file_logger, watchdog_obj, lockf_obj, spooler_obj, config_vars['platform'])
 
 # adapter object
 adapter_obj = ''
@@ -187,7 +191,24 @@ def main():
     
     # update poll summary with IP
     poll_obj.ip(adapter_obj.get_adapter_ip())
- 
+
+    ################################################
+    # Empty results spool queue if required/enabled
+    ################################################
+    file_logger.info("######## spooler checks ########")
+    if config_vars['results_spool_enabled'] == 'yes':
+
+        # clear out old spooled files if required
+        spooler_obj.prune_old_files()
+
+        # if export method not spooler, mgt connect 
+        # must be OK. Empty spool queue 
+        if config_vars['exporter_type'] != 'spooler':
+
+            spooler_obj.empty_queue()
+    else:
+        file_logger.info("Spooler not enabled.")
+
     #############################################
     # Run speedtest (if enabled)
     #############################################                                                                                                                                                                                                                      

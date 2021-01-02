@@ -20,7 +20,7 @@ import json
 import os
 import shutil
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class SpoolExporter(object):
     """
@@ -29,12 +29,12 @@ class SpoolExporter(object):
     connectivity is restored.
     """
 
-    def __init__(self, file_logger):
+    def __init__(self, config_vars, file_logger):
 
         self.file_logger = file_logger
-        self.spool_enabled = ''
-        self.spool_dir_root = ''
-        self.spool_max_age = 0
+        self.spool_enabled = config_vars['results_spool_enabled']
+        self.spool_dir_root = config_vars['results_spool_dir']
+        self.spool_max_age = int(config_vars['results_spool_max_age']) # time in minutes
 
         self.spool_checks_completed = False
     
@@ -61,19 +61,45 @@ class SpoolExporter(object):
             return False
         return True
     
-    def _prune_old_files(self):
-        """
-        Remove files older than max_age
-        """
-
-        pass
+    def _list_spool_files(self):
 
         # list files in spool dir (sorted by name a->z)
+        spool_files = os.listdir(self.spool_dir_root)
+        spool_files.sort()
 
+        return spool_files
 
-        # step through files and check last modified timestamp - remove
-        # files older thn max age
+    
+    def prune_old_files(self):
+        """
+        Remove files older than max_age policy
+        """
 
+        self.file_logger.info("Checking for files to prune.")
+        file_list = self._list_spool_files()
+
+        if not file_list:
+            self.file_logger.info("No files to prune.")
+            return True
+
+        # determine cut-off time for files as per max-age policy
+        age_limit = datetime.now() - timedelta(minutes=self.spool_max_age)
+        
+        prune_count = 0
+        for filename in file_list:
+
+            full_file_name = "{}/{}".format(self.spool_dir_root, filename)
+
+            if os.path.getctime(full_file_name) < age_limit.timestamp():
+                os.remove(full_file_name)
+                prune_count += 1
+            else:
+                # As soon as we hit a file within policy, exit
+                break
+        
+        self.file_logger.info("Files pruned: {}".format(prune_count))
+        
+        return True
 
 
     def _dump_json_data(self, data_file, dict_data):
@@ -114,10 +140,6 @@ class SpoolExporter(object):
         Dump the results data in to a timestamped file
         """
 
-        self.spool_enabled = config_vars['results_spool_enabled']
-        self.spool_dir_root = config_vars['results_spool_dir']
-        self.spool_max_age = int(config_vars['results_spool_max_age']) 
-
         # if spooling not enabled, increment watchdog, remove lock file & exit
         if not self.spool_enabled == 'yes':
             self.file_logger.error("Result spooling not enabled - Exiting.")
@@ -140,9 +162,6 @@ class SpoolExporter(object):
                     self.file_logger.error("Unable to spool results data as spool root dir cannot be created: {}".format(self.spool_dir_root))
                     return False
             
-            # get rid of files older than the max-age policy
-            self._prune_old_files()
-
             self.spool_checks_completed = True
         
         # derive spool filename in format YYYY-MM-DD-HHMMSSmmm-<data source>.json
@@ -151,6 +170,22 @@ class SpoolExporter(object):
 
         # dump data in to json format file
         return self._dump_json_data(data_file, dict_data)
+    
+    def empty_queue(self):
+        """
+        Send files in spool dir to mgt platform
+        """
+
+        # check we have spooler dir
+
+        # check number of files in spooler dir
+
+        # step through spooled files & attempt to export
+        # (remove each spooled file as successfuly exporetd)
+
+        pass
+
+
 
 
 

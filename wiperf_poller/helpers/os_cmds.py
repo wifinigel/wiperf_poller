@@ -39,6 +39,7 @@ OS_CORE_CMDS = {
     'PING_CMD': _find_cmd('/bin/ping'),
     'REBOOT_CMD': _find_cmd('/sbin/reboot'),
     'ROUTE_CMD': _find_cmd('/sbin/route'),
+    'TIMEDATECTL_CMD': _find_cmd('/usr/bin/timedatectl'),
 }
 
 # define optional OS commands (attempt to find in path if not in hardcoded path)
@@ -64,6 +65,7 @@ NC_CMD = OS_CORE_CMDS['NC_CMD']
 PING_CMD = OS_CORE_CMDS['PING_CMD']
 REBOOT_CMD = OS_CORE_CMDS['REBOOT_CMD']
 ROUTE_CMD = OS_CORE_CMDS['ROUTE_CMD']
+TIMEDATECTL_CMD = OS_CORE_CMDS['TIMEDATECTL_CMD']
 
 
 SMB_CP = OS_OPT_CMDS['SMB_CP']

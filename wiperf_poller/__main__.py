@@ -3,6 +3,7 @@
 
 import sys
 import os
+import json
 import logging
 
 # our local ...
@@ -205,7 +206,44 @@ def main():
         # must be OK. Empty spool queue 
         if config_vars['exporter_type'] != 'spooler':
 
-            spooler_obj.empty_queue()
+            # check we have spooler dir
+            if spooler_obj._check_spool_dir_exists():
+                
+                # check number of files in spooler dir
+                file_list = spooler_obj._list_spool_files()
+
+                # step through spooled files & attempt to export
+                # (remove each spooled file as successfuly exported)
+                if len(file_list) > 0:
+
+                    for filename in file_list:
+
+                        full_file_name = "{}/{}".format(spooler_obj.spool_dir_root, filename)
+
+                        # read in the file as dict (from json)
+                        # TODO: add try test
+                        with open(full_file_name, "r") as json_file:
+                            results_list = json.load(json_file)
+                        
+                        for results_dict in results_list:
+
+                            # pull out the data source
+                            data_file = results_dict['data_source']
+                            results_dict.pop('data_source')
+
+                            column_headers = list(results_dict.keys())
+                            test_name = data_file
+
+                        # send the dict to exporter
+                        if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, file_logger):
+
+                            # remove data file
+                            os.remove(full_file_name)
+                            file_logger.info("Spooled results sent OK - {}".format(data_file))
+
+            else:
+                file_logger.error("Spooler directory does not exist: {}".format(spooler_obj.spool_dir_root))
+    
     else:
         file_logger.info("Spooler not enabled.")
 
@@ -216,7 +254,7 @@ def main():
     file_logger.info("########## speedtest ##########")
     if config_vars['speedtest_enabled'] == 'yes':
 
-        speedtest_obj = Speedtester(file_logger, platform)
+        speedtest_obj = Speedtester(file_logger, config_vars, platform)
         test_passed = speedtest_obj.run_tests(status_file_obj, check_correct_mode_interface, config_vars, exporter_obj, lockf_obj)
 
         if test_passed:

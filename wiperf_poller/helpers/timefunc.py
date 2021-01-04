@@ -19,6 +19,9 @@ def time_synced():
     
     return False
 
+def now_raw():
+    return time.time()
+
 def now_as_nsecs():
     return int(time.time() * 1000000000)
 
@@ -30,12 +33,6 @@ def now_as_msecs():
 
 def now_as_secs():
     return int(time.time())
-
-def splunk_ts():
-    ts = datetime.utcnow().strftime('%m-%d-%Y %H:%M:%S.000 +00:00')
-    print(ts)
-    print(type(ts))
-    return ts
 
 def get_timestamp(config_vars):
 

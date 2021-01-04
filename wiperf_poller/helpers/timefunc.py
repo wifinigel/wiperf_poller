@@ -3,7 +3,6 @@ Miscellaneous time functions
 """
 
 import time
-from datetime import datetime
 import subprocess
 from wiperf_poller.helpers.os_cmds import TIMEDATECTL_CMD
 
@@ -18,9 +17,6 @@ def time_synced():
             return True
     
     return False
-
-def now_raw():
-    return time.time()
 
 def now_as_nsecs():
     return int(time.time() * 1000000000)

@@ -1,5 +1,6 @@
 import datetime
 import sys
+from wiperf_poller.helpers.timefunc import time_synced, now_as_msecs
 
 # module import vars
 influx_modules = True
@@ -40,21 +41,19 @@ def influxexporter(localhost, host, port, username, password, database, dict_dat
         "fields": {},
     }
 
-    fields_dict = {}
+    # if time-source sync'ed, add timestamp
+    if time_synced():
+        data_point['time'] = dict_data['time']
 
-    # construct data structure to send to InFlux
-    for key, value in dict_data.items():
-
-        if key == 'time':
-            continue
-
-        fields_dict[key] = value
-
-    data_point['fields'] = fields_dict
+    # remove redundant timestamp from results data
+    del dict_data['time']
+    
+    # put results data in to payload to send to Influx
+    data_point['fields'] = dict_data
 
     # send to Influx
     try:
-        if client.write_points([data_point]):    
+        if client.write_points([data_point], time_precision='ms'):    
             file_logger.info("Data sent to influx OK")
         else:
             file_logger.info("Issue with sending data sent to influx...")

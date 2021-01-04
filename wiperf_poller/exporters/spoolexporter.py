@@ -21,6 +21,7 @@ import os
 import shutil
 import sys
 from datetime import datetime, timedelta
+from wiperf_poller.helpers.timefunc import get_timestamp, time_synced
 
 class SpoolExporter(object):
     """
@@ -35,6 +36,7 @@ class SpoolExporter(object):
         self.spool_enabled = config_vars['results_spool_enabled']
         self.spool_dir_root = config_vars['results_spool_dir']
         self.spool_max_age = int(config_vars['results_spool_max_age']) # time in minutes
+        self.config_vars = config_vars
 
         self.spool_checks_completed = False
     
@@ -106,28 +108,10 @@ class SpoolExporter(object):
         """
         Dump the results data in timestamped json file
         """
-
-        file_data = []
-
-        # if json file exists, read it in and update data dict
-        if os.path.exists(data_file):
-
-            try:
-                with open(data_file) as json_file:
-                    file_data = json.load(json_file)
-            except IOError as err:
-                self.file_logger.error("JSON I/O file read error: {}".format(err))
-                return False
-            
-            file_data.append(dict_data)
-        else:
-            # no file, so prepare to write initial data
-            file_data = [ dict_data ]
-
         # write out the json data
         try:
             with open (data_file, 'w') as json_file:
-                json.dump(file_data, json_file, indent=2)
+                json.dump( [ dict_data ], json_file, indent=2)
         except IOError as err:
                 self.file_logger.error("JSON I/O update error: {}".format(err))
                 return False
@@ -146,6 +130,12 @@ class SpoolExporter(object):
             watchdog_obj.inc_watchdog_count()
             lockf_obj.delete_lock_file()
             sys.exit()
+        
+        # Do not allow spooling if probe is not time sync'ed - historical
+        # data timestamps will be meaningless
+        if not time_synced():
+            self.file_logger.warning("Result spooling not permitted as probe is not time-synced.")
+            return False
 
         # perform spool checks, unless completed on previous iteration
         if not self.spool_checks_completed:
@@ -164,27 +154,15 @@ class SpoolExporter(object):
             
             self.spool_checks_completed = True
         
+        # add data source to results
+        dict_data['data_source'] = data_file
+        
         # derive spool filename in format YYYY-MM-DD-HHMMSSmmm-<data source>.json
         file_timestamp = datetime.today().strftime("%Y-%m-%d-%H%M%S.%f")[:-3]
         data_file = "{}/{}-{}.json".format(self.spool_dir_root, file_timestamp, data_file)
 
         # dump data in to json format file
         return self._dump_json_data(data_file, dict_data)
-    
-    def empty_queue(self):
-        """
-        Send files in spool dir to mgt platform
-        """
-
-        # check we have spooler dir
-
-        # check number of files in spooler dir
-
-        # step through spooled files & attempt to export
-        # (remove each spooled file as successfuly exporetd)
-
-        pass
-
 
 
 

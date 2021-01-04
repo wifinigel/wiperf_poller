@@ -42,6 +42,7 @@ def read_local_config(config_file, file_logger):
     
     # data exporter type for results
     config_vars['exporter_type'] = gen_sect.get('exporter_type', 'splunk')
+    config_vars['time_format'] = gen_sect.get('exporter_type', 'splunk')
 
     # Results spooling enabled?
     config_vars['results_spool_enabled'] = gen_sect.get('results_spool_enabled', 'yes')

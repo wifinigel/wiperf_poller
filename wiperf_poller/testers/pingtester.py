@@ -8,6 +8,7 @@ import re
 import subprocess
 from sys import stderr
 from wiperf_poller.helpers.os_cmds import PING_CMD
+from wiperf_poller.helpers.timefunc import get_timestamp
 
 class PingTester(object):
     '''
@@ -202,7 +203,7 @@ class PingTester(object):
 
             # ping results
             if ping_result:
-                results_dict['time'] = int(time.time())
+                results_dict['time'] = get_timestamp(config_vars)
                 results_dict['ping_index'] = int(ping_index)
                 results_dict['ping_host'] = str(ping_result['host'])
                 results_dict['pkts_tx'] = int(ping_result['pkts_tx'])

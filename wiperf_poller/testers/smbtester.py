@@ -10,6 +10,7 @@ import subprocess
 import timeout_decorator
 from wiperf_poller.helpers.os_cmds import SMB_CP,SMB_MOUNT,LS_CMD,UMOUNT_CMD
 from wiperf_poller.helpers.route import inject_test_traffic_static_route
+from wiperf_poller.helpers.timefunc import get_timestamp
 
 class SmbTester(object):
     '''
@@ -258,7 +259,7 @@ class SmbTester(object):
             
             # Send SMB results to exporter
             if smb_result:
-                results_dict['time'] = int(time.time())
+                results_dict['time'] = get_timestamp(config_vars)
                 results_dict['smb_index'] = int(smb_index)
                 results_dict['smb_host'] = str(smb_result['host'])
                 results_dict['filename'] = str(smb_result['filename'])

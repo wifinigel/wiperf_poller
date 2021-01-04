@@ -2,6 +2,7 @@
 Poll status class - reports status messages of current poll cycle to mgt platform
 """
 import time
+from wiperf_poller.helpers.timefunc import get_timestamp
 
 class PollStatus():
 
@@ -14,6 +15,7 @@ class PollStatus():
         self.file_logger = file_logger
         self.config_vars = config_vars
         self.status_dict = {
+            'time': get_timestamp(config_vars),
             'ip': 'Unknown',
             'network': 'Fail',
             'speedtest': 'N/A',

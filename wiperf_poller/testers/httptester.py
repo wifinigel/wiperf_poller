@@ -7,6 +7,7 @@ import warnings
 import requests
 from requests.exceptions import HTTPError
 import urllib3
+from wiperf_poller.helpers.timefunc import get_timestamp
 
 class HttpTester(object):
     '''
@@ -119,7 +120,7 @@ class HttpTester(object):
                     self.file_logger.info("HTTP results: {}".format(result_str))
 
                     results_dict = {
-                        'time': int(time.time()),
+                        'time': get_timestamp(config_vars),
                         'http_index': int(http_index),
                         'http_target': str(http_target),
                         'http_get_time_ms': int(http_get_time),

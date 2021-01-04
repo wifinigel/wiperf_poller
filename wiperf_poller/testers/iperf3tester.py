@@ -15,6 +15,7 @@ import timeout_decorator
 
 from wiperf_poller.testers.pingtester import PingTester
 from wiperf_poller.helpers.route import inject_test_traffic_static_route
+from wiperf_poller.helpers.timefunc import get_timestamp
 
 class IperfTester(object):
     """
@@ -142,7 +143,7 @@ class IperfTester(object):
 
             results_dict = {}
 
-            results_dict['time'] = int(time.time())
+            results_dict['time'] = get_timestamp(config_vars)
             results_dict['sent_mbps'] =  float(round(result.sent_Mbps, 1))
             results_dict['received_mbps']   =  float(round(result.received_Mbps, 1))
             results_dict['sent_bytes'] =  int(result.sent_bytes)
@@ -218,7 +219,7 @@ class IperfTester(object):
             
             results_dict = {}
 
-            results_dict['time'] = int(time.time())
+            results_dict['time'] = get_timestamp(config_vars)
             results_dict['bytes'] =  int(result.bytes)
             results_dict['mbps']   =  float(round(result.Mbps, 1))
             results_dict['jitter_ms'] =  float(round(result.jitter_ms, 1))

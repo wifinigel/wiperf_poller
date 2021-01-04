@@ -7,6 +7,7 @@ import time
 import re
 import subprocess
 from wiperf_poller.helpers.os_cmds import GREP_CMD,WPA_CMD
+from wiperf_poller.helpers.timefunc import get_timestamp
 import datetime
 
 class AuthTester(object):
@@ -57,14 +58,22 @@ class AuthTester(object):
             output = exc.output.decode()
             error = "Hit an error with wpa_cli reconnect : {}".format( str(output))
             self.file_logger.error(error)
+            return False
 
         # sleep to allow logging to complete
         time.sleep(2)
 
         # grep for association log info
-        cmd_string = "{} \"{}: Trying to associate with \" /var/log/daemon.log ".format(GREP_CMD, interface)
-        auth_output = subprocess.check_output(cmd_string, stderr=subprocess.STDOUT, shell=True).decode().splitlines()
-        result = auth_output[len(auth_output)-1].split()
+        try:
+            cmd_string = "{} \"{}: Trying to associate with \" /var/log/daemon.log ".format(GREP_CMD, interface)
+            auth_output = subprocess.check_output(cmd_string, stderr=subprocess.STDOUT, shell=True).decode().splitlines()
+            result = auth_output[len(auth_output)-1].split()
+        except subprocess.CalledProcessError as exc:
+            output = exc.output.decode()
+            error = "Hit an error with grep of daemon.log : {}".format( str(output))
+            self.file_logger.error(error)
+            return False
+    
         try:
             start_date_time = datetime.datetime.strptime(result[0] + " " + result[1], '%Y-%m-%d %H:%M:%S.%f')
         except:
@@ -112,7 +121,7 @@ class AuthTester(object):
 
         # Time to authenticate results
         if test_result:
-            results_dict['time'] = int(time.time())
+            results_dict['time'] = get_timestamp(config_vars)
             results_dict['auth_time'] = float(test_result['auth_time'])
             time.sleep(2)
 

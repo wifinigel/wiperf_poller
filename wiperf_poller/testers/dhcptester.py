@@ -5,6 +5,7 @@ import time
 import subprocess
 from wiperf_poller.helpers.wirelessadapter import WirelessAdapter
 from wiperf_poller.helpers.os_cmds import DHCLIENT_CMD
+from wiperf_poller.helpers.timefunc import get_timestamp
 
 
 class DhcpTester(object):
@@ -110,7 +111,7 @@ class DhcpTester(object):
         if renewal_result:
 
             results_dict = {
-                'time': int(time.time()),
+                'time': get_timestamp(config_vars),
                 'renewal_time_ms': int(renewal_result),
             }
 

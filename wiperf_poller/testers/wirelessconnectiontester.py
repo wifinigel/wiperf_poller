@@ -6,6 +6,7 @@ from wiperf_poller.helpers.wirelessadapter import WirelessAdapter
 from wiperf_poller.testers.mgtconnectiontester import MgtConnectionTester
 from wiperf_poller.helpers.route import check_correct_mode_interface, inject_default_route
 from wiperf_poller.testers.pingtester import PingTester
+from wiperf_poller.helpers.timefunc import get_timestamp
 
 class WirelessConnectionTester(object):
     """
@@ -99,7 +100,7 @@ class WirelessConnectionTester(object):
         # hold all results in one place
         results_dict = {}
 
-        results_dict['time'] = int(time.time())
+        results_dict['time'] = get_timestamp(config_vars)
         results_dict['ssid'] = self.adapter_obj.get_ssid()
         results_dict['bssid'] = self.adapter_obj.get_bssid()
         results_dict['freq_ghz'] = self.adapter_obj.get_freq()

@@ -4,16 +4,18 @@ import time
 import subprocess
 import json
 from wiperf_poller.helpers.os_cmds import LIBRESPEED_CMD
+from wiperf_poller.helpers.timefunc import get_timestamp
 
 class Speedtester(object):
     """
     Class to implement speedtest server tests for wiperf
     """
 
-    def __init__(self, file_logger, platform):
+    def __init__(self, file_logger, config_vars, platform):
 
         self.platform = platform
         self.file_logger = file_logger
+        self.config_vars = config_vars
 
     def librespeed(self, server_id='', args='', DEBUG=False):
         """
@@ -98,7 +100,7 @@ class Speedtester(object):
             self.file_logger.error("JSON decode of librespeed results failed - returning error")
             return False
         
-        test_time = int(time.time())
+        test_time = get_timestamp(self.config_vars)
         download_rate_mbps = round(float(results_dict['download']), 2)
         upload_rate_mbps = round(float(results_dict['upload']), 2)
         ping_time = int(results_dict['ping'])
@@ -240,7 +242,7 @@ mbytes_received: {}, latency_ms: {}, jitter_ms: {}, client_ip: {}, provider: {}'
 
         results_dict = st.results.dict()
 
-        test_time = int(time.time())
+        test_time = get_timestamp(self.config_vars)
         download_rate_mbps = round(float(results_dict['download'])/1024000, 2)
         upload_rate_mbps = round(float(results_dict['upload'])/1024000, 2)
         ping_time = int(results_dict['ping'])

@@ -3,8 +3,7 @@ A function to perform data export to Splunk using the HTTP event logger (HEC).
 """
 
 import sys
-from wiperf_poller.helpers.timefunc import time_synced, splunk_ts, now_as_msecs
-
+from wiperf_poller.helpers.timefunc import time_synced
 # module import vars
 splunk_modules = True
 import_err = ''
@@ -30,22 +29,22 @@ def splunkexporter(host, token, port, dict_data, source, file_logger):
         sys.exit()
     
     # if time-source sync'ed, add timestamp
-    timestamp = now_as_msecs()
+    timestamp = False
+
+    if time_synced():
+        timestamp = dict_data['time']
 
     # remove redundant timestamp from results data
     del dict_data['time']
-    dict_data['timestamp'] = timestamp
-    
+
     event_logger = http_event_collector(token, host)
 
     payload = {}
     payload.update({"sourcetype": "_json"})
     payload.update({"source": source})
     payload.update({"event": dict_data})
-    if time_synced():
-        payload.update({"timestamp": timestamp})
     
-    event_logger.sendEvent(payload)
+    event_logger.sendEvent(payload, eventtime=timestamp)
     event_logger.flushBatch()
 
     return True

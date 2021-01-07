@@ -65,7 +65,8 @@ class AuthTester(object):
 
         # grep for association log info
         try:
-            cmd_string = "{} \"{}: Trying to associate with \" /var/log/daemon.log ".format(GREP_CMD, interface)
+            #cmd_string = "{} \"{}: Trying to associate with \" /var/log/daemon.log ".format(GREP_CMD, interface)
+            cmd_string = "{} \"{}: Associated with \" /var/log/daemon.log ".format(GREP_CMD, interface)
             auth_output = subprocess.check_output(cmd_string, stderr=subprocess.STDOUT, shell=True).decode().splitlines()
             result = auth_output[len(auth_output)-1].split()
         except subprocess.CalledProcessError as exc:
@@ -98,7 +99,8 @@ class AuthTester(object):
         end_date_time = start_date_time
 
         while end_date_time<=start_date_time:
-            cmd_string = "{} \"{}: CTRL-EVENT-CONNECTED\" /var/log/daemon.log ".format(GREP_CMD, interface)
+            #cmd_string = "{} \"{}: CTRL-EVENT-CONNECTED\" /var/log/daemon.log ".format(GREP_CMD, interface)
+            cmd_string = "{} \"{}: WPA: Key negotiation completed\" /var/log/daemon.log ".format(GREP_CMD, interface)
             auth_output = subprocess.check_output(cmd_string, stderr=subprocess.STDOUT, shell=True).decode().splitlines()
             result = auth_output[len(auth_output)-1].split()
             end_date_time = datetime.datetime.strptime(result[0] + " " + result[1], '%Y-%m-%d %H:%M:%S.%f')

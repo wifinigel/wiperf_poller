@@ -60,6 +60,12 @@ def read_local_config(config_file, file_logger):
     # retention period of cache files (in days)
     config_vars['cache_retention_period'] = gen_sect.get('cache_retention_period', 3)
 
+    # log error polling error messages to mgt platform
+    config_vars['error_messages_enabled'] = gen_sect.get('error_messages_enabled', 'yes')
+    # max number of messages per poll
+    config_vars['error_messages_limit'] = gen_sect.get('error_messages_limit', 5)
+    
+
     ####### Splunk config ########
     # data transport
     config_vars['data_transport'] = gen_sect.get('data_transport', 'hec')

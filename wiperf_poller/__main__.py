@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
-import os
 import json
 import logging
+import os
+import sys
 import time
 
-# our local ...
+# our local modules
 from wiperf_poller.testers.speedtester import Speedtester
 from wiperf_poller.testers.wirelessconnectiontester import WirelessConnectionTester
 from wiperf_poller.testers.ethernetconnectiontester import EthernetConnectionTester
@@ -127,7 +127,7 @@ def main():
         
         # if able to get cfg file, re-read params in case updated
         if check_last_cfg_read(config_file, check_cfg_file, config_vars, file_logger):
-            (config_vars, config_obj) = read_local_config(config_file, file_logger)
+            (config_vars, _) = read_local_config(config_file, file_logger)
 
     else:
         file_logger.info("No remote cfg file confgured...using current local ini file.")

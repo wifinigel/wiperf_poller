@@ -7,7 +7,7 @@ import os
 import sys
 from socket import gethostname
 
-from wiperf_poller.exporters.splunkexporter import splunkexporter
+from wiperf_poller.exporters.splunkexporter import SplunkExporter
 from wiperf_poller.exporters.influxexporter2 import influxexporter2
 from wiperf_poller.exporters.influxexporter import influxexporter
 from wiperf_poller.exporters.spoolexporter import SpoolExporter
@@ -33,8 +33,8 @@ class ResultsExporter(object):
     def send_results_to_splunk(self, host, token, port, dict_data, file_logger, source):
 
         file_logger.info("Sending results event to Splunk: {} (dest host: {}, dest port: {})".format(source, host, port))
-        if is_ipv6(host): host = "[{}]".format(host)
-        return splunkexporter(host, token, port, dict_data, source, file_logger)
+        splunk_exp_obj=SplunkExporter(host, token, file_logger, port)
+        return splunk_exp_obj.export_result(dict_data, source)
 
     def send_results_to_influx(self, localhost, host, port, username, password, database, dict_data, source, file_logger):
 

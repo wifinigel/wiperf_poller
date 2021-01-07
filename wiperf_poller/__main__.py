@@ -8,33 +8,34 @@ import sys
 import time
 
 # our local modules
-from wiperf_poller.testers.speedtester import Speedtester
-from wiperf_poller.testers.wirelessconnectiontester import WirelessConnectionTester
-from wiperf_poller.testers.ethernetconnectiontester import EthernetConnectionTester
-from wiperf_poller.testers.pingtester import PingTester
-from wiperf_poller.testers.iperf3tester import IperfTester
+from wiperf_poller.testers.dhcptester import DhcpTester
 from wiperf_poller.testers.dnstester import DnsTester
 from wiperf_poller.testers.httptester import HttpTester
-from wiperf_poller.testers.dhcptester import DhcpTester
+from wiperf_poller.testers.ethernetconnectiontester import EthernetConnectionTester
+from wiperf_poller.testers.iperf3tester import IperfTester
+from wiperf_poller.testers.pingtester import PingTester
+from wiperf_poller.testers.speedtester import Speedtester
 from wiperf_poller.testers.smbtester import SmbTester
 from wiperf_poller.testers.wifiauthentication import AuthTester
+from wiperf_poller.testers.wirelessconnectiontester import WirelessConnectionTester
 
-from wiperf_poller.helpers.wirelessadapter import WirelessAdapter
+from wiperf_poller.helpers.bouncer import Bouncer
+from wiperf_poller.helpers.config import read_local_config
+from wiperf_poller.helpers.error_messages import ErrorMessages
 from wiperf_poller.helpers.ethernetadapter import EthernetAdapter
 from wiperf_poller.helpers.filelogger import FileLogger
-from wiperf_poller.helpers.config import read_local_config
-from wiperf_poller.helpers.bouncer import Bouncer
+from wiperf_poller.helpers.lockfile import LockFile
+from wiperf_poller.helpers.os_cmds import check_os_cmds
+from wiperf_poller.helpers.poll_status import PollStatus
 from wiperf_poller.helpers.remoteconfig import check_last_cfg_read
 from wiperf_poller.helpers.route import check_correct_mode_interface
 from wiperf_poller.helpers.statusfile import StatusFile
-from wiperf_poller.helpers.lockfile import LockFile
 from wiperf_poller.helpers.watchdog import Watchdog
-from wiperf_poller.helpers.os_cmds import check_os_cmds
-from wiperf_poller.helpers.poll_status import PollStatus
-from wiperf_poller.helpers.error_messages import ErrorMessages
-from wiperf_poller.exporters.spoolexporter import SpoolExporter
+from wiperf_poller.helpers.wirelessadapter import WirelessAdapter
 
 from wiperf_poller.exporters.exportresults import ResultsExporter
+from wiperf_poller.exporters.spoolexporter import SpoolExporter
+
 
 config_file = "/etc/wiperf/config.ini"
 log_file = "/var/log/wiperf_agent.log"

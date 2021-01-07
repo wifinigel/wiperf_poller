@@ -5,6 +5,7 @@ import sys
 import os
 import json
 import logging
+import time
 
 # our local ...
 from wiperf_poller.testers.speedtester import Speedtester
@@ -221,9 +222,12 @@ def main():
                         full_file_name = "{}/{}".format(spooler_obj.spool_dir_root, filename)
 
                         # read in the file as dict (from json)
-                        # TODO: add try test
-                        with open(full_file_name, "r") as json_file:
-                            results_list = json.load(json_file)
+                        try:
+                            with open(full_file_name, "r") as json_file:
+                                results_list = json.load(json_file)
+                        except IOError as err:
+                            file_logger.error("JSON I/O file read error: {}".format(err))
+                            break
                         
                         for results_dict in results_list:
 
@@ -240,7 +244,7 @@ def main():
                             # remove data file
                             os.remove(full_file_name)
                             file_logger.info("Spooled results sent OK - {}".format(data_file))
-
+                        
             else:
                 file_logger.error("Spooler directory does not exist: {}".format(spooler_obj.spool_dir_root))
     

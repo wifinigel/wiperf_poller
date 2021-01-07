@@ -7,7 +7,7 @@ import logging
 import time
 from logging.handlers import RotatingFileHandler
 
-def FileLogger(log_file):
+def FileLogger(log_file, error_log_file):
     '''
     A function to perform very simple logging to a named file. Any non-recoverable
     errors are written to stdout (e.g. can't open file)
@@ -15,7 +15,7 @@ def FileLogger(log_file):
 
     logger = logging.getLogger("Probe_Log")
     logger.setLevel(level=logging.INFO)
-    
+
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     # add a rotating handler
@@ -25,7 +25,7 @@ def FileLogger(log_file):
     logger.addHandler(rot_handler)
 
     # add error logging file handler
-    file_handler = logging.FileHandler('/tmp/wiperf_err.log', mode='w')
+    file_handler = logging.FileHandler(error_log_file, mode='w')
     file_handler.setFormatter(formatter)
     file_handler.setLevel(logging.ERROR)
     logger.addHandler(file_handler)

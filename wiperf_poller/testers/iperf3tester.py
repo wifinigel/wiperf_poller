@@ -137,7 +137,7 @@ class IperfTester(object):
         try:
             result = self.tcp_iperf_client_test(server_hostname, duration=duration, port=port, debug=False)
         except:
-            self.file_logger.info("TCP iperf3 test process timed out.")
+            self.file_logger.error("TCP iperf3 test process timed out.")
 
         if result:
 
@@ -213,7 +213,7 @@ class IperfTester(object):
         try:
             result = self.udp_iperf_client_test(server_hostname, duration=duration, port=port, bandwidth=bandwidth, debug=False)
         except:
-            self.file_logger.info("UDP iperf3 test process timed out")
+            self.file_logger.error("UDP iperf3 test process timed out")
 
         if result:
             

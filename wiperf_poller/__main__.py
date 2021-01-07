@@ -31,12 +31,14 @@ from wiperf_poller.helpers.lockfile import LockFile
 from wiperf_poller.helpers.watchdog import Watchdog
 from wiperf_poller.helpers.os_cmds import check_os_cmds
 from wiperf_poller.helpers.poll_status import PollStatus
+from wiperf_poller.helpers.error_messages import ErrorMessages
 from wiperf_poller.exporters.spoolexporter import SpoolExporter
 
 from wiperf_poller.exporters.exportresults import ResultsExporter
 
 config_file = "/etc/wiperf/config.ini"
 log_file = "/var/log/wiperf_agent.log"
+error_log_file = "/tmp/wiperf_err.log"
 lock_file = '/tmp/wiperf_poller.lock'
 status_file = '/tmp/wiperf_status.txt'
 watchdog_file = '/tmp/wiperf_poller.watchdog'
@@ -52,7 +54,7 @@ DUMMY_DATA = False # Speedtest data only
 ###################################
 
 # set up our error_log file & initialize
-file_logger = FileLogger(log_file)
+file_logger = FileLogger(log_file, error_log_file)
 file_logger.info("*****************************************************")
 file_logger.info(" Starting logging...")
 file_logger.info("*****************************************************")
@@ -453,6 +455,10 @@ def main():
   
     # dump poller status info
     poll_obj.dump(exporter_obj)
+
+    # dump error messages
+    error_msg_obj = ErrorMessages(config_vars, error_log_file, file_logger)
+    error_msg_obj.dump(exporter_obj)
 
     # get rid of lock file
     status_file_obj.write_status_file("")

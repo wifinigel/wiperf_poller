@@ -1,23 +1,31 @@
 v0.2
-1. Added fix for bad read of remote config file when downloaded (thanks Ben Roeder)
-2. Fixed bad config var names for InfluxDB2 in config.py (thanks Konstantin)
-3. Added SMB tests provided by Mario Gingras
-4. Added Auth test provided by Mario Gingras
-5. Improved route injection for tests when required interface not selected by default routing
-6. Fixed isue with incorrect data types in Influx DB for ping tests (some numeric values were created
-   as strings, preventing calcs on their values.)
+1.  Added fix for bad read of remote config file when downloaded (thanks Ben Roeder)
+2.  Fixed bad config var names for InfluxDB2 in config.py (thanks Konstantin)
+3.  Added SMB tests provided by Mario Gingras
+4.  Added Auth test provided by Mario Gingras
+5.  Improved route injection for tests when required interface not selected by default routing
+6.  Fixed isue with incorrect data types in Influx DB for ping tests (some numeric values were created
+    as strings, preventing calcs on their values.)
 
-   This fixed isue will cause failures for ping test results on existing data. To correct the issue,
-   existing ping test data in the Influx DB must be dropped using the following command in the InfluxDB
-   CLI utility:
+    This fixed isue will cause failures for ping test results on existing data. To correct the issue,
+    existing ping test data in the Influx DB must be dropped using the following command in the InfluxDB
+    CLI utility:
 
-   sudo influx -username admin -password letmein
-   use wiperf
-   drop series from "wiperf-ping"
+    sudo influx -username admin -password letmein
+    use wiperf
+    drop series from "wiperf-ping"
 
-7. Added support for librespeed to speedtest in addition to eisting Ookla support. Also
-   made more data points available to reports including latency, jitter & data volume for
-   upload/download
+7.  Added support for librespeed to speedtest in addition to eisting Ookla support. Also
+    made more data points available to reports including latency, jitter & data volume for
+    upload/download
+8.  Added support for cached data : data may now be cached locally for retrieval and inspection
+    by user-defined means (e.g. SSH to probe & inspect data). Data may be stored in VSC or JSON
+    format.
+9.  Added result spooling support. If connectivity between the probe and reporting platform is
+    lost, results may be spooled to a local directory and automaticlaly forwarded when connectivity
+    is re-established.
+10. Added support for forwarding of probe error messages to reporting platform to allow diagnosis
+    of test related issues on the probe.
 
 
 v0.1.25

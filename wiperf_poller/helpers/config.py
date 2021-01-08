@@ -44,6 +44,9 @@ def read_local_config(config_file, file_logger):
     config_vars['exporter_type'] = gen_sect.get('exporter_type', 'splunk')
     config_vars['time_format'] = gen_sect.get('exporter_type', 'splunk')
 
+    # report poller results after each cycle?
+    config_vars['poller_reporting_enabled'] = gen_sect.get('poller_reporting_enabled', 'yes')
+
     # Results spooling enabled?
     config_vars['results_spool_enabled'] = gen_sect.get('results_spool_enabled', 'yes')
     # Max age of spooled results data (in minutes)
@@ -280,4 +283,4 @@ def read_local_config(config_file, file_logger):
         print("Machine ID = " + config_vars['machine_id'])
     '''
 
-    return (config_vars, config)
+    return config_vars

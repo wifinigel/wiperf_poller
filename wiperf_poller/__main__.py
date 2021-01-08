@@ -61,7 +61,7 @@ file_logger.info(" Starting logging...")
 file_logger.info("*****************************************************")
 
 # Pull in our config.ini dict
-(config_vars, config_obj) = read_local_config(config_file, file_logger)
+config_vars = read_local_config(config_file, file_logger)
 
 # set logging to debug if debugging enabled
 if DEBUG or (config_vars['debug'] == 'on'):
@@ -128,7 +128,7 @@ def main():
         
         # if able to get cfg file, re-read params in case updated
         if check_last_cfg_read(config_file, check_cfg_file, config_vars, file_logger):
-            (config_vars, _) = read_local_config(config_file, file_logger)
+            config_vars = read_local_config(config_file, file_logger)
 
     else:
         file_logger.info("No remote cfg file confgured...using current local ini file.")
@@ -455,11 +455,13 @@ def main():
     #####################################
   
     # dump poller status info
-    poll_obj.dump(exporter_obj)
+    if config_vars['poller_reporting_enabled'] == 'yes':
+        poll_obj.dump(exporter_obj)
 
     # dump error messages
-    error_msg_obj = ErrorMessages(config_vars, error_log_file, file_logger)
-    error_msg_obj.dump(exporter_obj)
+    if config_vars['error_messages_enabled'] == 'yes':
+        error_msg_obj = ErrorMessages(config_vars, error_log_file, file_logger)
+        error_msg_obj.dump(exporter_obj)
 
     # get rid of lock file
     status_file_obj.write_status_file("")

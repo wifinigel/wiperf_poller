@@ -17,8 +17,7 @@ class ErrorMessages():
         self.error_log_file = error_log_file
         self.config_vars = config_vars
         self.file_logger = file_logger
-        self.error_messages_limit = config_vars['error_messages_limit']
-        self.error_messages_enabled = config_vars['error_messages_enabled']
+        self.error_messages_limit = int(config_vars['error_messages_limit'])
 
 
     def dump(self, exporter_obj):
@@ -52,7 +51,7 @@ class ErrorMessages():
             for error_message in message_list:
 
                 column_headers = [ 'time', 'error_message' ]
-                results_dict =  { 'time': time.time(), 'error_message': error_message }
+                results_dict =  { 'time': get_timestamp(self.config_vars), 'error_message': error_message }
 
                 # dump the results
                 data_file = 'wiperf-poll-errors'

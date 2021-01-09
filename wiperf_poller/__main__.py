@@ -248,8 +248,6 @@ def main():
                             os.remove(full_file_name)
                             file_logger.info("Spooled results sent OK - {}".format(data_file))
                         
-            else:
-                file_logger.error("Spooler directory does not exist: {}".format(spooler_obj.spool_dir_root))
     
     else:
         file_logger.info("Spooler not enabled.")

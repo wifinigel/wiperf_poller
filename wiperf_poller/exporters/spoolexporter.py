@@ -40,7 +40,7 @@ class SpoolExporter(object):
 
         self.spool_checks_completed = False
     
-    def _check_spool_dir_exists(self):
+    def check_spool_dir_exists(self):
         """
         Check if root cache dir exists (by default /var/spool/wiperf)
         """
@@ -63,7 +63,7 @@ class SpoolExporter(object):
             return False
         return True
     
-    def _list_spool_files(self):
+    def list_spool_files(self):
 
         # list files in spool dir (sorted by name a->z)
         spool_files = os.listdir(self.spool_dir_root)
@@ -79,11 +79,11 @@ class SpoolExporter(object):
      
         self.file_logger.info("Checking for files to prune.")
 
-        if not self._check_spool_dir_exists():
+        if not self.check_spool_dir_exists():
             self.file_logger.info("Spool dir does not exist yet.")
             return True
         
-        file_list = self._list_spool_files()
+        file_list = self.list_spool_files()
 
         if not file_list:
             self.file_logger.info("No files to prune.")
@@ -148,7 +148,7 @@ class SpoolExporter(object):
             self.file_logger.info("Spooling data as mgt platform not reachable.")
 
             # check we have a root dir spooling results
-            if not self._check_spool_dir_exists():
+            if not self.check_spool_dir_exists():
 
                 self.file_logger.info("Spool dir does not exist - creating: {}".format(self.spool_dir_root))
 

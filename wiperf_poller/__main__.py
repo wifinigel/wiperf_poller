@@ -211,10 +211,10 @@ def main():
         if config_vars['exporter_type'] != 'spooler':
 
             # check we have spooler dir
-            if spooler_obj._check_spool_dir_exists():
+            if spooler_obj.check_spool_dir_exists():
                 
                 # check number of files in spooler dir
-                file_list = spooler_obj._list_spool_files()
+                file_list = spooler_obj.list_spool_files()
 
                 # step through spooled files & attempt to export
                 # (remove each spooled file as successfuly exported)

@@ -119,7 +119,7 @@ class SmbTester(object):
         return True
 
 
-    @timeout_decorator.timeout(30, use_signals=False)
+    @timeout_decorator.timeout(60, use_signals=False)
     def smb_copy(self, host, filename, path, username, password, smb_timeout=1):
         '''
         This function will run mount a SMB volume and copy a file from it to the local 

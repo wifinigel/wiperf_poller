@@ -68,7 +68,7 @@ class SmbTester(object):
         # Mount a volume
         try:
             self.file_logger.info("Mounting remote volume...")
-            cmd_string = "{} //{}{} {} -o user={},pass=\'{}\'".format(SMB_MOUNT, host, path, mount_point, username, password)
+            cmd_string = "{} //{}{} {} -o user={},password=\'{}\'".format(SMB_MOUNT, host, path, mount_point, username, password)
             self.file_logger.debug("SMB mount cmd: {}".format(cmd_string))
 
             smb_output = subprocess.check_output(cmd_string, stderr=subprocess.STDOUT, shell=True).decode().splitlines()

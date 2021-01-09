@@ -16,7 +16,7 @@ from wiperf_poller.testers.iperf3tester import IperfTester
 from wiperf_poller.testers.pingtester import PingTester
 from wiperf_poller.testers.speedtester import Speedtester
 from wiperf_poller.testers.smbtester import SmbTester
-from wiperf_poller.testers.wifiauthentication import AuthTester
+#from wiperf_poller.testers.wifiauthentication import AuthTester
 from wiperf_poller.testers.wirelessconnectiontester import WirelessConnectionTester
 
 from wiperf_poller.helpers.bouncer import Bouncer
@@ -431,23 +431,23 @@ def main():
     #####################################
     # Run WIFI time to authenticate test (if enabled)
     #####################################
-    file_logger.info("########## wireless time to authenticate test ##########")
-    if config_vars['auth_enabled'] == 'yes' and config_vars['test_issue'] == False:
+    #file_logger.info("########## wireless time to authenticate test ##########")
+    #if config_vars['auth_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
-        Auth_obj = AuthTester(file_logger, platform=platform)
-        tests_passed = Auth_obj.run_tests(status_file_obj, config_vars, adapter_obj, check_correct_mode_interface, exporter_obj, watchdog_obj)
-        if tests_passed:
-            poll_obj.auth('Completed')
-        else:
-            poll_obj.auth('Failure')
+    #    Auth_obj = AuthTester(file_logger, platform=platform)
+    #    tests_passed = Auth_obj.run_tests(status_file_obj, config_vars, adapter_obj, check_correct_mode_interface, exporter_obj, watchdog_obj)
+    #    if tests_passed:
+    #        poll_obj.auth('Completed')
+    #    else:
+    #        poll_obj.auth('Failure')
 
-    else:
-        if config_vars['test_issue'] == True:
-            file_logger.info("Previous test failed: {}".format(config_vars['test_issue_descr']))
-            poll_obj.auth('Not run')
-        else:
-            file_logger.info("Authentication test not enabled in config file, bypassing this test...")
-            poll_obj.auth('Not enabled')
+    #else:
+    #    if config_vars['test_issue'] == True:
+    #        file_logger.info("Previous test failed: {}".format(config_vars['test_issue_descr']))
+    #        poll_obj.auth('Not run')
+    #    else:
+    #        file_logger.info("Authentication test not enabled in config file, bypassing this test...")
+    #        poll_obj.auth('Not enabled')
 
 
     #####################################

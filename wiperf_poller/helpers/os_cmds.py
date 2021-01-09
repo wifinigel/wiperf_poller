@@ -48,8 +48,8 @@ OS_OPT_CMDS = {
     'SMB_MOUNT': _find_cmd('/sbin/mount.cifs'),
     'LS_CMD': _find_cmd('/sbin/ls'),
     'UMOUNT_CMD': _find_cmd('/bin/umount'),
-    'GREP_CMD': _find_cmd('/bin/grep'),
-    'WPA_CMD': _find_cmd('/sbin/wpa_cli'),
+    #'GREP_CMD': _find_cmd('/bin/grep'),
+    #'WPA_CMD': _find_cmd('/sbin/wpa_cli'),
     'LIBRESPEED_CMD': _find_cmd('/usr/local/bin/librespeed-cli'),
 }
 
@@ -72,8 +72,8 @@ SMB_CP = OS_OPT_CMDS['SMB_CP']
 SMB_MOUNT = OS_OPT_CMDS['SMB_MOUNT']
 LS_CMD = OS_OPT_CMDS['LS_CMD']
 UMOUNT_CMD = OS_OPT_CMDS['UMOUNT_CMD']
-GREP_CMD = OS_OPT_CMDS['GREP_CMD']
-WPA_CMD = OS_OPT_CMDS['WPA_CMD']
+#GREP_CMD = OS_OPT_CMDS['GREP_CMD']
+#WPA_CMD = OS_OPT_CMDS['WPA_CMD']
 LIBRESPEED_CMD = OS_OPT_CMDS['LIBRESPEED_CMD']
 
 def check_os_cmds(file_logger):

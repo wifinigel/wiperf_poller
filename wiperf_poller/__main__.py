@@ -467,7 +467,7 @@ def main():
     status_file_obj.write_status_file("")
     lockf_obj.delete_lock_file()
 
-    file_logger.info("########## end ##########")
+    file_logger.info("########## end ##########\n\n\n")
 
     # decrement watchdog as we ran OK
     if config_vars['test_issue'] == False:

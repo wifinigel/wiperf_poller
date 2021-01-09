@@ -78,15 +78,20 @@ LIBRESPEED_CMD = OS_OPT_CMDS['LIBRESPEED_CMD']
 
 def check_os_cmds(file_logger):
     """
-    This function checks is all expected OS commands are avaiable.
+    This function checks if all expected OS commands are avaiable.
     """
+
     # emit warning msg for missing optional commands
+    file_logger.info("Checking optional OS commands are available."
+    
     for cmd_name in OS_OPT_CMDS.keys():
 
         if not OS_OPT_CMDS[cmd_name]:     
-            file_logger.warning("Unable to find required OS command: {} (Some functionality may not be available)".format(cmd_name))
+            file_logger.warning("Unable to find optional OS command: {} (Some functionality may not be available)".format(cmd_name))
     
     # return failure for missing core command
+    file_logger.info("Checking required OS commands are available."
+
     for cmd_name in OS_CORE_CMDS.keys():
 
         if not OS_CORE_CMDS[cmd_name]:     

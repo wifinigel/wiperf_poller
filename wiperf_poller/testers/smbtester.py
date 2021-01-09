@@ -74,7 +74,7 @@ class SmbTester(object):
             smb_output = subprocess.check_output(cmd_string, stderr=subprocess.STDOUT, shell=True).decode().splitlines()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
-            error = "Hit an error with SMB mount {} : {}".format(str(host), str(output))
+            error = "Hit an error with SMB mount {} : {}".format(str(host) + '/' + str(path), str(output))
             self.file_logger.error(error)
 
             # Things have gone bad - we just return a false status

@@ -76,12 +76,13 @@ class SpoolExporter(object):
         """
         Remove files older than max_age policy
         """
+     
+        self.file_logger.info("Checking for files to prune.")
 
         if not self._check_spool_dir_exists():
             self.file_logger.info("Spool dir does not exist yet.")
             return True
         
-        self.file_logger.info("Checking for files to prune.")
         file_list = self._list_spool_files()
 
         if not file_list:

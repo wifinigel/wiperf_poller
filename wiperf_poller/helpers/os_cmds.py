@@ -82,7 +82,7 @@ def check_os_cmds(file_logger):
     """
 
     # emit warning msg for missing optional commands
-    file_logger.info("Checking optional OS commands are available."
+    file_logger.info("Checking optional OS commands are available.")
     
     for cmd_name in OS_OPT_CMDS.keys():
 
@@ -90,7 +90,7 @@ def check_os_cmds(file_logger):
             file_logger.warning("Unable to find optional OS command: {} (Some functionality may not be available)".format(cmd_name))
     
     # return failure for missing core command
-    file_logger.info("Checking required OS commands are available."
+    file_logger.info("Checking required OS commands are available.")
 
     for cmd_name in OS_CORE_CMDS.keys():
 

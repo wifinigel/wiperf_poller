@@ -46,6 +46,7 @@ OS_CORE_CMDS = {
 OS_OPT_CMDS = {
     'SMB_CP': _find_cmd('/bin/cp'),
     'SMB_MOUNT': _find_cmd('/sbin/mount.cifs'),
+    'MOUNT': _find_cmd('/bin/mount'),
     'LS_CMD': _find_cmd('/sbin/ls'),
     'UMOUNT_CMD': _find_cmd('/bin/umount'),
     #'GREP_CMD': _find_cmd('/bin/grep'),
@@ -70,6 +71,7 @@ TIMEDATECTL_CMD = OS_CORE_CMDS['TIMEDATECTL_CMD']
 
 SMB_CP = OS_OPT_CMDS['SMB_CP']
 SMB_MOUNT = OS_OPT_CMDS['SMB_MOUNT']
+MOUNT = OS_OPT_CMDS['MOUNT']
 LS_CMD = OS_OPT_CMDS['LS_CMD']
 UMOUNT_CMD = OS_OPT_CMDS['UMOUNT_CMD']
 #GREP_CMD = OS_OPT_CMDS['GREP_CMD']

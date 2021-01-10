@@ -8,7 +8,7 @@ import re
 import os
 import subprocess
 import timeout_decorator
-from wiperf_poller.helpers.os_cmds import SMB_CP,SMB_MOUNT,LS_CMD,UMOUNT_CMD
+from wiperf_poller.helpers.os_cmds import SMB_CP, SMB_MOUNT, MOUNT, LS_CMD, UMOUNT_CMD
 from wiperf_poller.helpers.route import inject_test_traffic_static_route
 from wiperf_poller.helpers.timefunc import get_timestamp
 
@@ -48,9 +48,32 @@ class SmbTester(object):
             self.file_logger.error("Error creating mount point: {}".format(ex))
             return False
 
-        self.file_logger.info("Created mount point OK")
         return True
     
+    def _already_mounted(self, mount_point):
+
+        # check mounted volumes to see if already mounted
+        self.file_logger.debug("Checking path: {}".format(mount_point))
+
+        cmd_string = "{}".format(MOUNT)
+        self.file_logger.debug("Mount command: {}".format(cmd_string))
+
+        mount_output = []
+        try:
+            mount_output = subprocess.check_output(cmd_string, stderr=subprocess.STDOUT, shell=True).decode().splitlines()
+        except subprocess.CalledProcessError as exc:
+            output = exc.output.decode()
+            error = "Hit an error with mount command: {}".format(output)
+            self.file_logger.error(error)
+            return False
+        
+        # check if already mounted
+        for line in mount_output:
+            if mount_point in line:
+                return True
+        
+        return False
+
     def _mount_volume(self, host, path, mount_point, username, password):
         """
         Mount a volume
@@ -65,7 +88,7 @@ class SmbTester(object):
         Returns:
             [bool]: False = failed, True = success
         """
-        # Mount a volume
+        # Mount a volume      
         try:
             self.file_logger.info("Mounting remote volume...")
             cmd_string = "{} //{}{} {} -o user={},password=\'{}\'".format(SMB_MOUNT, host, path, mount_point, username, password)
@@ -74,7 +97,7 @@ class SmbTester(object):
             smb_output = subprocess.check_output(cmd_string, stderr=subprocess.STDOUT, shell=True).decode().splitlines()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
-            error = "Hit an error with SMB mount {} : {}".format(str(host) + '/' + str(path), str(output))
+            error = "Hit an error with SMB mount {} : {}".format(str(host) + str(path), str(output))
             self.file_logger.error(error)
 
             # Things have gone bad - we just return a false status
@@ -85,7 +108,7 @@ class SmbTester(object):
 
         return True
     
-    def _unmount_volume(self, mount_point, host, path, silent=False):
+    def _unmount_volume(self, mount_point, silent=False):
         """
         Unmount a previously mounted volume
 
@@ -100,9 +123,12 @@ class SmbTester(object):
             [bool]: False = failed, True = success
         """
         # Unmount the volume
+        smb_output = ''
+
         try:
             if not silent:
                 self.file_logger.info("Unmounting volume...")
+            
             cmd_string = "{} {} ".format(UMOUNT_CMD, mount_point)
             self.file_logger.debug("Unmount command: {}".format(cmd_string))
 
@@ -110,12 +136,14 @@ class SmbTester(object):
         except subprocess.CalledProcessError as exc:
             if not silent:
                 output = exc.output.decode()
-                error = "Hit an error when unmounting volume {}/{} : {}".format(host, path, str(output))
+                error = "Hit an error when unmounting mount point {} : {}".format(mount_point, str(output))
                 self.file_logger.error(error)
                 # Things have gone bad - we just return a false status
                 return False
 
         self.file_logger.debug("Unmount command output: {}".format(smb_output))
+        time.sleep(1)
+
         return True
 
 
@@ -139,17 +167,6 @@ class SmbTester(object):
 
         self.file_logger.debug("SMB mount: " + str(host) + " share " + str(path))
 
-        # create mount point if does not exist
-        if not os.path.exists(self.mount_point):
-
-            if not self._create_mount_point(self.mount_point):
-                self.file_logger.error("Unable to create mount point for SMB tests: {}".format(self.mount_point))
-                return False
-
-        # SMB mount the remote volume
-        if not self._mount_volume(host, path, self.mount_point, username, password):
-            return False
-
         # Copy file to the SMB mounted volume
         self.file_logger.debug("SMB copy: " + str(filename)) 
         try:
@@ -165,10 +182,6 @@ class SmbTester(object):
             output = exc.output.decode()
             error = "Hit an error with SMB copy {} : {}".format(str(host), str(output))
             self.file_logger.error(error)
-        
-        # Unmount the volume
-        if not self._unmount_volume(self.mount_point, host, path):
-            return False
         
         # Perform various calcs prior to returning results
         self.time_to_transfer = end_time-start_time
@@ -189,13 +202,14 @@ class SmbTester(object):
             'transfer_time': self.time_to_transfer,
             'rate':self.transfert_rate}
 
+
     def run_tests(self, status_file_obj, config_vars, adapter, check_correct_mode_interface, exporter_obj, watchd):
 
         self.file_logger.info("Starting SMB test...")
         status_file_obj.write_status_file("SMB tests")
 
         self.file_logger.info("Checking we have required software packages for these tests")
-        for package_installed in (SMB_CP,SMB_MOUNT,LS_CMD,UMOUNT_CMD):
+        for package_installed in (SMB_CP, SMB_MOUNT, MOUNT, LS_CMD, UMOUNT_CMD):
 
             self.file_logger.debug("Checking for package: {}".format(package_installed))
 
@@ -251,12 +265,49 @@ class SmbTester(object):
                     tests_passed = False
                     break               
 
+            # create mount point if does not exist
+            if not os.path.exists(self.mount_point):
+
+                if not self._create_mount_point(self.mount_point):
+                    self.file_logger.error("Unable to create mount point for SMB tests: {}".format(self.mount_point))
+                    tests_passed = False
+                    continue
+                else:
+                    self.file_logger.info("Created mount point OK")
+            
+            # check if a volume already mounted to mount point, unmount if it is
+            if self._already_mounted(self.mount_point):
+                self.file_logger.info("Path already mounted")
+
+                # attempt a umount
+                if not self._unmount_volume(self, self.mount_point):
+                    self.file_logger.error("Unable to unmount existing mount.")
+                    tests_passed = False
+                    continue 
+                else:
+                    self.file_logger.info("Unmounted OK")      
+
+            # SMB mount the remote volume
+            if not self._mount_volume(smb_host, path, self.mount_point, smb_username, smb_password):
+                self.file_logger.error("Mount failed.")
+                tests_passed = False
+                continue
+            else:
+                self.file_logger.info("Mounted OK")
+
+            # perform the copy
             smb_result = False
             try:
                 smb_result=self.smb_copy(smb_host, filename, path, smb_username, smb_password, 1)
             except:
                 self.file_logger.error("SMB copy process timed out.")
             
+            # Unmount the volume
+            if not self._unmount_volume(self.mount_point):
+                self.file_logger.warning("Unmount failed.")
+            else:
+                self.file_logger.info("Unmounted OK") 
+
             # Send SMB results to exporter
             if smb_result:
                 results_dict['time'] = get_timestamp(config_vars)

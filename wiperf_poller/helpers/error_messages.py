@@ -41,7 +41,7 @@ class ErrorMessages():
 
             for line in lines:
                 if re.search(r'^\d\d\d\d-\d\d-\d\d', line) :
-                    message_list.append(line.strip()[:120])
+                    message_list.append(line.strip()[:150])
 
             # limit to last n messages
             if len(message_list) > self.error_messages_limit:

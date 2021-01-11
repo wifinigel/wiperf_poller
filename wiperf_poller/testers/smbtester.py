@@ -50,10 +50,12 @@ class SmbTester(object):
 
         return True
     
-    def _already_mounted(self, mount_point):
+    def _already_mounted(self, host, path):
+
+        full_path = "//{}{}".format(host, path)
 
         # check mounted volumes to see if already mounted
-        self.file_logger.debug("Checking path: {}".format(mount_point))
+        self.file_logger.debug("Checking path: {}".format(full_path))
 
         cmd_string = "{}".format(MOUNT)
         self.file_logger.debug("Mount command: {}".format(cmd_string))
@@ -69,7 +71,7 @@ class SmbTester(object):
         
         # check if already mounted
         for line in mount_output:
-            if mount_point in line:
+            if full_path in line:
                 return True
         
         return False
@@ -108,7 +110,7 @@ class SmbTester(object):
 
         return True
     
-    def _unmount_volume(self, mount_point, silent=False):
+    def _unmount_volume(self, host, path, silent=False):
         """
         Unmount a previously mounted volume
 
@@ -124,19 +126,20 @@ class SmbTester(object):
         """
         # Unmount the volume
         smb_output = ''
+        smb_full_path = "//{}{}".format(host, path)
 
         try:
             if not silent:
                 self.file_logger.info("Unmounting volume...")
             
-            cmd_string = "{} {} ".format(UMOUNT_CMD, mount_point)
+            cmd_string = "{} {}".format(UMOUNT_CMD, smb_full_path)
             self.file_logger.debug("Unmount command: {}".format(cmd_string))
 
             smb_output = subprocess.check_output(cmd_string, stderr=subprocess.STDOUT, shell=True).decode().splitlines()
         except subprocess.CalledProcessError as exc:
             if not silent:
                 output = exc.output.decode()
-                error = "Hit an error when unmounting mount point {} : {}".format(mount_point, str(output))
+                error = "Hit an error when unmounting path {} : {}".format(smb_full_path, str(output))
                 self.file_logger.error(error)
                 # Things have gone bad - we just return a false status
                 return False
@@ -244,6 +247,7 @@ class SmbTester(object):
                 smb_username = global_username
                 smb_password = global_password
 
+            # skip empty entries
             if smb_host == '':
                 continue
 
@@ -276,11 +280,11 @@ class SmbTester(object):
                     self.file_logger.info("Created mount point OK")
             
             # check if a volume already mounted to mount point, unmount if it is
-            if self._already_mounted(self.mount_point):
+            if self._already_mounted(smb_host, path):
                 self.file_logger.info("Path already mounted")
 
                 # attempt a umount
-                if not self._unmount_volume(self, self.mount_point):
+                if not self._unmount_volume(smb_host, path):
                     self.file_logger.error("Unable to unmount existing mount.")
                     tests_passed = False
                     continue 
@@ -303,7 +307,7 @@ class SmbTester(object):
                 self.file_logger.error("SMB copy process timed out.")
             
             # Unmount the volume
-            if not self._unmount_volume(self.mount_point):
+            if not self._unmount_volume(smb_host, path):
                 self.file_logger.warning("Unmount failed.")
             else:
                 self.file_logger.info("Unmounted OK") 

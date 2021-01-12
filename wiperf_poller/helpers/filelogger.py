@@ -21,7 +21,7 @@ def FileLogger(log_file, error_log_file):
     # add a rotating handler
     rot_handler = RotatingFileHandler(log_file, maxBytes=521000, backupCount=10)
     rot_handler.setFormatter(formatter)
-    rot_handler.setLevel(logging.INFO)
+    rot_handler.setLevel(level=logging.DEBUG)
     logger.addHandler(rot_handler)
 
     # add error logging file handler

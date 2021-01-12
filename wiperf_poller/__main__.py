@@ -46,9 +46,8 @@ watchdog_file = '/tmp/wiperf_poller.watchdog'
 bounce_file = '/tmp/wiperf_poller.bounce'
 check_cfg_file = '/tmp/wiperf_poller.cfg'
 
-# Enable debugs or create some dummy data for testing
+# Enable debugs
 DEBUG = 0
-DUMMY_DATA = False # Speedtest data only
 
 ###################################
 # File logger
@@ -65,7 +64,9 @@ config_vars = read_local_config(config_file, file_logger)
 
 # set logging to debug if debugging enabled
 if DEBUG or (config_vars['debug'] == 'on'):
-    file_logger.setLevel('DEBUG')
+    #rot_handler = file_logger.handlers[0]
+    #rot_handler.setLevel(logging.DEBUG)
+    file_logger.setLevel(level=logging.DEBUG)
     file_logger.info("(Note: logging set to debug level.)")
 
 # check we are running as root user (sudo)

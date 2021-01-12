@@ -90,7 +90,9 @@ class WirelessConnectionTester(object):
                     sys.exit()
 
         # Check we can get to the mgt platform (function will exit script if no connectivity)
-        self.file_logger.info("Checking we can get to the management platform...")
+        self.file_logger.info("Checking we can get to the management platform (host = {}, port = {}, type = {}".format(config_vars['data_host'], 
+            config_vars['data_port'], config_vars['exporter_type']))
+        
         mgt_connection_obj = MgtConnectionTester(config_vars, self.file_logger, self.platform)
 
         # if we can't hit the mgt platform, set exporter to the local spooler if spooling enabled

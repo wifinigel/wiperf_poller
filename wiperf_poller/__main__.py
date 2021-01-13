@@ -389,7 +389,7 @@ def main():
     file_logger.info("########## dhcp test ##########")
     if config_vars['dhcp_test_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
-        dhcp_obj = DhcpTester(file_logger, platform=platform)
+        dhcp_obj = DhcpTester(file_logger, lockf_obj, platform=platform)
         tests_passed = dhcp_obj.run_tests(status_file_obj, config_vars, exporter_obj)
 
         if tests_passed:

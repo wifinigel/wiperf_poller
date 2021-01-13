@@ -22,7 +22,7 @@ class DhcpTester(object):
         self.duration = ''
         self.platform = platform
 
-    def bounce_interface(self, interface, file_logger):
+    def bounce_interface(self, interface, lockf_obj, file_logger):
         """
         Log an error before bouncing the wlan interface
         """
@@ -33,7 +33,9 @@ class DhcpTester(object):
         adapter.bounce_wlan_interface()
         self.file_logger.error("Interface bounced: {}".format(interface))
 
-        # TODO: this exit will leave lock file in place - need to remove it
+        # remove lock file
+         lockf_obj.delete_lock_file()
+
         # exit as something bad must have happened...
         sys.exit()
 

@@ -212,12 +212,20 @@ class SmbTester(object):
         status_file_obj.write_status_file("SMB tests")
 
         self.file_logger.info("Checking we have required software packages for these tests")
-        for package_installed in (SMB_CP, SMB_MOUNT, MOUNT, LS_CMD, UMOUNT_CMD):
 
-            self.file_logger.debug("Checking for package: {}".format(package_installed))
+        packages = {
+            'smb copy': SMB_CP, 
+            'smb mount': SMB_MOUNT, 
+            'mount': MOUNT, 
+            'ls': LS_CMD, 
+            'umount': UMOUNT_CMD
+        }
+        for package_name, package_installed in packages.items():
+
+            self.file_logger.debug("Checking for package: {}".format(package_name))
 
             if not package_installed:
-                self.file_logger.error("Unable to find required package: {}".format(package_installed))
+                self.file_logger.error("Unable to find required package: {}".format(package_name))
                 return False
 
         self.file_logger.info("Packages all present.")

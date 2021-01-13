@@ -36,12 +36,12 @@ def FieldCheck(field, value, debug=False):
         return False
 
     if field == 'data_host':
-        if re.match("\d+?\.\d+?\.\d+?\.\d+", value): return True
-        if re.match("\w+", value): return True
+        if re.match(r"\d+?\.\d+?\.\d+?\.\d+", value): return True
+        if re.match(r"\w+", value): return True
         return False
     
     if field == 'splunk_token':
-        if re.match("^[\w|\-]{36}$", value): return True
+        if re.match(r"^[\w|\-]{36}$", value): return True
         return False
     
     # Speedtest fields

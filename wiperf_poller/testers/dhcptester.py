@@ -13,7 +13,7 @@ class DhcpTester(object):
     A class to perform a DHCP release & renew and return the renewal time
     """
 
-    def __init__(self, file_logger, platform="rpi"):
+    def __init__(self, file_logger, lockf_obj, platform="rpi"):
 
         self.platform = platform
         self.file_logger = file_logger
@@ -21,8 +21,9 @@ class DhcpTester(object):
         self.interface = ''
         self.duration = ''
         self.platform = platform
+        self.lockf_obj = lockf_obj
 
-    def bounce_interface(self, interface, lockf_obj, file_logger):
+    def bounce_interface(self, interface, file_logger):
         """
         Log an error before bouncing the wlan interface
         """
@@ -34,7 +35,7 @@ class DhcpTester(object):
         self.file_logger.error("Interface bounced: {}".format(interface))
 
         # remove lock file
-         lockf_obj.delete_lock_file()
+        self.lockf_obj.delete_lock_file()
 
         # exit as something bad must have happened...
         sys.exit()

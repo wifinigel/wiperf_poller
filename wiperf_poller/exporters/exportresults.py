@@ -13,7 +13,6 @@ from wiperf_poller.exporters.influxexporter import influxexporter
 from wiperf_poller.exporters.spoolexporter import SpoolExporter
 from wiperf_poller.helpers.route import is_ipv6
 from wiperf_poller.exporters.cacheexporter import CacheExporter
-#TODO: conditional import of influxexporter if Influx module available
 
 class ResultsExporter(object):
     """

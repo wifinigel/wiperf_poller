@@ -7,6 +7,7 @@ import warnings
 import requests
 from requests.exceptions import HTTPError
 import urllib3
+from wiperf_poller.helpers.timefunc import get_timestamp
 
 class HttpTester(object):
     '''
@@ -106,8 +107,6 @@ class HttpTester(object):
 
             if http_result:
 
-                column_headers = ['time', 'http_index', 'http_target', 'http_get_time_ms', 'http_status_code', 'http_server_response_time_ms']
-
                 http_status_code = http_result[0]
                 http_get_time = http_result[1]
                 http_server_response_time = http_result[2]
@@ -121,13 +120,16 @@ class HttpTester(object):
                     self.file_logger.info("HTTP results: {}".format(result_str))
 
                     results_dict = {
-                        'time': int(time.time()),
-                        'http_index': http_index,
-                        'http_target': http_target,
-                        'http_get_time_ms': http_get_time,
-                        'http_status_code': http_status_code,
-                        'http_server_response_time_ms': http_server_response_time
+                        'time': get_timestamp(config_vars),
+                        'http_index': int(http_index),
+                        'http_target': str(http_target),
+                        'http_get_time_ms': int(http_get_time),
+                        'http_status_code': int(http_status_code),
+                        'http_server_response_time_ms': int(http_server_response_time)
                     }
+
+                    # define column headers for CSV
+                    column_headers = list(results_dict.keys())
 
                     # dump the results
                     data_file = config_vars['http_data_file']

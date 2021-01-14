@@ -7,111 +7,64 @@ import os
 import sys
 from socket import gethostname
 
-from wiperf_poller.exporters.splunkexporter import splunkexporter
+from wiperf_poller.exporters.splunkexporter import SplunkExporter
 from wiperf_poller.exporters.influxexporter2 import influxexporter2
 from wiperf_poller.exporters.influxexporter import influxexporter
+from wiperf_poller.exporters.spoolexporter import SpoolExporter
 from wiperf_poller.helpers.route import is_ipv6
-#TODO: conditional import of influxexporter if Influx module available
+from wiperf_poller.exporters.cacheexporter import CacheExporter
 
 class ResultsExporter(object):
     """
     Class to implement universal resuts exporter for wiperf
     """
 
-    def __init__(self, file_logger, platform):
+    def __init__(self, file_logger, watchdog_obj, lockf_obj, spooler_obj, platform):
 
         self.platform = platform
         self.file_logger = file_logger
+        self.watchdog_obj = watchdog_obj
+        self.lockf_obj = lockf_obj
+        self.cache_obj = CacheExporter(file_logger)
+        self.spooler_obj = spooler_obj
 
-    def send_results_to_csv(self, data_file, dict_data, column_headers, file_logger, delete_data_file=True):
+    
+    def send_results_to_splunk(self, host, token, port, dict_data, file_logger, source):
 
-        try:
-            # if False:
-            if os.path.exists(data_file) and (delete_data_file == False):
-                with open(data_file, 'a') as csvfile:
-                    writer = csv.DictWriter(csvfile, fieldnames=column_headers)
-                    writer.writerow(dict_data)
-            else:
-                with open(data_file, 'w') as csvfile:
-                    writer = csv.DictWriter(csvfile, fieldnames=column_headers)
-                    writer.writeheader()
-                    writer.writerow(dict_data)
-        except IOError as err:
-            file_logger.error("CSV I/O error: {}".format(err))
-            return False
-        
-        return True
-
-
-    def send_results_to_json(self, data_file, dict_data, file_logger, delete_data_file=True):
-
-        try:
-            # change write/append mode depending on whether data file exists
-            file_mode = 'w'
-            if os.path.exists(data_file) and (delete_data_file == False):
-                file_mode = 'a'
-
-            with open(data_file, file_mode) as json_file:
-                json.dump(dict_data, json_file)
-        except IOError as err:
-            file_logger.error("JSON I/O error: {}".format(err))
-            return False
-        
-        return True
-
-
-    def send_results_to_hec(self, host, token, port, dict_data, file_logger, source):
-
-        file_logger.info("Sending event to HEC: {} (dest host: {}, dest port: {})".format(source, host, port))
-        if is_ipv6(host): host = "[{}]".format(host)
-        return splunkexporter(host, token, port, dict_data, source, file_logger)
+        file_logger.info("Sending results event to Splunk: {} (dest host: {}, dest port: {})".format(source, host, port))
+        splunk_exp_obj=SplunkExporter(host, token, file_logger, port)
+        return splunk_exp_obj.export_result(dict_data, source)
 
     def send_results_to_influx(self, localhost, host, port, username, password, database, dict_data, source, file_logger):
 
-        file_logger.info("Sending data to Influx host: {}, port: {}, database: {})".format(host, port, database))
+        file_logger.info("Sending results data to Influx host: {}, port: {}, database: {})".format(host, port, database))
         if is_ipv6(host): host = "[{}]".format(host)
         return influxexporter(localhost, host, port, username, password, database, dict_data, source, file_logger)
     
     def send_results_to_influx2(self, localhost, url, token, bucket, org, dict_data, source, file_logger):
 
-        file_logger.info("Sending data to Influx url: {}, bucket: {}, source: {})".format(url, bucket, source))
+        file_logger.info("Sending results data to Influx url: {}, bucket: {}, source: {})".format(url, bucket, source))
         return influxexporter2(localhost, url, token, bucket, org, dict_data, source, file_logger)
+    
+    def send_results_to_spooler(self, config_vars, data_file, dict_data, file_logger):
+
+        file_logger.info("Sending results data to spooler: {} (as mgt platform not available)".format(data_file))
+        return self.spooler_obj.spool_results(config_vars, data_file, dict_data, self.watchdog_obj, self.lockf_obj)
 
 
     def send_results(self, config_vars, results_dict, column_headers, data_file, test_name, file_logger, delete_data_file=False):
 
-        # dump the results to appropriate destination
+        # dump the results to local cache if enabled
+        if config_vars['cache_enabled'] =='yes':
+            file_logger.info("Sending results to local file cache.")
+            self.cache_obj.dump_cache_results(config_vars, data_file, results_dict, column_headers)
 
+        # dump the results to appropriate destination
         if config_vars['exporter_type'] == 'splunk':
 
-            # Check if we are using the Splunk HEC (https transport)
-            if config_vars['data_transport'] == 'hec':
-                file_logger.info("HEC update: {}, source={}".format(data_file, test_name))
-                return self.send_results_to_hec(config_vars['data_host'], config_vars['splunk_token'], config_vars['data_port'],
-                    results_dict, file_logger, data_file)
-            
-            # Create files if we are using the Splunk universal forwarder
-            elif config_vars['data_transport'] == 'forwarder':
-
-                # CSV file format for forwarder
-                if config_vars['data_format'] == 'csv':
-                    data_file = "{}/{}.csv".format(config_vars['data_dir'], data_file)
-                    return self.send_results_to_csv(data_file, results_dict, column_headers,file_logger, delete_data_file=delete_data_file)
-                
-                # JSON format for the forwarder
-                elif config_vars['data_format'] == 'json':
-                
-                    data_file = "{}/{}.json".format(config_vars['data_dir'], data_file)
-                    return self.send_results_to_json(data_file, results_dict, file_logger, delete_data_file=delete_data_file)
-                
-                else:                
-                    file_logger.info("Unknown file format type in config file: {}".format(config_vars['data_format']))
-                    sys.exit()
-           
-            # Transport type which is not know has been configured in the ini file
-            else:
-                file_logger.info("Unknown transport type in config file: {}".format(config_vars['data_transport']))
-                sys.exit()
+            file_logger.info("Splunk update: {}, source={}".format(data_file, test_name))
+            return self.send_results_to_splunk(config_vars['data_host'], config_vars['splunk_token'], config_vars['data_port'],
+                results_dict, file_logger, data_file)
         
         elif config_vars['exporter_type'] == 'influxdb':
             
@@ -131,6 +84,10 @@ class ResultsExporter(object):
 
             return self.send_results_to_influx2(gethostname(), influx_url, config_vars['influx2_token'],
                     config_vars['influx2_bucket'], config_vars['influx2_org'], results_dict, data_file, file_logger)
+        
+        elif config_vars['exporter_type'] == 'spooler':
+            
+            return self.send_results_to_spooler(config_vars, data_file, results_dict, file_logger)
         
         else:
             file_logger.info("Unknown exporter type in config file: {}".format(config_vars['exporter_type']))

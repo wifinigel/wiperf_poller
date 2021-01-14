@@ -5,6 +5,7 @@ import time
 import subprocess
 from wiperf_poller.helpers.wirelessadapter import WirelessAdapter
 from wiperf_poller.helpers.os_cmds import DHCLIENT_CMD
+from wiperf_poller.helpers.timefunc import get_timestamp
 
 
 class DhcpTester(object):
@@ -12,7 +13,7 @@ class DhcpTester(object):
     A class to perform a DHCP release & renew and return the renewal time
     """
 
-    def __init__(self, file_logger, platform="rpi"):
+    def __init__(self, file_logger, lockf_obj, platform="rpi"):
 
         self.platform = platform
         self.file_logger = file_logger
@@ -20,6 +21,7 @@ class DhcpTester(object):
         self.interface = ''
         self.duration = ''
         self.platform = platform
+        self.lockf_obj = lockf_obj
 
     def bounce_interface(self, interface, file_logger):
         """
@@ -32,7 +34,9 @@ class DhcpTester(object):
         adapter.bounce_wlan_interface()
         self.file_logger.error("Interface bounced: {}".format(interface))
 
-        # TODO: this exit will leave lock file in place - need to remove it
+        # remove lock file
+        self.lockf_obj.delete_lock_file()
+
         # exit as something bad must have happened...
         sys.exit()
 
@@ -42,7 +46,7 @@ class DhcpTester(object):
         The renewal duration is timed and the result (in mS) returned
 
         Usage:
-            tester_obj = DhcpTester(logger, debug=False)
+            tester_obj = DhcpTester(logger, platform)
             tester_obj.dhcp_renewal("wlan0")
 
         If the renewal fails, the wlan interface will be bounced and the whole script will exit
@@ -59,9 +63,10 @@ class DhcpTester(object):
             start = time.time()
 
             p = subprocess.Popen([DHCLIENT_CMD, '-v', self.interface, '-pf', '/tmp/dhclient.pid'], stderr=subprocess.PIPE)
+
             while True:
                 line = p.stderr.readline()
-                self.file_logger.debug("dhcp:", line.rstrip())
+                self.file_logger.debug("dhcp: {}".format(line.decode().strip()))
                 if b'DHCPACK' in line:
                     break
                 
@@ -108,12 +113,13 @@ class DhcpTester(object):
 
         if renewal_result:
 
-            column_headers = ['time', 'renewal_time_ms']
-
             results_dict = {
-                'time': int(time.time()),
-                'renewal_time_ms': renewal_result,
+                'time': get_timestamp(config_vars),
+                'renewal_time_ms': int(renewal_result),
             }
+
+            # define column headers for CSV
+            column_headers = list(results_dict.keys())
 
             # dump the results
             data_file = config_vars['dhcp_data_file']

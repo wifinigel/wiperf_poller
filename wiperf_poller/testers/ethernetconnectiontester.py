@@ -6,6 +6,7 @@ from socket import gethostbyname
 from wiperf_poller.helpers.ethernetadapter import EthernetAdapter
 from wiperf_poller.testers.mgtconnectiontester import MgtConnectionTester
 from wiperf_poller.helpers.route import check_correct_mode_interface, inject_default_route
+from wiperf_poller.helpers.timefunc import time_synced
 from wiperf_poller.testers.pingtester import PingTester
 
 class EthernetConnectionTester(object):
@@ -84,8 +85,32 @@ class EthernetConnectionTester(object):
                     sys.exit()
 
         # Check we can get to the mgt platform (function will exit script if no connectivity)
-        self.file_logger.info("Checking we can get to the management platform...")
+        self.file_logger.info("Checking we can get to the management platform (host = {}, port = {}, type = {})".format(config_vars['data_host'], 
+            config_vars['data_port'], config_vars['exporter_type']))
 
         mgt_connection_obj = MgtConnectionTester(config_vars, self.file_logger, self.platform)
-        mgt_connection_obj.check_connection(watchdog_obj, lockf_obj)
+
+        # if we can't hit the mgt platform, set exporter to the local spooler if spooling enabled
+        exit_msg = ''
+
+        if not mgt_connection_obj.check_connection(lockf_obj): 
+     
+            # Can't get to mgt platform - spooling enabled? 
+            if config_vars['results_spool_enabled'] == 'yes':
+                
+                # We have spooling enabled, are we time-sync'ed?
+                if not time_synced():
+                    exit_msg = "Unable to reach mgt platform, unable to spool as probe not time sync'ed"
+                else:
+                    config_vars['exporter_type'] = 'spooler'
+            
+            else:
+                exit_msg = 'Unable to reach mgt platform, local spooling disabled - exiting'
+        
+        if exit_msg:
+            self.file_logger.warning(exit_msg)
+            lockf_obj.delete_lock_file()
+            sys.exit()
+
+
 

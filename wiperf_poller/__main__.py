@@ -1,63 +1,72 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
-import os
+import json
 import logging
+import os
+import sys
+import time
 
-# our local ...
-from wiperf_poller.testers.speedtester import Speedtester
-from wiperf_poller.testers.wirelessconnectiontester import WirelessConnectionTester
-from wiperf_poller.testers.ethernetconnectiontester import EthernetConnectionTester
-from wiperf_poller.testers.pingtester import PingTester
-from wiperf_poller.testers.iperf3tester import IperfTester
+# our local modules
+from wiperf_poller.testers.dhcptester import DhcpTester
 from wiperf_poller.testers.dnstester import DnsTester
 from wiperf_poller.testers.httptester import HttpTester
-from wiperf_poller.testers.dhcptester import DhcpTester
+from wiperf_poller.testers.ethernetconnectiontester import EthernetConnectionTester
+from wiperf_poller.testers.iperf3tester import IperfTester
+from wiperf_poller.testers.pingtester import PingTester
+from wiperf_poller.testers.speedtester import Speedtester
+from wiperf_poller.testers.smbtester import SmbTester
+#from wiperf_poller.testers.wifiauthentication import AuthTester
+from wiperf_poller.testers.wirelessconnectiontester import WirelessConnectionTester
 
-from wiperf_poller.helpers.wirelessadapter import WirelessAdapter
+from wiperf_poller.helpers.bouncer import Bouncer
+from wiperf_poller.helpers.config import read_local_config
+from wiperf_poller.helpers.error_messages import ErrorMessages
 from wiperf_poller.helpers.ethernetadapter import EthernetAdapter
 from wiperf_poller.helpers.filelogger import FileLogger
-from wiperf_poller.helpers.config import read_local_config
-from wiperf_poller.helpers.bouncer import Bouncer
+from wiperf_poller.helpers.lockfile import LockFile
+from wiperf_poller.helpers.os_cmds import check_os_cmds
+from wiperf_poller.helpers.poll_status import PollStatus
 from wiperf_poller.helpers.remoteconfig import check_last_cfg_read
 from wiperf_poller.helpers.route import check_correct_mode_interface
 from wiperf_poller.helpers.statusfile import StatusFile
-from wiperf_poller.helpers.lockfile import LockFile
 from wiperf_poller.helpers.watchdog import Watchdog
-from wiperf_poller.helpers.os_cmds import check_os_cmds
-from wiperf_poller.helpers.poll_status import PollStatus 
+from wiperf_poller.helpers.wirelessadapter import WirelessAdapter
 
 from wiperf_poller.exporters.exportresults import ResultsExporter
+from wiperf_poller.exporters.spoolexporter import SpoolExporter
+
 
 config_file = "/etc/wiperf/config.ini"
 log_file = "/var/log/wiperf_agent.log"
+error_log_file = "/tmp/wiperf_err.log"
 lock_file = '/tmp/wiperf_poller.lock'
 status_file = '/tmp/wiperf_status.txt'
 watchdog_file = '/tmp/wiperf_poller.watchdog'
 bounce_file = '/tmp/wiperf_poller.bounce'
 check_cfg_file = '/tmp/wiperf_poller.cfg'
 
-# Enable debugs or create some dummy data for testing
+# Enable debugs
 DEBUG = 0
-DUMMY_DATA = False # Speedtest data only
 
 ###################################
 # File logger
 ###################################
 
 # set up our error_log file & initialize
-file_logger = FileLogger(log_file)
+file_logger = FileLogger(log_file, error_log_file)
 file_logger.info("*****************************************************")
 file_logger.info(" Starting logging...")
 file_logger.info("*****************************************************")
 
 # Pull in our config.ini dict
-(config_vars, config_obj) = read_local_config(config_file, file_logger)
+config_vars = read_local_config(config_file, file_logger)
 
 # set logging to debug if debugging enabled
 if DEBUG or (config_vars['debug'] == 'on'):
-    file_logger.setLevel('DEBUG')
+    #rot_handler = file_logger.handlers[0]
+    #rot_handler.setLevel(logging.DEBUG)
+    file_logger.setLevel(level=logging.DEBUG)
     file_logger.info("(Note: logging set to debug level.)")
 
 # check we are running as root user (sudo)
@@ -82,8 +91,11 @@ status_file_obj = StatusFile(status_file, file_logger)
 # bouncer object
 bouncer_obj = Bouncer(bounce_file, config_vars, file_logger)
 
+# spooler object
+spooler_obj = SpoolExporter(config_vars, file_logger)
+
 # exporter object
-exporter_obj = ResultsExporter(file_logger, config_vars['platform'])
+exporter_obj = ResultsExporter(file_logger, watchdog_obj, lockf_obj, spooler_obj, config_vars['platform'])
 
 # adapter object
 adapter_obj = ''
@@ -185,7 +197,62 @@ def main():
     
     # update poll summary with IP
     poll_obj.ip(adapter_obj.get_adapter_ip())
- 
+
+    ################################################
+    # Empty results spool queue if required/enabled
+    ################################################
+    file_logger.info("######## spooler checks ########")
+    if config_vars['results_spool_enabled'] == 'yes':
+
+        # clear out old spooled files if required
+        spooler_obj.prune_old_files()
+
+        # if export method not spooler, mgt connect 
+        # must be OK. Empty spool queue 
+        if config_vars['exporter_type'] != 'spooler':
+
+            # check we have spooler dir
+            if spooler_obj.check_spool_dir_exists():
+                
+                # check number of files in spooler dir
+                file_list = spooler_obj.list_spool_files()
+
+                # step through spooled files & attempt to export
+                # (remove each spooled file as successfuly exported)
+                if len(file_list) > 0:
+
+                    for filename in file_list:
+
+                        full_file_name = "{}/{}".format(spooler_obj.spool_dir_root, filename)
+
+                        # read in the file as dict (from json)
+                        try:
+                            with open(full_file_name, "r") as json_file:
+                                results_list = json.load(json_file)
+                        except IOError as err:
+                            file_logger.error("JSON I/O file read error: {}".format(err))
+                            break
+                        
+                        for results_dict in results_list:
+
+                            # pull out the data source
+                            data_file = results_dict['data_source']
+                            results_dict.pop('data_source')
+
+                            column_headers = list(results_dict.keys())
+                            test_name = data_file
+
+                        # send the dict to exporter
+                        if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, file_logger):
+
+                            # remove data file
+                            os.remove(full_file_name)
+                            file_logger.info("Spooled results sent OK - {}".format(data_file))
+                        
+    
+    else:
+        file_logger.info("Spooler not enabled.")
+
     #############################################
     # Run speedtest (if enabled)
     #############################################                                                                                                                                                                                                                      
@@ -193,7 +260,7 @@ def main():
     file_logger.info("########## speedtest ##########")
     if config_vars['speedtest_enabled'] == 'yes':
 
-        speedtest_obj = Speedtester(file_logger, platform)
+        speedtest_obj = Speedtester(file_logger, config_vars, platform)
         test_passed = speedtest_obj.run_tests(status_file_obj, check_correct_mode_interface, config_vars, exporter_obj, lockf_obj)
 
         if test_passed:
@@ -322,7 +389,7 @@ def main():
     file_logger.info("########## dhcp test ##########")
     if config_vars['dhcp_test_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
-        dhcp_obj = DhcpTester(file_logger, platform=platform)
+        dhcp_obj = DhcpTester(file_logger, lockf_obj, platform=platform)
         tests_passed = dhcp_obj.run_tests(status_file_obj, config_vars, exporter_obj)
 
         if tests_passed:
@@ -338,18 +405,68 @@ def main():
             file_logger.info("DHCP test not enabled in config file, bypassing this test...")
             poll_obj.dhcp('Not enabled')
 
+
+    #####################################
+    # Run SMB renewal test (if enabled)
+    #####################################
+    file_logger.info("########## SMB test ##########")
+    if config_vars['smb_enabled'] == 'yes' and config_vars['test_issue'] == False:
+
+        smb_obj = SmbTester(file_logger, platform=platform)
+        tests_passed = smb_obj.run_tests(status_file_obj, config_vars, adapter_obj, check_correct_mode_interface, exporter_obj, watchdog_obj)
+        if tests_passed:
+            poll_obj.smb('Completed')
+        else:
+            poll_obj.smb('Failure')
+
+    else:
+        if config_vars['test_issue'] == True:
+            file_logger.info("Previous test failed: {}".format(config_vars['test_issue_descr']))
+            poll_obj.smb('Not run')
+        else:
+            file_logger.info("smb test not enabled in config file, bypassing this test...")
+            poll_obj.smb('Not enabled')
+
+    #####################################
+    # Run WIFI time to authenticate test (if enabled)
+    #####################################
+    #file_logger.info("########## wireless time to authenticate test ##########")
+    #if config_vars['auth_enabled'] == 'yes' and config_vars['test_issue'] == False:
+
+    #    Auth_obj = AuthTester(file_logger, platform=platform)
+    #    tests_passed = Auth_obj.run_tests(status_file_obj, config_vars, adapter_obj, check_correct_mode_interface, exporter_obj, watchdog_obj)
+    #    if tests_passed:
+    #        poll_obj.auth('Completed')
+    #    else:
+    #        poll_obj.auth('Failure')
+
+    #else:
+    #    if config_vars['test_issue'] == True:
+    #        file_logger.info("Previous test failed: {}".format(config_vars['test_issue_descr']))
+    #        poll_obj.auth('Not run')
+    #    else:
+    #        file_logger.info("Authentication test not enabled in config file, bypassing this test...")
+    #        poll_obj.auth('Not enabled')
+
+
     #####################################
     # Tidy up before exit
     #####################################
+  
+    # dump poller status info
+    if config_vars['poller_reporting_enabled'] == 'yes':
+        poll_obj.dump(exporter_obj)
 
-    # get rid of log file
+    # dump error messages
+    if config_vars['error_messages_enabled'] == 'yes':
+        error_msg_obj = ErrorMessages(config_vars, error_log_file, file_logger)
+        error_msg_obj.dump(exporter_obj)
+
+    # get rid of lock file
     status_file_obj.write_status_file("")
     lockf_obj.delete_lock_file()
-    
-    # dump poller status info
-    poll_obj.dump()
 
-    file_logger.info("########## end ##########")
+    file_logger.info("########## end ##########\n\n\n")
 
     # decrement watchdog as we ran OK
     if config_vars['test_issue'] == False:

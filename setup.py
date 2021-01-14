@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="wiperf_poller",
-    version="0.1.25",
+    version="0.2.1",
     author="Nigel Bowden",
     author_email="wifinigel@gmail.com",
     description="Poller for the wiperf utlity",

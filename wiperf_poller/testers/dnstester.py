@@ -3,6 +3,7 @@ A simple class to perform a DNS lookup against a number of targets and return th
 '''
 import time
 import socket
+from wiperf_poller.helpers.timefunc import get_timestamp
 
 class DnsTester(object):
     '''
@@ -79,9 +80,6 @@ class DnsTester(object):
 
             if dns_result:
 
-                column_headers = ['time', 'dns_index',
-                                  'dns_target', 'lookup_time_ms']
-
                 # summarise result for log
                 result_str = ' {}: {}ms'.format(dns_target, dns_result)
 
@@ -89,11 +87,14 @@ class DnsTester(object):
                 self.file_logger.info("DNS results: {}".format(result_str))
 
                 results_dict = {
-                    'time': int(time.time()),
-                    'dns_index': dns_index,
-                    'dns_target': dns_target,
-                    'lookup_time_ms': dns_result
+                    'time': get_timestamp(config_vars),
+                    'dns_index': int(dns_index),
+                    'dns_target': str(dns_target),
+                    'lookup_time_ms': int(dns_result)
                 }
+
+                # define column headers for CSV
+                column_headers = list(results_dict.keys())
 
                 # dump the results
                 data_file = config_vars['dns_data_file']

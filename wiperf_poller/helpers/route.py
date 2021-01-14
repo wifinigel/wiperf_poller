@@ -240,7 +240,7 @@ def _inject_static_route(ip_address, req_interface, traffic_type, file_logger, i
     matched traffic over a specific interface
     """
 
-    file_logger.info("  [Route Injection] Attempting static route insertion to fix routing issue (note this may not take effect until the next test cycle)")
+    file_logger.info("  [Route Injection] Attempting static route insertion to fix routing issue")
     try:
         new_route = "{} dev {}".format(ip_address, req_interface)
         add_route_cmd = "{} {} route add  ".format(IP_CMD, ip_ver) + new_route
@@ -282,7 +282,15 @@ def inject_test_traffic_static_route(ip_address, config_vars, file_logger):
     file_logger.info("  [Route Injection] Checking probe mode: '{}' ".format(probe_mode))
     test_traffic_interface= get_test_traffic_interface(config_vars, file_logger)
 
-    return _inject_static_route(ip_address, test_traffic_interface, "test traffic", file_logger)
+    # if route injection works, check that route is now over correct interface
+    if _inject_static_route(ip_address, test_traffic_interface, "test traffic", file_logger):
+
+       if check_correct_mode_interface(ip_address, config_vars, file_logger):
+
+           return True
+    
+    # Something went wrong...
+    return False
 
 
 

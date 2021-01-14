@@ -39,12 +39,35 @@ def read_local_config(config_file, file_logger):
     config_vars['platform'] = 'rpi'
     if os.path.exists("/etc/wlanpi-state"):
         config_vars['platform'] = 'wlanpi'
+    
     # data exporter type for results
     config_vars['exporter_type'] = gen_sect.get('exporter_type', 'splunk')
-    # format of output data (csv/json)
-    config_vars['data_format'] = gen_sect.get('data_format', 'json')
-    # directory where data dumped
-    config_vars['data_dir'] = gen_sect.get('data_dir')
+    config_vars['time_format'] = gen_sect.get('exporter_type', 'splunk')
+
+    # report poller results after each cycle?
+    config_vars['poller_reporting_enabled'] = gen_sect.get('poller_reporting_enabled', 'yes')
+
+    # Results spooling enabled?
+    config_vars['results_spool_enabled'] = gen_sect.get('results_spool_enabled', 'yes')
+    # Max age of spooled results data (in minutes)
+    config_vars['results_spool_max_age'] = gen_sect.get('results_spool_max_age', 30)
+    # Dir for spool files
+    config_vars['results_spool_dir'] = gen_sect.get('results_spool_dir', '/var/spool/wiperf')
+
+    # local results caching enabled/disabled
+    config_vars['cache_enabled'] = gen_sect.get('cache_enabled', 'no')
+    # format of cache output data (csv/json)
+    config_vars['cache_data_format'] = gen_sect.get('cache_data_format', 'csv')
+    # root directory where cache data dumped
+    config_vars['cache_root'] = gen_sect.get('cache_root', "/var/cache/wiperf")
+    # retention period of cache files (in days)
+    config_vars['cache_retention_period'] = gen_sect.get('cache_retention_period', 3)
+
+    # log error polling error messages to mgt platform
+    config_vars['error_messages_enabled'] = gen_sect.get('error_messages_enabled', 'yes')
+    # max number of messages per poll
+    config_vars['error_messages_limit'] = gen_sect.get('error_messages_limit', 5)
+    
 
     ####### Splunk config ########
     # data transport
@@ -60,6 +83,7 @@ def read_local_config(config_file, file_logger):
     ####### Influx1 config ########
     config_vars['influx_host'] = gen_sect.get('influx_host')
     config_vars['influx_port'] = gen_sect.get('influx_port', '8086')
+    config_vars['influx_ssl'] = gen_sect.get('influx_ssl', True)
     config_vars['influx_username'] = gen_sect.get('influx_username', 'admin')
     config_vars['influx_password'] = gen_sect.get('influx_password', 'admin')
     config_vars['influx_database'] = gen_sect.get('influx_database', 'wiperf')
@@ -68,6 +92,7 @@ def read_local_config(config_file, file_logger):
     ####### Influx2 config ########
     config_vars['influx2_host'] = gen_sect.get('influx2_host')
     config_vars['influx2_port'] = gen_sect.get('influx2_port', '8086')
+    config_vars['influx2_ssl'] = gen_sect.get('influx2_ssl', True)
     config_vars['influx2_token'] = gen_sect.get('influx2_token', '')
     config_vars['influx2_bucket'] = gen_sect.get('influx2_bucket', '')
     config_vars['influx2_org'] = gen_sect.get('influx2_org', '')
@@ -81,8 +106,8 @@ def read_local_config(config_file, file_logger):
         config_vars['data_host'] = config_vars['influx_host']
         config_vars['data_port'] = config_vars['influx_port']
     elif config_vars['exporter_type'] == 'influxdb2':
-        config_vars['data_host'] = config_vars['influx_host2']
-        config_vars['data_port'] = config_vars['influx_port2']
+        config_vars['data_host'] = config_vars['influx2_host']
+        config_vars['data_port'] = config_vars['influx_2port']
     else:
         print("Unknown exporter type: {}".format(config_vars['exporter_type']))
         sys.exit()
@@ -132,7 +157,9 @@ def read_local_config(config_file, file_logger):
     # Get Speedtest config params
     speed_sect = config['Speedtest']
     config_vars['speedtest_enabled'] = speed_sect.get('enabled', 'no')
+    config_vars['provider'] = speed_sect.get('provider', 'ookla')
     config_vars['server_id'] = speed_sect.get('server_id', '')
+    config_vars['librespeed_args'] = speed_sect.get('librespeed_args', '')
     config_vars['speedtest_data_file'] = speed_sect.get('speedtest_data_file', 'wiperf-speedtest')
     config_vars['http_proxy'] = speed_sect.get('http_proxy', '')
     config_vars['https_proxy'] = speed_sect.get('https_proxy', '')
@@ -197,6 +224,44 @@ def read_local_config(config_file, file_logger):
     config_vars['dhcp_test_mode'] = dhcp_sect.get('mode', 'passive')
     config_vars['dhcp_data_file'] = dhcp_sect.get('dhcp_data_file', 'wiperf-dhcp')
 
+    # Get SMB test config params
+    smb_sect = config['SMB_test']
+    config_vars['smb_enabled'] = smb_sect.get('enabled', 'no')
+    config_vars['smb_data_file'] = smb_sect.get('smb_data_file', 'wiperf-smb')
+    config_vars['smb_global_username'] = smb_sect.get('smb_global_username', ' ')
+    config_vars['smb_global_password'] = smb_sect.get('smb_global_password', ' ')
+    config_vars['smb_host1'] = smb_sect.get('smb_host1', '')
+    config_vars['smb_host2'] = smb_sect.get('smb_host2', '')
+    config_vars['smb_host3'] = smb_sect.get('smb_host3', '')
+    config_vars['smb_host4'] = smb_sect.get('smb_host4', '')
+    config_vars['smb_host5'] = smb_sect.get('smb_host5', '')
+    config_vars['smb_username1'] = smb_sect.get('smb_username1', ' ')
+    config_vars['smb_username2'] = smb_sect.get('smb_username2', ' ')
+    config_vars['smb_username3'] = smb_sect.get('smb_username3', ' ')
+    config_vars['smb_username4'] = smb_sect.get('smb_username4', ' ')
+    config_vars['smb_username5'] = smb_sect.get('smb_username5', ' ')
+    config_vars['smb_password1'] = smb_sect.get('smb_password1', ' ')
+    config_vars['smb_password2'] = smb_sect.get('smb_password2', ' ')
+    config_vars['smb_password3'] = smb_sect.get('smb_password3', ' ')
+    config_vars['smb_password4'] = smb_sect.get('smb_password4', ' ')
+    config_vars['smb_password5'] = smb_sect.get('smb_password5', ' ')
+    config_vars['smb_path1'] = smb_sect.get('smb_path1', '')
+    config_vars['smb_path2'] = smb_sect.get('smb_path2', '')
+    config_vars['smb_path3'] = smb_sect.get('smb_path3', '')
+    config_vars['smb_path4'] = smb_sect.get('smb_path4', '')
+    config_vars['smb_path5'] = smb_sect.get('smb_path5', '')
+    config_vars['smb_filename1'] = smb_sect.get('smb_filename1','')
+    config_vars['smb_filename2'] = smb_sect.get('smb_filename2', '')
+    config_vars['smb_filename3'] = smb_sect.get('smb_filename3', '')
+    config_vars['smb_filename4'] = smb_sect.get('smb_filename4', '')
+    config_vars['smb_filename5'] = smb_sect.get('smb_filename5', '')
+
+    # Get Authentication test config params
+    #auth_sect = config['Auth_test']
+    #config_vars['auth_enabled'] = auth_sect.get('enabled', 'no')
+    #config_vars['auth_data_file'] = auth_sect.get('auth_data_file', 'wiperf-auth')
+
+
     '''
     # Check all entered config.ini values to see if valid
     for key in config_vars: 
@@ -218,4 +283,4 @@ def read_local_config(config_file, file_logger):
         print("Machine ID = " + config_vars['machine_id'])
     '''
 
-    return (config_vars, config)
+    return config_vars

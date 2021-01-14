@@ -1,28 +1,174 @@
 import speedtest
 import sys
 import time
+import subprocess
+import json
+from wiperf_poller.helpers.os_cmds import LIBRESPEED_CMD
+from wiperf_poller.helpers.timefunc import get_timestamp
 
 class Speedtester(object):
     """
     Class to implement speedtest server tests for wiperf
     """
 
-    def __init__(self, file_logger, platform):
+    def __init__(self, file_logger, config_vars, platform):
 
         self.platform = platform
         self.file_logger = file_logger
+        self.config_vars = config_vars
 
-
-    def ooklaspeedtest(self, server_id='', DUMMY_DATA=False, DEBUG=False):
-        '''
-        This function runs the actual speedtest and returns the result
+    def librespeed(self, server_id='', args='', DEBUG=False):
+        """
+        This function runs the ookla speedtest and returns the result
         as a dictionary: 
-            { 'ping_time':  ping_time,
-            'download_rate': download_rate,
-            'upload_rate': upload_rate,
-            'server_name': server_name
+            {   download_rate_mbps = download_rate_mbps (float)
+                upload_rate_mbps = upload_rate_mbps (float)
+                ping_time = ping_time (int)
+                server_name = server_name (str)
+                mbytes_sent = mbytes_sent (float)
+                mbytes_received = mbytes_received (float)
+                latency_ms = latency_ms (same as ping_time value - float)
+                jitter_ms = jitter (int)
             }
 
+        Speedtest result format:
+            {   
+                "timestamp":"2020-12-29T05:48:10.143697357Z",
+                "server":{
+                    "name":"Frankfurt, Germany (Clouvider)",
+                    "url":"http://fra.speedtest.clouvider.net/backend"
+                },
+                "client":{
+                    "ip":"81.111.152.68",
+                    "hostname":"cpc82729-staf9-2-0-cust67.3-1.cable.virginm.net",
+                    "city":"Stoke-on-Trent",
+                    "region":"England",
+                    "country":"GB",
+                    "loc":"53.0042,-2.1854",
+                    "org":"AS5089 Virgin Media Limited",
+                    "postal":"ST4",
+                    "timezone":"Europe/London"
+                },
+                "bytes_sent":21037056,
+                "bytes_received":58813742,
+                "ping":33.72727272727273,
+                "jitter":2.51,
+                "upload":10.79,
+                "download":30.16,
+                "share":""
+            }
+
+        """
+
+        # check command exists
+        if not LIBRESPEED_CMD:
+            self.file_logger.error("Librespeed-cli command does not appear to be installed, unable to perform test.")
+            return False
+        
+        # define command to run
+        cmd = "{} --json".format(LIBRESPEED_CMD)
+
+        if server_id:
+            cmd += " --server {}".format(server_id)
+        
+        if args:
+            cmd += " {}".format(args)
+
+        self.file_logger.debug("Librespeed command: {}".format(cmd))
+        
+        # run librespeed command
+        try:
+            speedtest_info = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True).decode()
+        except subprocess.CalledProcessError as exc:
+            output = exc.output.decode()
+            error_descr = "Issue running librespeed speedtest command: {}".format(output)
+
+            self.file_logger.error("{}".format(error_descr))
+            return False
+
+        self.file_logger.debug("Librespeed returned info: {}".format(speedtest_info))
+
+        # extract data from JSON string
+        results_dict = {}
+        if speedtest_info:
+            results_dict = json.loads(speedtest_info)
+        else:
+            self.file_logger.error("No data returned by Librespeed speedtest - returning error")
+            return False
+
+        if not results_dict:
+            self.file_logger.error("JSON decode of librespeed results failed - returning error")
+            return False
+        
+        test_time = get_timestamp(self.config_vars)
+        download_rate_mbps = round(float(results_dict['download']), 2)
+        upload_rate_mbps = round(float(results_dict['upload']), 2)
+        ping_time = int(results_dict['ping'])
+        server_name = str(results_dict['server']['name'])
+        mbytes_sent = round(int(results_dict['bytes_sent'])/1024000, 2)
+        mbytes_received = round(int(results_dict['bytes_received'])/1024000, 2)
+        latency_ms = int(results_dict['ping'])
+        jitter_ms = int(results_dict['jitter'])
+        client_ip = str(results_dict['client']['ip'])
+        provider = 'Librespeed'
+
+        self.file_logger.info('time: {}, ping_time: {}, download_rate_mbps: {}, upload_rate_mbps: {}, server_name: {}, mbytes_sent: {},  \
+mbytes_received: {}, latency_ms: {}, jitter_ms: {}, client_ip: {}, provider: {}'.format(
+            test_time, ping_time, download_rate_mbps, upload_rate_mbps, server_name, mbytes_sent, mbytes_received, latency_ms, jitter_ms, client_ip, provider))
+
+        return {'time': test_time, 'ping_time': ping_time, 'download_rate_mbps': download_rate_mbps, 'upload_rate_mbps': upload_rate_mbps, 
+            'server_name': server_name, 'mbytes_sent': mbytes_sent, 'mbytes_received': mbytes_received, 'latency_ms': latency_ms, 
+            'jitter_ms': jitter_ms, 'client_ip': client_ip, 'provider': provider}
+
+    def ooklaspeedtest(self, server_id='', DEBUG=False):
+        '''
+        This function runs the ookla speedtest and returns the result
+        as a dictionary: 
+            {   download_rate_mbps = download_rate_mbps (float)
+                upload_rate_mbps = upload_rate_mbps (float)
+                ping_time = ping_time (int)
+                server_name = server_name (str)
+                mbytes_sent = mbytes_sent (float)
+                mbytes_received = mbytes_received (float)
+                latency_ms = latency_ms (same as ping_time value - float)
+                jitter_ms = jitter (int)
+            }
+        
+        Speedtest results format (Ookla):
+        {
+            'download': 29471546.96131429, 
+            'upload': 10066173.96792112, 
+            'ping': 34.035, 
+            'server': {
+                'url': 'http://speedtest-net5.rapidswitch.co.uk:8080/speedtest/upload.php', 
+                'lat': '52.6369', 
+                'lon': '-1.1398', 
+                'name': 'Leicester', 
+                'country': 'United Kingdom', 
+                'cc': 'GB', 
+                'sponsor': 'Iomart', 
+                'id': '29080', 
+                'host': 'speedtest-net5.rapidswitch.co.uk:8080', 
+                'd': 68.38417645961746, 
+                'latency': 34.035
+            }, 
+            'timestamp': '2020-12-29T06:45:22.334398Z', 
+            'bytes_sent': 13393920, 
+            'bytes_received': 37314032, 
+            'share': None, 
+            'client': {
+                'ip': '81.111.152.68', 
+                'lat': '52.8052', 
+                'lon': '-2.1164', 
+                'isp': 'Virgin Media', 
+                'isprating': '3.7', 
+                'rating': '0', 
+                'ispdlavg': '0', 
+                'ispulavg': '0', 
+                'loggedin': '0', 
+                'country': 'GB'
+            }
+        }
 
         Speedtest server list format (dict):
         19079.416816052293: [{'cc': 'NZ',
@@ -59,69 +205,67 @@ class Speedtester(object):
                         'url': 'http://speedtest.unifone.net.nz/speedtest/upload.php'}]
         '''
 
-        if DUMMY_DATA == False:
-
-            # perform Speedtest
+        # perform Speedtest
+        try:
+            st = speedtest.Speedtest()
+        except Exception as error:
+            self.file_logger.error("Speedtest error: {}".format(error))
+            return False
+        # check if we have specific target server
+        if server_id:
+            self.file_logger.info("Speedtest info: specific server ID provided for test: {}".format(str(server_id)))
             try:
-                st = speedtest.Speedtest()
+                st.get_servers(servers=[server_id])
             except Exception as error:
-                self.file_logger.error("Speedtest error: {}".format(error))
+                self.file_logger.error("Speedtest error: unable to get details of specified server: {}, reason: {}".format(
+                    str(server_id), error))
                 return False
-            # check if we have specific target server
-            if server_id:
-                self.file_logger.info("Speedtest info: specific server ID provided for test: {}".format(str(server_id)))
-                try:
-                    st.get_servers(servers=[server_id])
-                except Exception as error:
-                    self.file_logger.error("Speedtest error: unable to get details of specified server: {}, reason: {}".format(
-                        str(server_id), error))
-                    return False
-            else:
-                try:
-                    st.get_best_server()
-                except Exception as error:
-                    self.file_logger.error("Speedtest error: unable to get best server, reason: {}".format(error))
-                    return False
-
-            try:
-                download_rate = '%.2f' % (st.download()/1024000)
-                self.file_logger.debug("Download rate = " + str(download_rate) + " Mbps")
-            except Exception as error:
-                self.file_logger.error("Download test error: {}".format(error))
-                return False
-
-            try:
-                upload_rate = '%.2f' % (st.upload(pre_allocate=False)/1024000)
-                self.file_logger.debug("Upload rate = " + str(upload_rate) + " Mbps")
-            except Exception as error:
-                self.file_logger.error("Upload test error: {}".format(error))
-                return False
-
-            results_dict = st.results.dict()
-            ping_time = int(results_dict['ping'])
-            server_name = results_dict['server']['host']
         else:
-            # create dummy data (for speed of testing)
-            import random
+            try:
+                st.get_best_server()
+            except Exception as error:
+                self.file_logger.error("Speedtest error: unable to get best server, reason: {}".format(error))
+                return False
 
-            ping_time = random.randint(20, 76)
-            download_rate = round(random.uniform(30.0, 60.0), 2)
-            upload_rate = round(random.uniform(3.0, 8.0), 2)
-            server_name = "dummy-speedtest2.warwicknet.com:8080"
+        # run download test
+        try:
+            st.download()
+        except Exception as error:
+            self.file_logger.error("Download test error: {}".format(error))
+            return False
 
-        self.file_logger.info('ping_time: {}, download_rate: {}, upload_rate: {}, server_name: {}'.format(
-            ping_time, download_rate, upload_rate, server_name))
+        try:
+            st.upload(pre_allocate=False)
+        except Exception as error:
+            self.file_logger.error("Upload test error: {}".format(error))
+            return False
 
-        return {'ping_time': ping_time, 'download_rate': download_rate, 'upload_rate': upload_rate, 'server_name': server_name}
+        results_dict = st.results.dict()
+
+        test_time = get_timestamp(self.config_vars)
+        download_rate_mbps = round(float(results_dict['download'])/1024000, 2)
+        upload_rate_mbps = round(float(results_dict['upload'])/1024000, 2)
+        ping_time = int(results_dict['ping'])
+        server_name = str(results_dict['server']['host'])
+        mbytes_sent = round(int(results_dict['bytes_sent'])/1024000, 2)
+        mbytes_received = round(int(results_dict['bytes_received'])/1024000, 2)
+        latency_ms = int(results_dict['ping'])
+        jitter_ms = None
+        client_ip = str(results_dict['client']['ip'])
+        provider = 'Ookla'
+
+        self.file_logger.info( 'time: {}, ping_time: {}, download_rate_mbps: {}, upload_rate_mbps: {}, server_name: {}, mbytes_sent: {},  \
+mbytes_received: {}, latency_ms: {}, jitter_ms: {}, client_ip: {}, provider: {}'.format(
+            test_time, ping_time, download_rate_mbps, upload_rate_mbps, server_name, mbytes_sent, mbytes_received, latency_ms, jitter_ms, client_ip, provider))
+
+        return {'time': test_time, 'ping_time': ping_time, 'download_rate_mbps': download_rate_mbps, 'upload_rate_mbps': upload_rate_mbps, 'server_name': server_name, 
+            'mbytes_sent': mbytes_sent, 'mbytes_received': mbytes_received, 'latency_ms': latency_ms, 'jitter_ms': jitter_ms, 'client_ip': client_ip,
+            'provider': provider}
 
 
     def run_tests(self, status_file_obj, check_correct_mode_interface, config_vars, exporter_obj, lockf_obj):
 
-        column_headers = ['time', 'server_name', 'ping_time', 'download_rate_mbps', 'upload_rate_mbps']
-
-        results_dict = {}
-
-        self.file_logger.info("Starting speedtest...")
+        self.file_logger.info("Starting speedtest ({})...".format(config_vars['provider']))
         status_file_obj.write_status_file("speedtest")
 
         if check_correct_mode_interface('8.8.8.8', config_vars, self.file_logger):
@@ -129,26 +273,34 @@ class Speedtester(object):
             self.file_logger.info("Speedtest in progress....please wait.")
 
             # speedtest returns false if there are any issues
-            speedtest_results = self.ooklaspeedtest(config_vars['server_id'])
+            speedtest_results = {}
+
+            if config_vars['provider'] == 'ookla':
+                self.file_logger.debug("Running Ookla speedtest.")
+                speedtest_results = self.ooklaspeedtest(config_vars['server_id'])
+                
+            elif config_vars['provider'] == 'librespeed':
+                self.file_logger.debug("Running Librespeed speedtest.")
+                speedtest_results = self.librespeed(server_id=config_vars['server_id'], args=config_vars['librespeed_args'])
+
+            else:
+                self.file_logger.error("Unknown speedtest provider: {}".format(config_vars['provider']))
+                return False
 
             if not speedtest_results == False:
 
                 self.file_logger.debug("Main: Speedtest results:")
                 self.file_logger.debug(speedtest_results)
 
-                # speedtest results
-                results_dict['time'] = int(time.time())
-                results_dict['ping_time'] = int(speedtest_results['ping_time'])
-                results_dict['download_rate_mbps'] = float(speedtest_results['download_rate'])
-                results_dict['upload_rate_mbps'] = float(speedtest_results['upload_rate'])
-                results_dict['server_name'] = str(speedtest_results['server_name'])
+                # define column headers for CSV
+                column_headers = list(speedtest_results.keys())
 
                 self.file_logger.info("Speedtest ended.")
 
                 # dump the results
                 data_file = config_vars['speedtest_data_file']
                 test_name = "Speedtest"
-                if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger):
+                if exporter_obj.send_results(config_vars, speedtest_results, column_headers, data_file, test_name, self.file_logger):
                     self.file_logger.info("Speedtest results sent OK.")
                     return True
                 else:

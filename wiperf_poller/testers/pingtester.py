@@ -8,6 +8,7 @@ import re
 import subprocess
 from sys import stderr
 from wiperf_poller.helpers.os_cmds import PING_CMD
+from wiperf_poller.helpers.timefunc import get_timestamp
 
 class PingTester(object):
     '''
@@ -152,11 +153,7 @@ class PingTester(object):
                         ping_host3, ping_host4, ping_host5]
 
         ping_count = config_vars['ping_count']
-
-        # define colum headers for CSV
-        column_headers = ['time', 'ping_index', 'ping_host', 'pkts_tx', 'pkts_rx',
-                            'percent_loss', 'test_time_ms', 'rtt_min_ms', 'rtt_avg_ms', 'rtt_max_ms', 'rtt_mdev_ms']
-        
+      
         tests_passed = True
 
         # initial ping to populate arp cache and avoid arp timeput for first test ping
@@ -206,17 +203,20 @@ class PingTester(object):
 
             # ping results
             if ping_result:
-                results_dict['time'] = int(time.time())
-                results_dict['ping_index'] = ping_index
-                results_dict['ping_host'] = ping_result['host']
-                results_dict['pkts_tx'] = ping_result['pkts_tx']
-                results_dict['pkts_rx'] = ping_result['pkts_rx']
-                results_dict['percent_loss'] = ping_result['pkt_loss']
-                results_dict['test_time_ms'] = ping_result['test_time']
+                results_dict['time'] = get_timestamp(config_vars)
+                results_dict['ping_index'] = int(ping_index)
+                results_dict['ping_host'] = str(ping_result['host'])
+                results_dict['pkts_tx'] = int(ping_result['pkts_tx'])
+                results_dict['pkts_rx'] = int(ping_result['pkts_rx'])
+                results_dict['percent_loss'] = int(ping_result['pkt_loss'])
+                results_dict['test_time_ms'] = int(ping_result['test_time'])
                 results_dict['rtt_min_ms'] = round(float(ping_result['rtt_min']), 2)
                 results_dict['rtt_avg_ms'] = round(float(ping_result['rtt_avg']), 2)
                 results_dict['rtt_max_ms'] = round(float(ping_result['rtt_max']), 2)
                 results_dict['rtt_mdev_ms'] = round(float(ping_result['rtt_mdev']), 2)
+
+                # define column headers for CSV
+                column_headers = list(results_dict.keys())
 
                 # dump the results
                 data_file = config_vars['ping_data_file']

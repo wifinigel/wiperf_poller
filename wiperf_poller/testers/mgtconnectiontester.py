@@ -19,9 +19,8 @@ class MgtConnectionTester(object):
         self.platform = platform
         self.file_logger = file_logger
 
-    def check_connection(self, watchdog_obj, lockf_obj):
+    def check_connection(self, lockf_obj):
 
-        data_transport = self.config_vars['data_transport']
         exporter_type = self.config_vars['exporter_type']
         data_host = self.config_vars['data_host']
         data_port = self.config_vars['data_port']
@@ -41,22 +40,21 @@ class MgtConnectionTester(object):
                 else:
                     self.file_logger.warning("  We still have a routing issue. Will have to exit as mgt traffic over correct interface not possible")
                     self.file_logger.warning("  Suggest making static routing additions or adding an additional metric to the interface causing the issue.")
+                    self.file_logger.warning("  (*** Note ***: check you have configured the correct mgt interface if this message persists)")
                     lockf_obj.delete_lock_file()
                     sys.exit()
 
         # if we are using hec, make sure we can access the hec network port, otherwise we are wasting our time
-        if data_transport == 'hec' and exporter_type == 'splunk':
+        if exporter_type == 'splunk':
             self.file_logger.info("  Checking port connection to Splunk server {}, port: {}".format(data_host, data_port))
 
             try:
-                portcheck_output = subprocess.check_output('{} -zvw10 {} {}'.format(NC_CMD, data_host, data_port), stderr=subprocess.STDOUT, shell=True).decode()
+                subprocess.check_output('{} -zvw10 {} {}'.format(NC_CMD, data_host, data_port), stderr=subprocess.STDOUT, shell=True).decode()
                 self.file_logger.info("  Port connection to server {}, port: {} checked OK.".format(data_host, data_port))
             except subprocess.CalledProcessError as exc:
                 output = exc.output.decode()
-                self.file_logger.error("Port check to server failed. Err msg: {} (Exiting...)".format(str(output)))
-                watchdog_obj.inc_watchdog_count()
-                lockf_obj.delete_lock_file()
-                sys.exit()
+                self.file_logger.error("Port check to server failed. Err msg: {}".format(str(output)))
+                return False
 
             # check our token is valid
             payload = dict()
@@ -84,9 +82,7 @@ class MgtConnectionTester(object):
 
             if not passed_auth:
                 self.file_logger.error("Splunk token check: Auth check to server failed. (Exiting...)")
-                watchdog_obj.inc_watchdog_count()
-                lockf_obj.delete_lock_file()
-                sys.exit()
+                return False
             
             return True
         
@@ -94,15 +90,13 @@ class MgtConnectionTester(object):
             self.file_logger.info("  Checking port connection to InfluxDB server {}, port: {}".format(data_host, data_port))
 
             try:
-                portcheck_output = subprocess.check_output('{} -zvw10 {} {}'.format(NC_CMD, data_host, data_port), stderr=subprocess.STDOUT, shell=True).decode()
+                subprocess.check_output('{} -zvw10 {} {}'.format(NC_CMD, data_host, data_port), stderr=subprocess.STDOUT, shell=True).decode()
                 self.file_logger.info("  Port connection to server {}, port: {} checked OK.".format(data_host, data_port))
             except subprocess.CalledProcessError as exc:
                 output = exc.output.decode()
                 self.file_logger.error(
-                    "Port check to server failed. Err msg: {} (Exiting...)".format(str(output)))
-                watchdog_obj.inc_watchdog_count()
-                lockf_obj.delete_lock_file()
-                sys.exit()
+                    "Port check to server failed. Err msg: {}".format(str(output)))
+                return False
 
             return True
 
@@ -110,15 +104,13 @@ class MgtConnectionTester(object):
             self.file_logger.info("  Checking port connection to InfluxDB2 server {}, port: {}".format(data_host, data_port))
 
             try:
-                portcheck_output = subprocess.check_output('{} -zvw10 {} {}'.format(NC_CMD, data_host, data_port), stderr=subprocess.STDOUT, shell=True).decode()
+                subprocess.check_output('{} -zvw10 {} {}'.format(NC_CMD, data_host, data_port), stderr=subprocess.STDOUT, shell=True).decode()
                 self.file_logger.info("  Port connection to server {}, port: {} checked OK.".format(data_host, data_port))
             except subprocess.CalledProcessError as exc:
                 output = exc.output.decode()
                 self.file_logger.error(
-                    "Port check to server failed. Err msg: {} (Exiting...)".format(str(output)))
-                watchdog_obj.inc_watchdog_count()
-                lockf_obj.delete_lock_file()
-                sys.exit()
+                    "Port check to server failed. Err msg: {}".format(str(output)))
+                return False
 
             return True
         

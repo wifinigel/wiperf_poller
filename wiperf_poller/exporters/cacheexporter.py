@@ -41,16 +41,6 @@ class CacheExporter(object):
         self.cache_checks_completed = False
     
     
-    def _check_cache_root_exists(self):
-        """
-        Check if root cache dir exists (by default /var/cache/wiperf)
-        """
-        if os.path.exists(self.cache_root) and os.path.isdir(self.cache_root):
-            return True
-
-        return False
-
-
     def _check_cache_day_dir_exists(self):
         """
         Check if today's dir exists
@@ -180,11 +170,6 @@ class CacheExporter(object):
 
         # check cache checks, unless completed on previous iteration
         if not self.cache_checks_completed:
-
-            # check we have a root dir for cache dirs
-            if not self._check_cache_root_exists():
-                self.file_logger.error("Unable to cache results data as cache root does not exist: {}".format(self.cache_root))
-                return False
 
             # check cache dir for today exists
             if not self._check_cache_day_dir_exists():

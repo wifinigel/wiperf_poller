@@ -44,10 +44,7 @@ def influxexporter(localhost, host, port, username, password, database, dict_dat
     # if time-source sync'ed, add timestamp
     if time_synced():
         data_point['time'] = dict_data['time']
-
-    # remove redundant timestamp from results data
-    del dict_data['time']
-    
+ 
     # put results data in to payload to send to Influx
     data_point['fields'] = dict_data
 

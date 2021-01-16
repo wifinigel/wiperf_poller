@@ -140,9 +140,6 @@ class SplunkExporter(object):
         if time_synced():
             event_data['time'] = results_dict['time']
         
-        # remove redundant timestamp from results data
-        del results_dict['time']
-
         json_event_data = json.dumps(event_data)
 
         # send results data

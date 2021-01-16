@@ -129,8 +129,23 @@ class SpoolExporter(object):
         Dump the results data in to a timestamped file
         """
 
-        # if spooling not enabled, increment watchdog, remove lock file & exit
-        if not self.spool_enabled == 'yes':
+        #self.file_logger.debug("Result={}".format(dict_data))
+        #self.file_logger.debug("Exporter={}".format(config_vars['exporter_type']))
+
+        # if we get here and the exporter is not set to spooler, must have had
+        # issue sending result to reporting server, try to spool it
+        if config_vars['exporter_type'] != 'spooler':
+        
+            if self.spool_enabled == 'yes':
+                self.file_logger.info("Spooling result as looks like an issue sending to reporting server.")
+            else:
+                self.file_logger.info("Unable to spool result as spooling disabled.")
+                return False
+
+        elif not self.spool_enabled == 'yes':
+            # to get here, exporter must have been changed to spooler due to comms issue at start 
+            # of poller checks. If spooling not enabled, increment watchdog, remove lock file & exit
+            # as no point in continuing as no way of saving results.
             self.file_logger.error("Result spooling not enabled - Exiting.")
             watchdog_obj.inc_watchdog_count()
             lockf_obj.delete_lock_file()

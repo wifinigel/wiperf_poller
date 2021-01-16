@@ -27,7 +27,6 @@ class ResultsExporter(object):
         self.lockf_obj = lockf_obj
         self.cache_obj = CacheExporter(file_logger)
         self.spooler_obj = spooler_obj
-
     
     def send_results_to_splunk(self, host, token, port, dict_data, file_logger, source):
 
@@ -54,6 +53,8 @@ class ResultsExporter(object):
 
     def send_results(self, config_vars, results_dict, column_headers, data_file, test_name, file_logger, delete_data_file=False):
 
+        sent_ok = False
+
         # dump the results to local cache if enabled
         if config_vars['cache_enabled'] =='yes':
             file_logger.info("Sending results to local file cache.")
@@ -63,14 +64,14 @@ class ResultsExporter(object):
         if config_vars['exporter_type'] == 'splunk':
 
             file_logger.info("Splunk update: {}, source={}".format(data_file, test_name))
-            return self.send_results_to_splunk(config_vars['data_host'], config_vars['splunk_token'], config_vars['data_port'],
+            sent_ok = self.send_results_to_splunk(config_vars['data_host'], config_vars['splunk_token'], config_vars['data_port'],
                 results_dict, file_logger, data_file)
         
         elif config_vars['exporter_type'] == 'influxdb':
             
             file_logger.info("InfluxDB update: {}, source={}".format(data_file, test_name))
 
-            return self.send_results_to_influx(gethostname(), config_vars['data_host'], config_vars['data_port'], 
+            sent_ok = self.send_results_to_influx(gethostname(), config_vars['data_host'], config_vars['data_port'], 
                 config_vars['influx_username'], config_vars['influx_password'], config_vars['influx_database'], results_dict, data_file, file_logger)
         
         elif config_vars['exporter_type'] == 'influxdb2':
@@ -82,15 +83,22 @@ class ResultsExporter(object):
             if is_ipv6(host): host = "[{}]".format(host)
             influx_url = "https://{}:{}".format(host, config_vars['data_port'])
 
-            return self.send_results_to_influx2(gethostname(), influx_url, config_vars['influx2_token'],
+            sent_ok = self.send_results_to_influx2(gethostname(), influx_url, config_vars['influx2_token'],
                     config_vars['influx2_bucket'], config_vars['influx2_org'], results_dict, data_file, file_logger)
         
         elif config_vars['exporter_type'] == 'spooler':
-            
-            return self.send_results_to_spooler(config_vars, data_file, results_dict, file_logger)
+
+            # Do nothing, but drop through to spooler export at end
+            pass
         
         else:
             file_logger.info("Unknown exporter type in config file: {}".format(config_vars['exporter_type']))
+            self.lockf_obj.delete_lock_file()
             sys.exit()
 
-        return True
+        if sent_ok:
+            # we sent our data to  reporting plarform OK
+            return True
+        else:
+            # sending to reporting server failed, try spooling result as last resort
+            return self.send_results_to_spooler(config_vars, data_file, results_dict, file_logger)

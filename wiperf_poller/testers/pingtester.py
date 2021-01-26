@@ -144,13 +144,17 @@ class PingTester(object):
         self.file_logger.info("Starting ping test...")
         status_file_obj.write_status_file("Ping tests")
 
-        ping_host1 = config_vars['ping_host1']
-        ping_host2 = config_vars['ping_host2']
-        ping_host3 = config_vars['ping_host3']
-        ping_host4 = config_vars['ping_host4']
-        ping_host5 = config_vars['ping_host5']
-        ping_hosts = [ping_host1, ping_host2,
-                        ping_host3, ping_host4, ping_host5]
+        # read in ping hosts (format: 'ping_host1')
+        num_ping_targets = int(config_vars['ping_targets_total']) + 1
+
+        ping_hosts = []
+
+        for target_num in range(1, num_ping_targets):
+            target_name = 'ping_host{}'.format(target_num)
+            ping_host = ping_sect.get(target_name, '')
+
+            if ping_host:
+                ping_hosts.append(ping_host)
 
         ping_count = config_vars['ping_count']
       

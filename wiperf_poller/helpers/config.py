@@ -172,8 +172,8 @@ def read_local_config(config_file, file_logger):
 
     # Get Ping config params
     ping_sect = config['Ping_Test']
-    config_vars['ping_targets_total'] = ping_sect.get('number_of_targets', 5)
     config_vars['ping_enabled'] = ping_sect.get('enabled', 'no')
+    config_vars['ping_targets_total'] = ping_sect.get('ping_targets_total', 5)
     config_vars['ping_data_file'] = ping_sect.get('ping_data_file', 'wiperf-ping')
 
     # get specifed number of targets (format: 'ping_host1')

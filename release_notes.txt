@@ -1,3 +1,19 @@
+v0.2.4
+1. Added support for user-defined number of ping tests
+
+    New config.ini parameter to define number of targets: ping_targets_total: 10
+    
+    Hosts for all required targets must be defined in config.ini too, e.g.
+
+    ping_targets_total: 7
+    ping_host1: google.com
+    ping_host2: cisco.com
+    ping_host3: bbc.co.uk
+    ping_host4: 8.8.8.8
+    ping_host5: 8.8.4.4 
+    ping_host6: my_site.command
+    ping_host7: my_other_site.com 
+
 v0.2
 1.  Added fix for bad read of remote config file when downloaded (thanks Ben Roeder)
 2.  Fixed bad config var names for InfluxDB2 in config.py (thanks Konstantin - issue #1)

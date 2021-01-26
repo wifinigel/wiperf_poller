@@ -151,7 +151,7 @@ class PingTester(object):
 
         for target_num in range(1, num_ping_targets):
             target_name = 'ping_host{}'.format(target_num)
-            ping_host = ping_sect.get(target_name, '')
+            ping_host = config_vars[target_name]
 
             if ping_host:
                 ping_hosts.append(ping_host)
@@ -182,7 +182,6 @@ class PingTester(object):
 
         # run actual ping tests
         ping_index = 0
-        delete_file = True
         all_tests_fail = True
 
         for ping_host in ping_hosts:
@@ -225,14 +224,11 @@ class PingTester(object):
                 # dump the results
                 data_file = config_vars['ping_data_file']
                 test_name = "Ping"
-                if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger, delete_data_file=delete_file):
+                if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger):
                     self.file_logger.info("Ping test ended.")
                 else:
                     self.file_logger.error("Issue sending ping results.")
                     tests_passed = False
-
-                # Make sure we don't delete data file next time around
-                delete_file = False
 
                 self.file_logger.debug("Main: Ping test results:")
                 self.file_logger.debug(ping_result)

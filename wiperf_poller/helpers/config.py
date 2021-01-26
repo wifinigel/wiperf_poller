@@ -172,13 +172,17 @@ def read_local_config(config_file, file_logger):
 
     # Get Ping config params
     ping_sect = config['Ping_Test']
+    config_vars['ping_targets_total'] = ping_sect.get('number_of_targets', 5)
     config_vars['ping_enabled'] = ping_sect.get('enabled', 'no')
     config_vars['ping_data_file'] = ping_sect.get('ping_data_file', 'wiperf-ping')
-    config_vars['ping_host1'] = ping_sect.get('ping_host1', '')
-    config_vars['ping_host2'] = ping_sect.get('ping_host2', '')
-    config_vars['ping_host3'] = ping_sect.get('ping_host3', '')
-    config_vars['ping_host4'] = ping_sect.get('ping_host4', '')
-    config_vars['ping_host5'] = ping_sect.get('ping_host5', '')
+
+    # get specifed number of targets (format: 'ping_host1')
+    num_ping_targets = int(config_vars['ping_targets_total']) + 1
+
+    for target_num in range(1, num_ping_targets):
+        target_name = 'ping_host{}'.format(target_num)
+        config_vars[target_name] = ping_sect.get(target_name, '')
+
     config_vars['ping_count'] = ping_sect.get('ping_count', '')
 
     # Get iperf3 tcp test params

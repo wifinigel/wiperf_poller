@@ -239,7 +239,10 @@ class SmbTester(object):
         all_tests_fail = True
         results_dict = {}
 
-        for smb_index in range(1,6):
+        # get specifed number of targets
+        num_smb_targets = int(config_vars['smb_targets_count']) + 1
+
+        for smb_index in range(1, num_smb_targets):
 
             # bail if we have had previous test issues
             if config_vars['test_issue'] == True:

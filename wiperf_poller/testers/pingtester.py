@@ -29,7 +29,7 @@ class PingTester(object):
         self.rtt_max = ''
         self.rtt_mdev = ''
 
-    def ping_host(self, host, count, ping_timeout=1):
+    def ping_host(self, host, count, ping_timeout=1, ping_interval=0.2):
         '''
         This function will run a ping test and return an analysis of the results
 
@@ -54,7 +54,7 @@ class PingTester(object):
 
         # Execute the ping
         try:
-            cmd_string = "{} -4 -q -c {} -W {} {}".format(PING_CMD, count, ping_timeout, host)
+            cmd_string = "{} -4 -q -c {} -W {} -i {} {}".format(PING_CMD, count, ping_timeout, ping_interval, host)
             ping_output = subprocess.check_output(cmd_string, stderr=subprocess.STDOUT, shell=True).decode().splitlines()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
@@ -145,7 +145,7 @@ class PingTester(object):
         status_file_obj.write_status_file("Ping tests")
 
         # read in ping hosts (format: 'ping_host1')
-        num_ping_targets = int(config_vars['ping_targets_total']) + 1
+        num_ping_targets = int(config_vars['ping_targets_count']) + 1
 
         ping_hosts = []
 

@@ -73,8 +73,16 @@ class HttpTester(object):
         self.file_logger.info("Starting HTTP tests...")
         status_file_obj.write_status_file("HTTP tests")
 
-        http_targets = [config_vars['http_target1'], config_vars['http_target2'],
-                        config_vars['http_target3'], config_vars['http_target4'], config_vars['http_target5']]
+        # build targets list
+        http_targets = []
+        
+        # get specifed number of targets (format: 'http_target1')
+        num_http_targets = int(config_vars['http_targets_count']) + 1
+
+        # read in all target data
+        for target_num in range(1, num_http_targets):
+            target_name = 'http_target{}'.format(target_num)
+            http_targets.append(config_vars[target_name])
 
         http_index = 0
         delete_file = True

@@ -61,8 +61,16 @@ class DnsTester(object):
         self.file_logger.info("Starting DNS tests...")
         status_file_obj.write_status_file("DNS tests")
 
-        dns_targets = [config_vars['dns_target1'], config_vars['dns_target2'],
-                       config_vars['dns_target3'], config_vars['dns_target4'], config_vars['dns_target5']]
+        # build targets list
+        dns_targets = []
+        
+        # get specifed number of targets (format: 'dns_target1')
+        num_dns_targets = int(config_vars['dns_targets_count']) + 1
+
+        # read in all target data
+        for target_num in range(1, num_dns_targets):
+            target_name = 'dns_target{}'.format(target_num)
+            dns_targets.append(config_vars[target_name])
 
         dns_index = 0
         delete_file = True

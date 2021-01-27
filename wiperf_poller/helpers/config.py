@@ -173,17 +173,20 @@ def read_local_config(config_file, file_logger):
     # Get Ping config params
     ping_sect = config['Ping_Test']
     config_vars['ping_enabled'] = ping_sect.get('enabled', 'no')
-    config_vars['ping_targets_total'] = ping_sect.get('ping_targets_total', 5)
+    config_vars['ping_targets_count'] = ping_sect.get('ping_targets_count', 5)
     config_vars['ping_data_file'] = ping_sect.get('ping_data_file', 'wiperf-ping')
 
     # get specifed number of targets (format: 'ping_host1')
-    num_ping_targets = int(config_vars['ping_targets_total']) + 1
+    num_ping_targets = int(config_vars['ping_targets_count']) + 1
 
     for target_num in range(1, num_ping_targets):
         target_name = 'ping_host{}'.format(target_num)
+        # format: config_vars["ping_host1"]
         config_vars[target_name] = ping_sect.get(target_name, '')
 
-    config_vars['ping_count'] = ping_sect.get('ping_count', '')
+    config_vars['ping_count'] = ping_sect.get('ping_count', 10)
+    config_vars['ping_timeout'] = ping_sect.get('ping_timeout', 1)
+    config_vars['ping_interval'] = ping_sect.get('ping_interval', 0.2)
 
     # Get iperf3 tcp test params
     iperft_sect = config['Iperf3_tcp_test']
@@ -205,22 +208,30 @@ def read_local_config(config_file, file_logger):
     # Get DNS test params
     dns_sect = config['DNS_test']
     config_vars['dns_test_enabled'] = dns_sect.get('enabled', 'no')
+    config_vars['dns_targets_count'] = dns_sect.get('dns_targets_count', 5)
     config_vars['dns_data_file'] = dns_sect.get('dns_data_file', 'wiperf-dns')
-    config_vars['dns_target1'] = dns_sect.get('dns_target1', '')
-    config_vars['dns_target2'] = dns_sect.get('dns_target2', '')
-    config_vars['dns_target3'] = dns_sect.get('dns_target3', '')
-    config_vars['dns_target4'] = dns_sect.get('dns_target4', '')
-    config_vars['dns_target5'] = dns_sect.get('dns_target5', '')
+
+    # get specifed number of targets (format: 'dns_target1')
+    num_dns_targets = int(config_vars['dns_targets_count']) + 1
+
+    for target_num in range(1, num_dns_targets):
+        target_name = 'dns_target{}'.format(target_num)
+        # format: config_vars["dns_target1"]
+        config_vars[target_name] = dns_sect.get(target_name, '')
 
     # Get http test params
     http_sect = config['HTTP_test']
     config_vars['http_test_enabled'] = http_sect.get('enabled', 'no')
+    config_vars['http_targets_count'] = http_sect.get('http_targets_count', 5)
     config_vars['http_data_file'] = http_sect.get('http_data_file', 'wiperf-http')
-    config_vars['http_target1'] = http_sect.get('http_target1', '')
-    config_vars['http_target2'] = http_sect.get('http_target2', '')
-    config_vars['http_target3'] = http_sect.get('http_target3', '')
-    config_vars['http_target4'] = http_sect.get('http_target4', '')
-    config_vars['http_target5'] = http_sect.get('http_target5', '')
+
+    # get specifed number of targets (format: 'http_target1')
+    num_http_targets = int(config_vars['http_targets_count']) + 1
+
+    for target_num in range(1, num_http_targets):
+        target_name = 'http_target{}'.format(target_num)
+        # format: config_vars["http_target1"]
+        config_vars[target_name] = http_sect.get(target_name, '')
 
     # Get DHCP test params
     dhcp_sect = config['DHCP_test']
@@ -232,59 +243,47 @@ def read_local_config(config_file, file_logger):
     smb_sect = config['SMB_test']
     config_vars['smb_enabled'] = smb_sect.get('enabled', 'no')
     config_vars['smb_data_file'] = smb_sect.get('smb_data_file', 'wiperf-smb')
+    config_vars['smb_targets_count'] = smb_sect.get('smb_targets_count', 5)
+
     config_vars['smb_global_username'] = smb_sect.get('smb_global_username', ' ')
     config_vars['smb_global_password'] = smb_sect.get('smb_global_password', ' ')
-    config_vars['smb_host1'] = smb_sect.get('smb_host1', '')
-    config_vars['smb_host2'] = smb_sect.get('smb_host2', '')
-    config_vars['smb_host3'] = smb_sect.get('smb_host3', '')
-    config_vars['smb_host4'] = smb_sect.get('smb_host4', '')
-    config_vars['smb_host5'] = smb_sect.get('smb_host5', '')
-    config_vars['smb_username1'] = smb_sect.get('smb_username1', ' ')
-    config_vars['smb_username2'] = smb_sect.get('smb_username2', ' ')
-    config_vars['smb_username3'] = smb_sect.get('smb_username3', ' ')
-    config_vars['smb_username4'] = smb_sect.get('smb_username4', ' ')
-    config_vars['smb_username5'] = smb_sect.get('smb_username5', ' ')
-    config_vars['smb_password1'] = smb_sect.get('smb_password1', ' ')
-    config_vars['smb_password2'] = smb_sect.get('smb_password2', ' ')
-    config_vars['smb_password3'] = smb_sect.get('smb_password3', ' ')
-    config_vars['smb_password4'] = smb_sect.get('smb_password4', ' ')
-    config_vars['smb_password5'] = smb_sect.get('smb_password5', ' ')
-    config_vars['smb_path1'] = smb_sect.get('smb_path1', '')
-    config_vars['smb_path2'] = smb_sect.get('smb_path2', '')
-    config_vars['smb_path3'] = smb_sect.get('smb_path3', '')
-    config_vars['smb_path4'] = smb_sect.get('smb_path4', '')
-    config_vars['smb_path5'] = smb_sect.get('smb_path5', '')
-    config_vars['smb_filename1'] = smb_sect.get('smb_filename1','')
-    config_vars['smb_filename2'] = smb_sect.get('smb_filename2', '')
-    config_vars['smb_filename3'] = smb_sect.get('smb_filename3', '')
-    config_vars['smb_filename4'] = smb_sect.get('smb_filename4', '')
-    config_vars['smb_filename5'] = smb_sect.get('smb_filename5', '')
+
+    # get specifed number of targets 
+    # format: 
+    #   config_vars['smb_host1'] = smb_sect.get('smb_host1', '')
+    #   config_vars['smb_username1'] = smb_sect.get('smb_username1', ' ')
+    #   config_vars['smb_password1'] = smb_sect.get('smb_password1', ' ')
+    #   config_vars['smb_path1'] = smb_sect.get('smb_path1', '')
+    #   config_vars['smb_filename1'] = smb_sect.get('smb_filename1','')
+    
+    num_smb_targets = int(config_vars['smb_targets_count']) + 1
+
+    for target_num in range(1, num_smb_targets):
+
+        host = 'smb_host{}'.format(target_num)
+        # format: config_vars['smb_host1']
+        config_vars[host] = smb_sect.get(host, '')
+
+        username = 'smb_username{}'.format(target_num)
+        # format: config_vars['smb_username1']
+        config_vars[username] = smb_sect.get(username, '')
+
+        password = 'smb_password{}'.format(target_num)
+        # format: config_vars['smb_password1']
+        config_vars[password] = smb_sect.get(password, '')
+
+        path = 'smb_path{}'.format(target_num)
+        # format: config_vars['smb_path1']
+        config_vars[path] = smb_sect.get(path, '')
+
+        filename = 'smb_filename{}'.format(target_num)
+        # format: config_vars['smb_filename1']
+        config_vars[filename] = smb_sect.get(filename, '')
+
 
     # Get Authentication test config params
     #auth_sect = config['Auth_test']
     #config_vars['auth_enabled'] = auth_sect.get('enabled', 'no')
     #config_vars['auth_data_file'] = auth_sect.get('auth_data_file', 'wiperf-auth')
-
-
-    '''
-    # Check all entered config.ini values to see if valid
-    for key in config_vars: 
-
-        field = key
-        value = config_vars[field]   
-
-        if FieldCheck(field, value, DEBUG) == False:
-            err_msg = "Config.ini field error: {} (value = [{}])".format(field, value)
-            file_logger.error(err_msg)
-            print(err_msg + "...exiting")
-            sys.exit()
-
-    # Figure out our machine_id (provides unique device id if required)
-    machine_id = subprocess.check_output("cat /etc/machine-id", stderr=subprocess.STDOUT, shell=True).decode()
-    config_vars['machine_id'] = machine_id.strip()
-
-    if debug:    
-        print("Machine ID = " + config_vars['machine_id'])
-    '''
 
     return config_vars

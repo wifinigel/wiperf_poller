@@ -30,24 +30,24 @@ class ResultsExporter(object):
     
     def send_results_to_splunk(self, host, token, port, dict_data, file_logger, source):
 
-        file_logger.info("Sending results event to Splunk: {} (dest host: {}, dest port: {})".format(source, host, port))
+        file_logger.info("  Sending results data to Splunk: {} (dest host: {}, dest port: {})".format(source, host, port))
         splunk_exp_obj=SplunkExporter(host, token, file_logger, port)
         return splunk_exp_obj.export_result(dict_data, source)
 
     def send_results_to_influx(self, localhost, host, port, username, password, database, dict_data, source, file_logger):
 
-        file_logger.info("Sending results data to Influx host: {}, port: {}, database: {})".format(host, port, database))
+        file_logger.info("  Sending results data to Influx host: {}, port: {}, database: {})".format(host, port, database))
         if is_ipv6(host): host = "[{}]".format(host)
         return influxexporter(localhost, host, port, username, password, database, dict_data, source, file_logger)
     
     def send_results_to_influx2(self, localhost, url, token, bucket, org, dict_data, source, file_logger):
 
-        file_logger.info("Sending results data to Influx url: {}, bucket: {}, source: {})".format(url, bucket, source))
+        file_logger.info("  Sending results data to Influx url: {}, bucket: {}, source: {})".format(url, bucket, source))
         return influxexporter2(localhost, url, token, bucket, org, dict_data, source, file_logger)
     
     def send_results_to_spooler(self, config_vars, data_file, dict_data, file_logger):
 
-        file_logger.info("Sending results data to spooler: {} (as mgt platform not available)".format(data_file))
+        file_logger.info("  Sending results data to spooler: {} (as mgt platform not available)".format(data_file))
         return self.spooler_obj.spool_results(config_vars, data_file, dict_data, self.watchdog_obj, self.lockf_obj)
 
 
@@ -69,7 +69,7 @@ class ResultsExporter(object):
         
         elif config_vars['exporter_type'] == 'influxdb':
             
-            file_logger.info("InfluxDB update: {}, source={}".format(data_file, test_name))
+            file_logger.info("  InfluxDB update: {}, source={}".format(data_file, test_name))
 
             sent_ok = self.send_results_to_influx(gethostname(), config_vars['data_host'], config_vars['data_port'], 
                 config_vars['influx_username'], config_vars['influx_password'], config_vars['influx_database'], results_dict, data_file, file_logger)

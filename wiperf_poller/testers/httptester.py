@@ -8,6 +8,7 @@ import requests
 from requests.exceptions import HTTPError
 import urllib3
 from wiperf_poller.helpers.timefunc import get_timestamp
+from wiperf_poller.helpers.route import is_ipv6
 
 class HttpTester(object):
     '''
@@ -48,9 +49,9 @@ class HttpTester(object):
             # If the response was successful, no Exception will be raised
             response.raise_for_status()
         except HTTPError as http_err:
-            self.file_logger.error('HTTP error occurred: {}'.format(http_err))
+            self.file_logger.error('  HTTP error occurred: {}'.format(http_err))
         except Exception as err:
-            self.file_logger.error('Other error occurred: {}'.format(err))
+            self.file_logger.error('  Other error occurred: {}'.format(err))
 
         end = time.time()
         time_taken = int(round((end - start) * 1000))
@@ -63,7 +64,7 @@ class HttpTester(object):
             self.http_get_duration = False
             self.http_server_response_time = False
 
-        self.file_logger.debug("http get for: {} : {}mS, server repsonse time: {}ms (code: {}).".format(http_target, self.http_get_duration, self.http_server_response_time, self.http_status_code))
+        self.file_logger.debug("  http get for: {} : {}mS, server repsonse time: {}ms (code: {}).".format(http_target, self.http_get_duration, self.http_server_response_time, self.http_status_code))
 
         # return status code & elapsed duration in mS
         return (self.http_status_code, self.http_get_duration, self.http_server_response_time)
@@ -98,18 +99,25 @@ class HttpTester(object):
                 continue
 
             # check test will go over correct interface
+            #TODO: Check for correct URL format here: http://xxxx (otherwise split fails below & script exits)
             target_hostname = http_target.split('/')[2]
+
+            # pull out hostname if in format [2001:1:1:1:1::5] for
+            # direct ipv6 address
+            if "[" in target_hostname:
+                target_hostname = target_hostname[1: -1]
+
             if check_correct_mode_interface(target_hostname, config_vars, self.file_logger):
                 pass
             else:
                 self.file_logger.error(
-                    "Unable to test http to {} as route to destination not over correct interface...bypassing http tests".format(http_target))
+                    "  Unable to test http to {} as route to destination not over correct interface...bypassing http tests".format(http_target))
                 # we will break here if we have an issue as something bad has happened...don't want to run more tests
                 config_vars['test_issue'] = True
                 tests_passed = False
                 break
 
-            self.file_logger.info("Starting http test to : {}".format(http_target))
+            self.file_logger.info("  Starting http test to : {}".format(http_target))
 
             http_result = self.http_get(http_target)
 
@@ -125,7 +133,7 @@ class HttpTester(object):
                     result_str = ' {}: {}ms (status code: {})'.format(http_target, http_get_time, http_status_code)
 
                     # drop abbreviated results in log file
-                    self.file_logger.info("HTTP results: {}".format(result_str))
+                    self.file_logger.info("  HTTP results: {}".format(result_str))
 
                     results_dict = {
                         'time': get_timestamp(config_vars),
@@ -143,25 +151,25 @@ class HttpTester(object):
                     data_file = config_vars['http_data_file']
                     test_name = "HTTP"
                     if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger, delete_data_file=delete_file):
-                        self.file_logger.info("HTTP results sent OK.")
+                        self.file_logger.info("  HTTP results sent OK.")
                     else:
-                        self.file_logger.error("Issue sending HTTP results")
+                        self.file_logger.error("  Issue sending HTTP results")
                         tests_passed = False
 
                     all_tests_fail = False
 
                 else:
-                    self.file_logger.error("HTTP test had issue and failed, check agent.log")
+                    self.file_logger.error("  HTTP test had issue and failed, check agent.log")
                     tests_passed = False
 
-                self.file_logger.info("HTTP test ended.")
+                self.file_logger.info("  HTTP test ended.")
 
                 # Make sure we don't delete data file next time around
                 delete_file = False
 
             else:
                 self.file_logger.error(
-                    "HTTP test error - no results (check logs) - exiting HTTP tests")
+                    "  HTTP test error - no results (check logs) - exiting HTTP tests")
                 config_vars['test_issue'] = True
                 config_vars['test_issue_descr'] = "HTTP test failure"
                 tests_passed = False

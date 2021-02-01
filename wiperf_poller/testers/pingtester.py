@@ -9,6 +9,7 @@ import subprocess
 from sys import stderr
 from wiperf_poller.helpers.os_cmds import PING_CMD
 from wiperf_poller.helpers.timefunc import get_timestamp
+from wiperf_poller.helpers.route import resolve_name
 
 class PingTester(object):
     '''
@@ -54,7 +55,7 @@ class PingTester(object):
 
         # Execute the ping
         try:
-            cmd_string = "{} -4 -q -c {} -W {} -i {} {}".format(PING_CMD, count, ping_timeout, ping_interval, host)
+            cmd_string = "{} -q -c {} -W {} -i {} {}".format(PING_CMD, count, ping_timeout, ping_interval, host)
             ping_output = subprocess.check_output(cmd_string, stderr=subprocess.STDOUT, shell=True).decode().splitlines()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
@@ -125,7 +126,7 @@ class PingTester(object):
         self.file_logger.debug("rtt_max : " + str(self.rtt_max))
         self.file_logger.debug("rtt_mdev : " + str(self.rtt_mdev))
 
-        self.file_logger.info('ping_host: {}, pkts_tx: {}, pkts_rx: {}, pkt_loss: {}, rtt_avg: {}'.format(
+        self.file_logger.info('  ping_host: {}, pkts_tx: {}, pkts_rx: {}, pkt_loss: {}, rtt_avg: {}'.format(
             self.host, self.pkts_tx, self.pkts_rx, self.pkt_loss, self.rtt_avg))
 
         return {
@@ -154,27 +155,30 @@ class PingTester(object):
             ping_host = config_vars[target_name]
 
             if ping_host:
-                ping_hosts.append(ping_host)
+                ping_host_ip = resolve_name(ping_host, self.file_logger)
+                ping_hosts.append( { 'hostname': ping_host, 'ip': ping_host_ip } )
 
         ping_count = config_vars['ping_count']
       
         tests_passed = True
 
         # initial ping to populate arp cache and avoid arp timeput for first test ping
+        ping_hosts_list = []
+
         for ping_host in ping_hosts:
-            if ping_host == '':
+            if ping_host['hostname'] == '':
                 continue
             else:
                 # check for def_gw keyword
-                if ping_host == 'def_gw':
-                    ping_host = adapter.get_def_gw()
-
+                if ping_host['hostname'] == 'def_gw':
+                    ping_host['ip'] = adapter.get_def_gw()
+                
                 # check tests will go over correct interface
-                if check_correct_mode_interface(ping_host, config_vars, self.file_logger):
-                    self.ping_host(ping_host, 1)
+                if check_correct_mode_interface(ping_host['ip'], config_vars, self.file_logger):
+                    self.ping_host(ping_host['ip'], 1)
                 else:
                     self.file_logger.error(
-                        "Unable to ping {} as route to destination not over correct interface...bypassing ping tests".format(ping_host))
+                        "Unable to ping {} ({}) as route to destination not over correct interface...bypassing ping tests".format(ping_host['hostname'], ping_host['ip']))
                     # we will break here if we have an issue as something bad has happened...don't want to run more tests
                     config_vars['test_issue'] = True
                     tests_passed = False
@@ -184,7 +188,7 @@ class PingTester(object):
         ping_index = 0
         all_tests_fail = True
 
-        for ping_host in ping_hosts:
+        for ping_host in ping_hosts_list:
 
             # bail if we have had DNS issues
             if config_vars['test_issue'] == True:
@@ -193,14 +197,13 @@ class PingTester(object):
 
             ping_index += 1
 
-            if ping_host == '':
+            if ping_host['hostname'] == '':
                 continue
             else:
-                # check for def_gw keyword
-                if ping_host == 'def_gw':
-                    ping_host = adapter.get_def_gw()
+                ping_result = self.ping_host(ping_host['ip'], ping_count)
 
-                ping_result = self.ping_host(ping_host, ping_count)
+                # put hostname back in (swap out IP)
+                ping_result['host'] = ping_host['hostname']
 
             results_dict = {}
 

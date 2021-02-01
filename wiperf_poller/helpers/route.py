@@ -1,5 +1,5 @@
 
-from socket import gethostbyname
+import socket
 import subprocess
 import re
 import sys
@@ -19,19 +19,36 @@ def is_ipv6(ip_address):
     return re.search(r'[abcdf0123456789]+:', ip_address)
 
 
-def resolve_name(hostname, file_logger):
+def resolve_name(hostname, file_logger, ip_family="ipv4"):
     """
     if hostname passed, DNS lookup, otherwise, return unchanged IP address
     """
     if is_ipv4(hostname) or is_ipv6(hostname):
-        return hostname
+        return hostname  
+
+    # check if we are specifying an ipv6 address
+    if "^v6" in hostname:
+        (hostname, _) = hostname.split("^")
+        ip_family="ipv6"
+    # explicitly specify IPv4 host requirement
+    elif "^v4" in hostname:
+        (hostname, _) = hostname.split("^")
+        ip_family="ipv4"
 
     try:
-        ip_address = gethostbyname(hostname)
-        file_logger.info("  DNS hostname lookup : {}. Result: {}".format(hostname, ip_address))
+        ip_address = ''
+
+        if ip_family == "ipv6":
+            ip_address = socket.getaddrinfo(hostname, 0, family=socket.AF_INET6)[0][4][0]
+        elif ip_family == "ipv4":
+            # assume ipv4
+            ip_address = socket.getaddrinfo(hostname, 0, family=socket.AF_INET)[0][4][0]
+        
+        file_logger.info("  DNS hostname lookup : {} / Result: {}".format(hostname, ip_address))
         return ip_address
+
     except Exception as ex:
-        file_logger.error("  Issue looking up host {} (DNS Issue?): {}".format(hostname, ex))
+        file_logger.error("  Issue looking up host {} (DNS or hostname Issue?): {}".format(hostname, ex))
         return False
 
   
@@ -53,7 +70,7 @@ def get_first_ipv4_route_to_dest(ip_address, file_logger, ip_ver=''):
     Check the routes to a specific ip destination & return first entry
     """
 
-    ip_address = resolve_name(ip_address, file_logger)
+    ip_address = resolve_name(ip_address, file_logger, ip_family="ipv4")
 
     # get specific route details of path that will be used by kernel (cannot be used to modify routing entry)
     ip_route_cmd = "{} {} route get ".format(IP_CMD, ip_ver) + ip_address + " | head -n 1"

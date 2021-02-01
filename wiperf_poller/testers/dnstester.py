@@ -4,6 +4,8 @@ A simple class to perform a DNS lookup against a number of targets and return th
 import time
 import socket
 from wiperf_poller.helpers.timefunc import get_timestamp
+from wiperf_poller.helpers.route import resolve_name
+
 
 class DnsTester(object):
     '''
@@ -34,25 +36,23 @@ class DnsTester(object):
 
         self.target = target
 
-        self.file_logger.debug("DNS test target: {}".format(self.target))
-        self.file_logger.debug("Performing DNS lookup for: {}".format(target))
+        self.file_logger.debug("  DNS test target: {}".format(self.target))
+        self.file_logger.debug("  Performing DNS lookup for: {}".format(target))
 
         # TODO: Perform the test 3 times and take avg of best 2 out of 3 to iron
         #       out single-case anonmalies
+
         start = time.time()
-        try:
-            socket.gethostbyname(target)
-        except Exception as ex:
-            self.file_logger.error("DNS test lookup to {} failed. Err msg: {}".format(target, ex))
-            self.dns_result = False
-            self.file_logger.debug("DNS lookup for: {} failed! - err: {}".format(target, ex))
-            return self.dns_result
+        ip_address = resolve_name(target, self.file_logger)
+        
+        if not ip_address:
+            return False
 
         end = time.time()
         time_taken = int(round((end - start) * 1000))
         self.dns_result = time_taken
 
-        self.file_logger.debug("DNS lookup for: {} succeeded.".format(target))
+        self.file_logger.debug("  DNS lookup for: {} succeeded. (Result: {}, Time: {})".format(target, ip_address, time_taken))
 
         return self.dns_result
     
@@ -89,10 +89,18 @@ class DnsTester(object):
             if dns_result:
 
                 # summarise result for log
+                if "^v6" in dns_target:
+                    dns_target, _ = dns_target.split('^')
+                    dns_target += " (ipv6)"
+                
+                if "^v4" in dns_target:
+                    dns_target, _ = dns_target.split('^')
+                    dns_target += " (ipv4)"
+
                 result_str = ' {}: {}ms'.format(dns_target, dns_result)
 
                 # drop abbreviated results in log file
-                self.file_logger.info("DNS results: {}".format(result_str))
+                self.file_logger.info("  DNS results: {}".format(result_str))
 
                 results_dict = {
                     'time': get_timestamp(config_vars),
@@ -108,16 +116,16 @@ class DnsTester(object):
                 data_file = config_vars['dns_data_file']
                 test_name = "DNS"
                 if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger, delete_data_file=delete_file):
-                    self.file_logger.info("DNS test ended.")
+                    self.file_logger.info("  DNS test ended.")
                 else:
-                    self.file_logger.error("Issue sending DNS results.")
+                    self.file_logger.error("  Issue sending DNS results.")
                     tests_passed = False
 
                 # Make sure we don't delete data file next time around
                 delete_file = False
 
             else:
-                self.file_logger.error("DNS test error - no results (check logs) - exiting DNS tests")
+                self.file_logger.error("  DNS test error - no results (check logs) - exiting DNS tests")
                 tests_passed = False
 
         return tests_passed

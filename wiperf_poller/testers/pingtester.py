@@ -163,8 +163,6 @@ class PingTester(object):
         tests_passed = True
 
         # initial ping to populate arp cache and avoid arp timeput for first test ping
-        ping_hosts_list = []
-
         for ping_host in ping_hosts:
             if ping_host['hostname'] == '':
                 continue
@@ -188,7 +186,7 @@ class PingTester(object):
         ping_index = 0
         all_tests_fail = True
 
-        for ping_host in ping_hosts_list:
+        for ping_host in ping_hosts:
 
             # bail if we have had DNS issues
             if config_vars['test_issue'] == True:
@@ -206,6 +204,15 @@ class PingTester(object):
                 ping_result['host'] = ping_host['hostname']
 
             results_dict = {}
+
+            # fix v4/v6 designator for logs/reports
+            if "^v6" in ping_result['host']:
+                ping_result['host'], _ = ping_result['host'].split('^')
+                ping_result['host'] += " (ipv6)"
+            
+            if "^v4" in ping_result['host']:
+                ping_result['host'], _ = ping_result['host'].split('^')
+                ping_result['host'] += " (ipv4)"
 
             # ping results
             if ping_result:
@@ -228,19 +235,19 @@ class PingTester(object):
                 data_file = config_vars['ping_data_file']
                 test_name = "Ping"
                 if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger):
-                    self.file_logger.info("Ping test ended.")
+                    self.file_logger.info("  Ping test ended.")
                 else:
-                    self.file_logger.error("Issue sending ping results.")
+                    self.file_logger.error("  Issue sending ping results.")
                     tests_passed = False
 
-                self.file_logger.debug("Main: Ping test results:")
+                self.file_logger.debug("  Main: Ping test results:")
                 self.file_logger.debug(ping_result)
                 
                 # signal that at least one test passed
                 all_tests_fail = False
 
             else:
-                self.file_logger.error("Ping test failed.")
+                self.file_logger.error("  Ping test failed.")
                 tests_passed = False
             
         # if all tests fail, and there are more than 2 tests, signal a possible issue

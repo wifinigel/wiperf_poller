@@ -36,7 +36,7 @@ class ResultsExporter(object):
     def send_results_to_influx(self, localhost, host, port, username, password, database, dict_data, source, file_logger):
 
         file_logger.info("  Sending results data to Influx host: {}, port: {}, database: {})".format(host, port, database))
-        if is_ipv6(host): host = "[{}]".format(host)
+        if is_ipv6(host, file_logger): host = "[{}]".format(host)
         return influxexporter(localhost, host, port, username, password, database, dict_data, source, file_logger)
     
     def send_results_to_influx2(self, localhost, url, token, bucket, org, dict_data, source, file_logger):
@@ -79,7 +79,7 @@ class ResultsExporter(object):
 
             # construct url
             host = config_vars['data_host']
-            if is_ipv6(host): host = "[{}]".format(host)
+            if is_ipv6(host, file_logger): host = "[{}]".format(host)
             influx_url = "https://{}:{}".format(host, config_vars['data_port'])
 
             sent_ok = self.send_results_to_influx2(gethostname(), influx_url, config_vars['influx2_token'],

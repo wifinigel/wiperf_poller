@@ -11,24 +11,25 @@ import time
 from wiperf_poller.testers.dhcptester import DhcpTester
 from wiperf_poller.testers.dnstester import DnsTester
 from wiperf_poller.testers.httptester import HttpTester
-from wiperf_poller.testers.ethernetconnectiontester import EthernetConnectionTester
+from wiperf_poller.testers.networkconnectiontester import NetworkConnectionTester
+from wiperf_poller.testers.mgtconnectiontester import MgtConnectionTester
 from wiperf_poller.testers.iperf3tester import IperfTester
 from wiperf_poller.testers.pingtester import PingTester
 from wiperf_poller.testers.speedtester import Speedtester
 from wiperf_poller.testers.smbtester import SmbTester
-#from wiperf_poller.testers.wifiauthentication import AuthTester
-from wiperf_poller.testers.wirelessconnectiontester import WirelessConnectionTester
 
 from wiperf_poller.helpers.bouncer import Bouncer
 from wiperf_poller.helpers.config import read_local_config
 from wiperf_poller.helpers.error_messages import ErrorMessages
-from wiperf_poller.helpers.ethernetadapter import EthernetAdapter
+from wiperf_poller.helpers.networkadapter import NetworkAdapter
 from wiperf_poller.helpers.filelogger import FileLogger
 from wiperf_poller.helpers.lockfile import LockFile
 from wiperf_poller.helpers.os_cmds import check_os_cmds
 from wiperf_poller.helpers.poll_status import PollStatus
 from wiperf_poller.helpers.remoteconfig import check_last_cfg_read
-from wiperf_poller.helpers.route import check_correct_mode_interface
+from wiperf_poller.helpers.route import (check_correct_mode_interface_ipv4,
+    check_correct_mode_interface_ipv6,
+    check_correct_mode_interface)
 from wiperf_poller.helpers.statusfile import StatusFile
 from wiperf_poller.helpers.watchdog import Watchdog
 from wiperf_poller.helpers.wirelessadapter import WirelessAdapter
@@ -95,19 +96,18 @@ bouncer_obj = Bouncer(bounce_file, config_vars, file_logger)
 spooler_obj = SpoolExporter(config_vars, file_logger)
 
 # exporter object
-exporter_obj = ResultsExporter(file_logger, watchdog_obj, lockf_obj, spooler_obj, config_vars['platform'])
+exporter_obj = ResultsExporter(file_logger, watchdog_obj, lockf_obj, spooler_obj)
 
 # adapter object
 adapter_obj = ''
 probe_mode = config_vars['probe_mode']
 wlan_if = config_vars['wlan_if']
 eth_if = config_vars['eth_if']
-platform = config_vars['platform']
 
 if probe_mode == "ethernet":
-    adapter_obj = EthernetAdapter(eth_if, file_logger, platform=platform)
+    adapter_obj = NetworkAdapter(eth_if, file_logger)
 elif probe_mode == "wireless":
-    adapter_obj = WirelessAdapter(wlan_if, file_logger, platform=platform)
+    adapter_obj = WirelessAdapter(wlan_if, file_logger)
 else:
     file_logger.info("Unknown probe mode: {} (exiting)".format(probe_mode))
 
@@ -185,18 +185,24 @@ def main():
 
     status_file_obj.write_status_file("network check")
 
-    if config_vars['probe_mode'] == 'ethernet':
-        file_logger.info("Checking ethernet connection is good...(layer 1 &2)")
-        connection_obj = EthernetConnectionTester(file_logger, eth_if, platform)
+    if config_vars['probe_mode'] == 'wireless':
+        network_if = wlan_if
     else:
-        file_logger.info("Checking wireless connection is good...(layer 1 &2)")
-        connection_obj = WirelessConnectionTester(file_logger, wlan_if, platform)
+        network_if = eth_if
     
+    file_logger.info("Checking {} connection is good...(layer 1/2 & routing for test traffic)".format(config_vars['probe_mode']))
+    connection_obj = NetworkConnectionTester(file_logger, network_if, config_vars['probe_mode'])  
     connection_obj.run_tests(watchdog_obj, lockf_obj, config_vars, exporter_obj)
+
+    file_logger.info("Checking mgt connection is good via interface {}...".format(config_vars['mgt_if']))
+    mgt_connection_obj = MgtConnectionTester(config_vars, file_logger)
+    mgt_connection_obj.check_mgt_connection(lockf_obj, watchdog_obj)
+    
     poll_obj.network('OK') 
     
     # update poll summary with IP
-    poll_obj.ip(adapter_obj.get_adapter_ip())
+    poll_obj.ip(adapter_obj.get_adapter_ipv4_ip())
+    poll_obj.ip_v6(adapter_obj.get_adapter_ipv6_ip())
 
     ################################################
     # Empty results spool queue if required/enabled
@@ -260,7 +266,7 @@ def main():
     file_logger.info("########## speedtest ##########")
     if config_vars['speedtest_enabled'] == 'yes':
 
-        speedtest_obj = Speedtester(file_logger, config_vars, platform)
+        speedtest_obj = Speedtester(file_logger, config_vars)
         test_passed = speedtest_obj.run_tests(status_file_obj, check_correct_mode_interface, config_vars, exporter_obj, lockf_obj)
 
         if test_passed:
@@ -278,7 +284,7 @@ def main():
     if config_vars['ping_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
         # run ping test
-        ping_obj = PingTester(file_logger, platform=platform)
+        ping_obj = PingTester(file_logger)
 
         # run test
         tests_passed = ping_obj.run_tests(status_file_obj, config_vars, adapter_obj, check_correct_mode_interface, exporter_obj, watchdog_obj)
@@ -302,7 +308,7 @@ def main():
     file_logger.info("########## dns tests ##########")
     if config_vars['dns_test_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
-        dns_obj = DnsTester(file_logger, platform=platform)
+        dns_obj = DnsTester(file_logger)
         tests_passed = dns_obj.run_tests(status_file_obj, config_vars, exporter_obj)
 
         if tests_passed:
@@ -324,7 +330,7 @@ def main():
     file_logger.info("########## http tests ##########")
     if config_vars['http_test_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
-        http_obj = HttpTester(file_logger, platform=platform)
+        http_obj = HttpTester(file_logger)
         tests_passed = http_obj.run_tests(status_file_obj, config_vars, exporter_obj, watchdog_obj, check_correct_mode_interface,)
 
         if tests_passed:
@@ -346,7 +352,7 @@ def main():
     file_logger.info("########## iperf3 tcp test ##########")
     if config_vars['iperf3_tcp_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
-        iperf3_tcp_obj = IperfTester(file_logger, platform)
+        iperf3_tcp_obj = IperfTester(file_logger)
         test_result = iperf3_tcp_obj.run_tcp_test(config_vars, status_file_obj, check_correct_mode_interface, exporter_obj)
 
         if test_result:
@@ -368,7 +374,7 @@ def main():
     file_logger.info("########## iperf3 udp test ##########")
     if config_vars['iperf3_udp_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
-        iperf3_udp_obj = IperfTester(file_logger, platform)
+        iperf3_udp_obj = IperfTester(file_logger)
         test_result = iperf3_udp_obj.run_udp_test(config_vars, status_file_obj, check_correct_mode_interface, exporter_obj)
 
         if test_result:
@@ -389,7 +395,7 @@ def main():
     file_logger.info("########## dhcp test ##########")
     if config_vars['dhcp_test_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
-        dhcp_obj = DhcpTester(file_logger, lockf_obj, platform=platform)
+        dhcp_obj = DhcpTester(file_logger, lockf_obj)
         tests_passed = dhcp_obj.run_tests(status_file_obj, config_vars, exporter_obj)
 
         if tests_passed:
@@ -412,7 +418,7 @@ def main():
     file_logger.info("########## SMB test ##########")
     if config_vars['smb_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
-        smb_obj = SmbTester(file_logger, platform=platform)
+        smb_obj = SmbTester(file_logger)
         tests_passed = smb_obj.run_tests(status_file_obj, config_vars, adapter_obj, check_correct_mode_interface, exporter_obj, watchdog_obj)
         if tests_passed:
             poll_obj.smb('Completed')

@@ -4,35 +4,11 @@ import re
 import sys
 from wiperf_poller.helpers.os_cmds import IP_CMD
 
-def is_ipv4(ip_address):
-    """
-    Check if an address is in ivp4 format
-    """
-    return re.search(r'\d+.\d+.\d+.\d+', ip_address)
-
-
-def is_ipv6(ip_address):
-    """
-    Check if an address is in ivp6 format
-    """
-    return re.search(r'[abcdf0123456789]+:', ip_address)
-
-def _field_extractor(pattern, cmd_output_text):
-
-    re_result = re.search(pattern, cmd_output_text)
-
-    if not re_result is None:
-        field_value = re_result.group(1)
-        return field_value
-    else:
-        return None
-
-
 def resolve_name(hostname, file_logger, ip_family="ipv4"):
     """
     if hostname passed, DNS lookup, otherwise, return unchanged IP address
     """
-    if is_ipv4(hostname) or is_ipv6(hostname):
+    if is_ipv4(hostname, file_logger) or is_ipv6(hostname, file_logger):
         return hostname  
 
     # check if we are specifying an ipv6 address
@@ -58,6 +34,51 @@ def resolve_name(hostname, file_logger, ip_family="ipv4"):
     except Exception as ex:
         file_logger.error("  Issue looking up host {} (DNS or hostname Issue?): {}".format(hostname, ex))
         return False
+
+
+def is_ipv4(ip_address, file_logger):
+    """
+    Check if an address is in ivp4 format
+    """
+    if not ip_address:
+        file_logger.warning("  Warning: 'is_ipv4' called with no value")
+        return False
+    
+    if not re.match(r'\d+.\d+.\d+.\d+', ip_address):
+
+        # assume this is a hostname, let's try a lookup
+        ip_address = resolve_name(ip_address, file_logger, ip_family="ipv4")
+    
+    return re.search(r'\d+.\d+.\d+.\d+', ip_address)
+
+
+def is_ipv6(ip_address, file_logger):
+    """
+    Check if an address is in ivp6 format
+    """
+    if not ip_address:
+        file_logger.warning("  Warning: 'is_ipv6' called with no value")
+        return False
+    
+    if not re.match(r'[abcdf0123456789]+:', ip_address):
+
+        # assume this is a hostname, let's try a lookup
+        ip_address = resolve_name(ip_address, file_logger, ip_family="ipv6")
+    
+    return re.search(r'[abcdf0123456789]+:', ip_address)
+
+def _field_extractor(pattern, cmd_output_text):
+
+    re_result = re.search(pattern, cmd_output_text)
+
+    if not re_result is None:
+        field_value = re_result.group(1)
+        return field_value
+    else:
+        return None
+
+
+
 
   
 def get_test_traffic_interface(config_vars, file_logger):
@@ -146,8 +167,8 @@ def check_correct_mgt_interface(mgt_host, mgt_interface, file_logger):
     # figure out mgt_ip (in case hostname passed)
     mgt_ip = resolve_name(mgt_host, file_logger)
 
-    if is_ipv4(mgt_ip): return check_correct_ipv4_mgt_interface(mgt_ip, mgt_interface, file_logger)
-    if is_ipv6(mgt_ip): return check_correct_ipv6_mgt_interface(mgt_ip, mgt_interface, file_logger)
+    if is_ipv4(mgt_ip, file_logger): return check_correct_ipv4_mgt_interface(mgt_ip, mgt_interface, file_logger)
+    if is_ipv6(mgt_ip, file_logger): return check_correct_ipv6_mgt_interface(mgt_ip, mgt_interface, file_logger)
     
     file_logger.error("  Unknown mgt IP address format '{}' mode.".format(mgt_ip))
     return False
@@ -162,7 +183,7 @@ def check_correct_mode_interface_ipv4(ip_address, config_vars, file_logger):
     test_traffic_interface= get_test_traffic_interface(config_vars, file_logger)
     
     # get i/f name for route
-    if not is_ipv4(ip_address):
+    if not is_ipv4(ip_address, file_logger):
         raise ValueError("IP address supplied is not IPv4 format")
 
     route_to_dest = get_first_ipv4_route_to_dest(ip_address, file_logger)
@@ -180,7 +201,7 @@ def check_correct_mode_interface_ipv6(ip_address, config_vars, file_logger):
     test_traffic_interface= get_test_traffic_interface(config_vars, file_logger)
     
     # get i/f name for route
-    if not is_ipv6(ip_address):
+    if not is_ipv6(ip_address, file_logger):
         raise ValueError("IP address supplied is not IPv4 format")
 
     route_to_dest = get_first_ipv6_route_to_dest(ip_address, file_logger)
@@ -195,8 +216,8 @@ def check_correct_mode_interface(host, config_vars, file_logger):
     # figure out mgt_ip (in case hostname passed)
     host_ip = resolve_name(host, file_logger)
 
-    if is_ipv4(host_ip): return check_correct_mode_interface_ipv4(host_ip, config_vars, file_logger)
-    if is_ipv6(host_ip): return check_correct_ipv6_mgt_interface(host_ip, config_vars, file_logger)
+    if is_ipv4(host_ip, file_logger): return check_correct_mode_interface_ipv4(host_ip, config_vars, file_logger)
+    if is_ipv6(host_ip, file_logger): return check_correct_ipv6_mgt_interface(host_ip, config_vars, file_logger)
 
 
 def inject_default_route_ipv4(ip_address, config_vars, file_logger):
@@ -372,7 +393,7 @@ def _inject_static_route_ipv4(ip_address, req_interface, traffic_type, file_logg
 def _inject_static_route_ipv6(ip_address, req_interface, traffic_type, file_logger):
     # use ipv4 function, but pass in -6 version number
     # see https://www.tldp.org/HOWTO/Linux+IPv6-HOWTO/ch07s04.html
-    if not is_ipv6(ip_address): 
+    if not is_ipv6(ip_address, file_logger): 
         raise ValueError("Supplied IP address for static route is not IPv6 format")
 
     return _inject_static_route_ipv4(ip_address, req_interface, traffic_type, file_logger, "-6")
@@ -384,7 +405,7 @@ def inject_mgt_static_route_ipv4(ip_address, config_vars, file_logger):
     """
     mgt_interface = config_vars['mgt_if']
 
-    if not is_ipv4(ip_address): 
+    if not is_ipv4(ip_address, file_logger): 
         raise ValueError("Supplied IP address for static route is not IPv4 format")
     
     return _inject_static_route_ipv4(ip_address, mgt_interface, "mgt", file_logger)
@@ -396,7 +417,7 @@ def inject_mgt_static_route_ipv6(ip_address, config_vars, file_logger):
     """
     mgt_interface = config_vars['mgt_if']
 
-    if not is_ipv6(ip_address): 
+    if not is_ipv6(ip_address,file_logger): 
         raise ValueError("Supplied IP address for static route is not IPv6 format")
     
     return _inject_static_route_ipv6(ip_address, mgt_interface, "mgt", file_logger)
@@ -414,8 +435,8 @@ def inject_test_traffic_static_route(ip_address, config_vars, file_logger):
     # figure out ip (in case hostname passed)
     ip_address = resolve_name(ip_address, file_logger)
 
-    if is_ipv4(ip_address): inject_route = _inject_static_route_ipv4
-    if is_ipv6(ip_address): inject_route = _inject_static_route_ipv4
+    if is_ipv4(ip_address, file_logger): inject_route = _inject_static_route_ipv4
+    if is_ipv6(ip_address, file_logger): inject_route = _inject_static_route_ipv4
 
     # if route injection works, check that route is now over correct interface
     if inject_route(ip_address, test_traffic_interface, "test traffic", file_logger):

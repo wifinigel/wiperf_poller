@@ -1,4 +1,3 @@
-
 import socket
 import subprocess
 import re
@@ -18,6 +17,16 @@ def is_ipv6(ip_address):
     """
     return re.search(r'[abcdf0123456789]+:', ip_address)
 
+def _field_extractor(pattern, cmd_output_text):
+
+    re_result = re.search(pattern, cmd_output_text)
+
+    if not re_result is None:
+        field_value = re_result.group(1)
+        return field_value
+    else:
+        return None
+
 
 def resolve_name(hostname, file_logger, ip_family="ipv4"):
     """
@@ -35,15 +44,14 @@ def resolve_name(hostname, file_logger, ip_family="ipv4"):
         (hostname, _) = hostname.split("^")
         ip_family="ipv4"
 
-    try:
-        ip_address = ''
+    ip_address = ''
+    family_const = socket.AF_INET # default IPv4
 
-        if ip_family == "ipv6":
-            ip_address = socket.getaddrinfo(hostname, 0, family=socket.AF_INET6)[0][4][0]
-        elif ip_family == "ipv4":
-            # assume ipv4
-            ip_address = socket.getaddrinfo(hostname, 0, family=socket.AF_INET)[0][4][0]
-        
+    if ip_family == "ipv6":
+        family_const = socket.AF_INET6
+
+    try:
+        ip_address = socket.getaddrinfo(hostname, 0, family=family_const)[0][4][0]
         file_logger.info("  DNS hostname lookup : {} / Result: {}".format(hostname, ip_address))
         return ip_address
 
@@ -145,25 +153,18 @@ def check_correct_mgt_interface(mgt_host, mgt_interface, file_logger):
     return False
 
 
-def check_correct_mode_interface(ip_address, config_vars, file_logger):
+def check_correct_mode_interface_ipv4(ip_address, config_vars, file_logger):
     """
-    This function checks whether we use the expected interface for testing traffic, 
-    depending on which mode the probe is operating.
-
-    Modes:
-        ethernet : we expect to get to the Internet over the eth interface (usually eth0)
-        wireless : we expect to get to the Internet over the WLAN interface (usually wlan0) 
-
-    args:
-        ip_address: IP address of target out on the test domain (usually the Internet)
-        config_vars: dict of all config vars
-        file_logger: file logger object so that we can log operations
+    (See check_correct_mode_interface method)
     """
 
     # check test traffic will go via correct interface depending on mode
     test_traffic_interface= get_test_traffic_interface(config_vars, file_logger)
     
     # get i/f name for route
+    if not is_ipv4(ip_address):
+        raise ValueError("IP address supplied is not IPv4 format")
+
     route_to_dest = get_first_ipv4_route_to_dest(ip_address, file_logger)
 
     if test_traffic_interface in route_to_dest:
@@ -171,13 +172,39 @@ def check_correct_mode_interface(ip_address, config_vars, file_logger):
     else:
         return False
 
+def check_correct_mode_interface_ipv6(ip_address, config_vars, file_logger):
+    """
+    (See check_correct_mode_interface method)
+    """
+    # check test traffic will go via correct interface depending on mode
+    test_traffic_interface= get_test_traffic_interface(config_vars, file_logger)
+    
+    # get i/f name for route
+    if not is_ipv6(ip_address):
+        raise ValueError("IP address supplied is not IPv4 format")
 
-def inject_default_route(ip_address, config_vars, file_logger):
+    route_to_dest = get_first_ipv6_route_to_dest(ip_address, file_logger)
+
+    if test_traffic_interface in route_to_dest:
+        return True
+    else:
+        return False
+
+def check_correct_mode_interface(host, config_vars, file_logger):
+
+    # figure out mgt_ip (in case hostname passed)
+    host_ip = resolve_name(host, file_logger)
+
+    if is_ipv4(host_ip): return check_correct_mode_interface_ipv4(host_ip, config_vars, file_logger)
+    if is_ipv6(host_ip): return check_correct_ipv6_mgt_interface(host_ip, config_vars, file_logger)
+
+
+def inject_default_route_ipv4(ip_address, config_vars, file_logger):
 
     """
-    This function will attempt to inject a default route to attempt correct
-    routing issues caused by path cost if the ethernet interface is up and
-    is preferred to the WLAN interface.
+    This function will attempt to inject an IPv4 default route to attempt
+    correct routing issues caused by path cost if the ethernet interface
+    is up and is preferred to the WLAN interface.
 
     Scenario:
 
@@ -206,7 +233,7 @@ def inject_default_route(ip_address, config_vars, file_logger):
 
     if not "default" in route_to_dest:
         # this isn't a default route, so we can't fix this
-        file_logger.error('  [Route Injection] Route is not a default route entry...cannot resove this routing issue: {}'.format(route_to_dest))
+        file_logger.error('  [Route Injection (ipv4)] Route is not a default route entry...cannot resolve this routing issue: {}'.format(route_to_dest))
         return False
   
     # delete and re-add route with a new metric
@@ -245,11 +272,81 @@ def inject_default_route(ip_address, config_vars, file_logger):
     file_logger.info("  [Route Injection] Route injection complete")
     return True
 
-
-def _inject_static_route(ip_address, req_interface, traffic_type, file_logger, ip_ver=""):
+def inject_default_route_ipv6(ip_address, config_vars, file_logger):
 
     """
-    This function will attempt to inject a static route to correct
+    This function will attempt to inject an IPv6 default route to attempt
+    correct routing issues caused by path cost if the ethernet interface
+    is up and is preferred to the WLAN interface.
+
+    Scenario:
+
+    This function is called as it has been determined that the route used for
+    testing traffic is not the required interface. An attempt will be made to 
+    fix the routing by adding a new default route that uses the interface required
+    for testing, which will have a lower metrc and be used in preference to the
+    original default route
+
+    Process flow:
+    
+    1. Get route to the destination IP address
+    2. If it's not a default route entry, we can't fix this, exit
+    3. Get the existing default route & extract its metric 
+    4. Add a default route for the interface used for testing, with a lower metric
+    """
+
+    # get the default route to our ipv6 destination
+    route_to_dest = get_route_used_to_dest(ip_address, file_logger)
+
+    # This fix relies on the retrieved route being a default route in the 
+    # format: default dev eth0 metric 1024 onlink pref medium
+
+    if not "default" in route_to_dest:
+        # this isn't a default route, so we can't fix this
+        file_logger.error('  [Route Injection (ipv6)] Route is not a default route entry...cannot resolve this routing issue: {}'.format(route_to_dest))
+        return False
+  
+    # delete and re-add route with a new metric
+    try:
+        del_route_cmd = "{} route del ".format(IP_CMD) + route_to_dest
+        subprocess.run(del_route_cmd, shell=True)
+        file_logger.info("  [Route Injection (ipv6)] Deleting route: {}".format(route_to_dest))
+    except subprocess.CalledProcessError as proc_exc:
+        file_logger.error('  [Route Injection (ipv6)] Route deletion failed!: {}'.format(proc_exc))
+        return False
+    
+    try:
+        modified_route = re.sub(r"metric (\d+)", "metric 1024", route_to_dest)
+        add_route_cmd = "{} route add  ".format(IP_CMD) + modified_route
+        subprocess.run(add_route_cmd, shell=True)
+        file_logger.info("  [Route Injection (ipv6)] Re-adding deleted route with new metric: {}".format(modified_route))
+    except subprocess.CalledProcessError as proc_exc:
+        file_logger.error('  [Route Injection (ipv6)] Route addition failed!')
+        return False
+
+    # figure out what our required interface is for testing traffic
+    probe_mode = config_vars['probe_mode']
+    file_logger.info("  [Route Injection (ipv6)] Checking probe mode: '{}' ".format(probe_mode))
+    test_traffic_interface= get_test_traffic_interface(config_vars, file_logger)
+
+    # inject a new route with the required interface
+    try:
+        new_route = "default dev {} metric 1023".format(test_traffic_interface)
+        add_route_cmd = "{} route add  ".format(IP_CMD) + new_route
+        subprocess.run(add_route_cmd, shell=True)
+        file_logger.info("  [Route Injection (ipv6)] Adding new route: {}".format(new_route))
+    except subprocess.CalledProcessError as proc_exc:
+        file_logger.error('  [Route Injection (ipv6)] Route addition failed!')
+        return False
+
+    file_logger.info("  [Route Injection (ipv6)] Route injection complete")
+    return True
+
+
+def _inject_static_route_ipv4(ip_address, req_interface, traffic_type, file_logger, ip_ver=""):
+
+    """
+    This function will attempt to inject an IPv4 static route to correct
     routing issues for specific targets that will not be reached via
     the intended interface without the addition of this route.
 
@@ -257,7 +354,7 @@ def _inject_static_route(ip_address, req_interface, traffic_type, file_logger, i
     matched traffic over a specific interface
     """
 
-    file_logger.info("  [Route Injection] Attempting static route insertion to fix routing issue")
+    file_logger.info("  [Route Injection] Attempting {} static route insertion to fix routing issue".format(traffic_type))
     try:
         new_route = "{} dev {}".format(ip_address, req_interface)
         add_route_cmd = "{} {} route add  ".format(IP_CMD, ip_ver) + new_route
@@ -272,22 +369,37 @@ def _inject_static_route(ip_address, req_interface, traffic_type, file_logger, i
     return True
 
 
-def _inject_ipv6_static_route(ip_address, req_interface, traffic_type, file_logger):
+def _inject_static_route_ipv6(ip_address, req_interface, traffic_type, file_logger):
     # use ipv4 function, but pass in -6 version number
     # see https://www.tldp.org/HOWTO/Linux+IPv6-HOWTO/ch07s04.html
-    return _inject_static_route(ip_address, req_interface, traffic_type, file_logger, "-6")
+    if not is_ipv6(ip_address): 
+        raise ValueError("Supplied IP address for static route is not IPv6 format")
+
+    return _inject_static_route_ipv4(ip_address, req_interface, traffic_type, file_logger, "-6")
 
 
-def inject_mgt_static_route(ip_address, config_vars, file_logger):
+def inject_mgt_static_route_ipv4(ip_address, config_vars, file_logger):
     """
-    Inject a static route to correct routing issue for mgt traffic
+    Inject a static route (ipv4) to correct routing issue for mgt traffic
     """
     mgt_interface = config_vars['mgt_if']
 
-    if is_ipv6(ip_address): 
-        return _inject_ipv6_static_route(ip_address, mgt_interface, "mgt", file_logger)
+    if not is_ipv4(ip_address): 
+        raise ValueError("Supplied IP address for static route is not IPv4 format")
     
-    return _inject_static_route(ip_address, mgt_interface, "mgt", file_logger)
+    return _inject_static_route_ipv4(ip_address, mgt_interface, "mgt", file_logger)
+
+
+def inject_mgt_static_route_ipv6(ip_address, config_vars, file_logger):
+    """
+    Inject a static route (ipv6) to correct routing issue for mgt traffic
+    """
+    mgt_interface = config_vars['mgt_if']
+
+    if not is_ipv6(ip_address): 
+        raise ValueError("Supplied IP address for static route is not IPv6 format")
+    
+    return _inject_static_route_ipv6(ip_address, mgt_interface, "mgt", file_logger)
 
 
 def inject_test_traffic_static_route(ip_address, config_vars, file_logger):
@@ -299,8 +411,14 @@ def inject_test_traffic_static_route(ip_address, config_vars, file_logger):
     file_logger.info("  [Route Injection] Checking probe mode: '{}' ".format(probe_mode))
     test_traffic_interface= get_test_traffic_interface(config_vars, file_logger)
 
+    # figure out ip (in case hostname passed)
+    ip_address = resolve_name(ip_address, file_logger)
+
+    if is_ipv4(ip_address): inject_route = _inject_static_route_ipv4
+    if is_ipv6(ip_address): inject_route = _inject_static_route_ipv4
+
     # if route injection works, check that route is now over correct interface
-    if _inject_static_route(ip_address, test_traffic_interface, "test traffic", file_logger):
+    if inject_route(ip_address, test_traffic_interface, "test traffic", file_logger):
 
        if check_correct_mode_interface(ip_address, config_vars, file_logger):
 

@@ -18,7 +18,7 @@ class NetworkAdapter(object):
         self.platform = platform
 
         self.if_status = ''  # str
-        self.ip_addr_ipv4 = ''  # str
+        self.ip_addr = ''  # str
         self.ip_addr_ipv6 = ''  # str
         self.def_gw = ''  # str
 
@@ -138,17 +138,17 @@ class NetworkAdapter(object):
             self.file_logger.error("No IPv4 address found")
             return False
         else:
-            self.ip_addr_ipv4 = ip_re.group(1)
+            self.ip_addr = ip_re.group(1)
 
         # Check to see if IP address is APIPA (169.254.x.x)
-        apipa_re = re.search(r'169\.254', self.ip_addr_ipv4)
+        apipa_re = re.search(r'169\.254', self.ip_addr)
         if not apipa_re is None:
             self.file_logger.error("IP address found appears to be APIPA")
             return False
 
-        self.file_logger.debug("IP Address = " + self.ip_addr_ipv4)
+        self.file_logger.debug("IP Address = " + self.ip_addr)
 
-        return self.ip_addr_ipv4
+        return self.ip_addr
     
     def get_adapter_ipv6_ip(self):
         '''
@@ -305,7 +305,7 @@ class NetworkAdapter(object):
         sys.exit()
 
     def get_ipaddr_ipv4(self):
-        return self.ip_addr_ipv4
+        return self.ip_addr
     
     def get_ipaddr_ipv6(self):
         return self.ip_addr_ipv6

@@ -43,12 +43,7 @@ def is_ipv4(ip_address, file_logger):
     if not ip_address:
         file_logger.warning("  Warning: 'is_ipv4' called with no value")
         return False
-    
-    if not re.match(r'\d+.\d+.\d+.\d+', ip_address):
-
-        # assume this is a hostname, let's try a lookup
-        ip_address = resolve_name(ip_address, file_logger, ip_family="ipv4")
-    
+       
     return re.search(r'\d+.\d+.\d+.\d+', ip_address)
 
 
@@ -59,11 +54,6 @@ def is_ipv6(ip_address, file_logger):
     if not ip_address:
         file_logger.warning("  Warning: 'is_ipv6' called with no value")
         return False
-    
-    if not re.match(r'[abcdf0123456789]+:', ip_address):
-
-        # assume this is a hostname, let's try a lookup
-        ip_address = resolve_name(ip_address, file_logger, ip_family="ipv6")
     
     return re.search(r'[abcdf0123456789]+:', ip_address)
 
@@ -76,9 +66,6 @@ def _field_extractor(pattern, cmd_output_text):
         return field_value
     else:
         return None
-
-
-
 
   
 def get_test_traffic_interface(config_vars, file_logger):

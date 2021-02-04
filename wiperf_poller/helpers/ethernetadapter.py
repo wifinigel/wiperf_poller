@@ -11,9 +11,9 @@ class EthernetAdapter(object):
     A class to monitor and manipulate the wireless adapter for the WLANPerfAgent
     '''
 
-    def __init__(self, eth_if_name, file_logger, platform="rpi"):
+    def __init__(self, if_name, file_logger, platform="rpi"):
 
-        self.eth_if_name = eth_if_name
+        self.if_name = if_name
         self.file_logger = file_logger
         self.platform = platform
 
@@ -43,7 +43,7 @@ class EthernetAdapter(object):
         # Get wireless interface IP address info using the iwconfig command
         ####################################################################
         try:
-            cmd = "{} link show {}".format(IP_CMD, self.eth_if_name)
+            cmd = "{} link show {}".format(IP_CMD, self.if_name)
             if_info = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True).decode()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
@@ -100,8 +100,26 @@ class EthernetAdapter(object):
         self.file_logger.debug("Results list: {}".format(results_list))
 
         return results_list
+    
+    def interface_up(self):
 
-    def get_adapter_ip(self):
+        """
+        Checks if Ethernet interface is up (assumes self.ifconfig() has been run)
+
+        Returns:
+            True: interface up
+            False: interface down
+        """
+        if self.if_status == "UP":
+            return True
+        elif self.if_status == "DOWN":
+            return False
+        else: 
+            raise ValueError("Unknown status: {} (should be 'UP' or 'DOWN'".format(self.if_status))
+
+
+
+    def get_adapter_ipv4_ip(self):
         '''
         This method parses the output of the ifconfig command to figure out the
         IP address of the wireless adapter.
@@ -110,9 +128,11 @@ class EthernetAdapter(object):
         some stage
         '''
 
+        #TODO: Use psutil for the interface info
+
         # Get interface info
         try:
-            cmd = "{} -4 a show  {}".format(IP_CMD, self.eth_if_name)
+            cmd = "{} -4 a show  {}".format(IP_CMD, self.if_name)
             self.ifconfig_info = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True).decode()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
@@ -128,14 +148,16 @@ class EthernetAdapter(object):
         # Extract IP address info (e.g. inet 10.255.250.157)
         ip_re = re.search(r'inet .*?(\d+\.\d+\.\d+\.\d+)', self.ifconfig_info)
         if ip_re is None:
-            self.ip_addr = "NA"
+            self.file_logger.error("No IP address found")
+            return False
         else:
             self.ip_addr = ip_re.group(1)
 
         # Check to see if IP address is APIPA (169.254.x.x)
         apipa_re = re.search(r'169\.254', self.ip_addr)
         if not apipa_re is None:
-            self.ip_addr = "NA"
+            self.file_logger.error("IP address found appears to be APIPA")
+            return False
 
         self.file_logger.debug("IP Address = " + self.ip_addr)
 
@@ -152,7 +174,7 @@ class EthernetAdapter(object):
 
         # Get route info (used to figure out default gateway)
         try:
-            cmd = "{} -n | grep ^0.0.0.0 | grep {}".format(ROUTE_CMD, self.eth_if_name)
+            cmd = "{} -n | grep ^0.0.0.0 | grep {}".format(ROUTE_CMD, self.if_name)
             self.route_info = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True).decode()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
@@ -175,7 +197,7 @@ class EthernetAdapter(object):
 
         self.file_logger.debug("Default GW = " + self.def_gw)
 
-    def bounce_eth_interface(self):
+    def bounce_interface(self):
         '''
         If we run in to connectivity issues, we may like to try bouncing the
         wireless interface to see if we can recover the connection.
@@ -185,14 +207,14 @@ class EthernetAdapter(object):
 
         self.file_logger.debug("Bouncing interface (platform type = " + self.platform + ")")
 
-        self.file_logger.info("Bouncing interface {} (platform type = {})".format(self.eth_if_name, self.platform))
+        self.file_logger.info("Bouncing interface {} (platform type = {})".format(self.if_name, self.platform))
 
-        if_down_cmd = "{} {};".format(IF_DOWN_CMD, self.eth_if_name)
-        if_up_cmd = "{} {}".format(IF_UP_CMD, self.eth_if_name)
+        if_down_cmd = "{} {};".format(IF_DOWN_CMD, self.if_name)
+        if_up_cmd = "{} {}".format(IF_UP_CMD, self.if_name)
 
         try:
             self.file_logger.warning("Taking interface down...")
-            if_bounce = subprocess.check_output(if_down_cmd, stderr=subprocess.STDOUT, shell=True).decode()
+            subprocess.check_output(if_down_cmd, stderr=subprocess.STDOUT, shell=True).decode()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
             error_descr = "i/f down command appears to have failed. Error: {} (signalling error)".format(str(output))
@@ -204,7 +226,7 @@ class EthernetAdapter(object):
 
         try:
             self.file_logger.warning("Bringing interface up...")
-            if_bounce = subprocess.check_output(if_up_cmd, stderr=subprocess.STDOUT, shell=True).decode()
+            subprocess.check_output(if_up_cmd, stderr=subprocess.STDOUT, shell=True).decode()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
             error_descr = "i/f up command appears to have failed. Error: {} (signalling error)".format(str(output))
@@ -222,7 +244,7 @@ class EthernetAdapter(object):
 
         self.file_logger.error("Attempting to recover by bouncing ethernet interface...")
         self.file_logger.error("Bouncing Ethernet interface")
-        self.bounce_eth_interface()
+        self.bounce_interface()
         self.file_logger.error("Bounce completed. Exiting script.")
 
         # clean up lock file & exit
@@ -235,5 +257,3 @@ class EthernetAdapter(object):
     def get_ipaddr(self):
         return self.ip_addr
 
-    def get_def_gw(self):
-        return self.def_gw

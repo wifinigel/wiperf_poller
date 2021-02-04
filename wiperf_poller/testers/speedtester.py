@@ -11,9 +11,8 @@ class Speedtester(object):
     Class to implement speedtest server tests for wiperf
     """
 
-    def __init__(self, file_logger, config_vars, platform):
+    def __init__(self, file_logger, config_vars):
 
-        self.platform = platform
         self.file_logger = file_logger
         self.config_vars = config_vars
 

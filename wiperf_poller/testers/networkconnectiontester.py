@@ -57,7 +57,7 @@ class NetworkConnectionTester(object):
     def _check_interface_conn_up(self, watchdog_obj, lockf_obj):
 
         self.file_logger.info("Checking interface connection available.")
-        if self.adapter_obj.get_adapter_info == False:
+        if self.adapter_obj.get_adapter_info() == False:
 
             self.file_logger.error("Unable to get interface info due to failure with ifconfig command")
             watchdog_obj.inc_watchdog_count()
@@ -105,9 +105,9 @@ class NetworkConnectionTester(object):
             ############################
             # final ipv4 connectivity check: see if we can resolve an address
             # (network connection and DNS must be up)
-            self.file_logger.info("  Checking we can do a DNS lookup to {}".format(config_vars['connectivity_lookup']))
+            self.file_logger.info("  Checking we can do a DNS (ipv4)lookup to {}".format(config_vars['connectivity_lookup']))
 
-            # Run a ping to seed arp cache - not interetsed in result
+            # Run a ping to seed arp cache - not interested in result
             ping_obj = PingTester(self.file_logger)
             ping_obj.ping_host(config_vars['connectivity_lookup'], 1)
 
@@ -118,14 +118,14 @@ class NetworkConnectionTester(object):
             
             if not ip_address:
                 # hmmm....things went bad, lookup failed...bounce interface & exit
-                self.file_logger.error("  DNS seems to be failing, bouncing wireless interface.")
+                self.file_logger.error("  DNS seems to be failing, bouncing interface {}.".format(self.testing_interface))
                 watchdog_obj.inc_watchdog_count()
                 self.adapter_obj.bounce_error_exit(lockf_obj)  # exit here
 
             # check we are going to the Internet over the correct interface for ipv4 tests
             if check_correct_mode_interface_ipv4(ip_address, config_vars, self.file_logger):
 
-                self.file_logger.info("  Correct interface being used for ipv4 tests.")
+                self.file_logger.info("  Correct interface ({}) being used for ipv4 tests.".format(self.testing_interface))
             
             else:
                 ######################################################################
@@ -212,7 +212,7 @@ class NetworkConnectionTester(object):
             
             else:
                 # no ipv4 but have an ipv6 address
-                self.file_logger.warning("  Interface only has IPv4 address, IPv6 tests will fail.")      
+                self.file_logger.warning("  Testing interface only has IPv4 address, IPv6 tests will fail if performed.")      
 
         # report adapter info if this is a wireless connection
         if self.probe_mode == 'wireless':

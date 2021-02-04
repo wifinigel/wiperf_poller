@@ -17,6 +17,7 @@ class PollStatus():
         self.status_dict = {
             'time': get_timestamp(config_vars),
             'ip': 'Unknown',
+            'ip_v6': 'Unknown',
             'network': 'Fail',
             'speedtest': 'N/A',
             'ping': 'N/A',
@@ -35,6 +36,9 @@ class PollStatus():
 
     def ip(self, value):
         self.status_dict['ip'] = str(value)
+    
+    def ip_v6(self, value):
+        self.status_dict['ip_v6'] = str(value)
     
     def network(self, value):
         self.status_dict['network'] = str(value)

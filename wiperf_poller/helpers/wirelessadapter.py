@@ -31,7 +31,7 @@ class WirelessAdapter(NetworkAdapter):
         self.signal_level = 0.0  # float
         self.tx_retries = 0  # int
 
-        self.ip_addr_ipv4 = ''  # str
+        self.ip_addr = ''  # str
         self.ip_addr_ipv6 = ''  # str
         self.def_gw = ''  # str
 
@@ -408,4 +408,9 @@ class WirelessAdapter(NetworkAdapter):
 
     def get_tx_retries(self):
         return self.tx_retries
-
+    
+    def get_ipaddr_ipv4(self):
+        return self.ip_addr
+    
+    def get_ipaddr_ipv6(self):
+        return self.ip_addr_ipv6

@@ -19,9 +19,8 @@ class ResultsExporter(object):
     Class to implement universal resuts exporter for wiperf
     """
 
-    def __init__(self, file_logger, watchdog_obj, lockf_obj, spooler_obj, platform):
+    def __init__(self, file_logger, watchdog_obj, lockf_obj, spooler_obj):
 
-        self.platform = platform
         self.file_logger = file_logger
         self.watchdog_obj = watchdog_obj
         self.lockf_obj = lockf_obj

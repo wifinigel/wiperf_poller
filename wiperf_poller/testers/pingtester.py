@@ -166,11 +166,7 @@ class PingTester(object):
         for ping_host in ping_hosts:
             if ping_host['hostname'] == '':
                 continue
-            else:
-                # check for def_gw keyword
-                if ping_host['hostname'] == 'def_gw':
-                    ping_host['ip'] = adapter.get_def_gw()
-                
+            else:               
                 # check tests will go over correct interface
                 if check_correct_mode_interface(ping_host['ip'], config_vars, self.file_logger):
                     self.ping_host(ping_host['ip'], 1)

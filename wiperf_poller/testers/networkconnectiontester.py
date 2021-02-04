@@ -5,16 +5,16 @@ from socket import gethostbyname
 from wiperf_poller.helpers.wirelessadapter import WirelessAdapter
 from wiperf_poller.helpers.networkadapter import NetworkAdapter
 from wiperf_poller.testers.mgtconnectiontester import MgtConnectionTester
-from wiperf_poller.helpers.route import check_correct_mode_interface_ipv4, \
-    check_correct_mode_interface_ipv6, \
-    check_correct_mgt_interface, \
-    inject_default_route_ipv4, \
-    inject_default_route_ipv6, \
-    inject_mgt_static_route_ipv4, \
-    inject_mgt_static_route_ipv6, \
-    is_ipv4, \
-    is_ipv6, \
-    resolve_name
+from wiperf_poller.helpers.route import (check_correct_mode_interface_ipv4,
+    check_correct_mode_interface_ipv6,
+    check_correct_mgt_interface,
+    inject_default_route_ipv4,
+    inject_default_route_ipv6,
+    inject_mgt_static_route_ipv4,
+    inject_mgt_static_route_ipv6,
+    is_ipv4,
+    is_ipv6,
+    resolve_name)
 from wiperf_poller.testers.pingtester import PingTester
 from wiperf_poller.helpers.timefunc import time_synced
 from wiperf_poller.helpers.timefunc import get_timestamp
@@ -105,16 +105,16 @@ class NetworkConnectionTester(object):
             ############################
             # final ipv4 connectivity check: see if we can resolve an address
             # (network connection and DNS must be up)
-            self.file_logger.info("  Checking we can do a DNS lookup to {}".format(config_vars['connectivity_lookup_ipv4']))
+            self.file_logger.info("  Checking we can do a DNS lookup to {}".format(config_vars['connectivity_lookup']))
 
             # Run a ping to seed arp cache - not interetsed in result
             ping_obj = PingTester(self.file_logger)
-            ping_obj.ping_host(config_vars['connectivity_lookup_ipv4'], 1)
+            ping_obj.ping_host(config_vars['connectivity_lookup'], 1)
 
             ######################################################################
             # Try a DNS lookup (IPv4) against configured name for Internet checks 
             ######################################################################
-            ip_address = resolve_name(config_vars['connectivity_lookup_ipv4'], self.file_logger, ip_family="ipv4")
+            ip_address = resolve_name(config_vars['connectivity_lookup'], self.file_logger, ip_family="ipv4")
             
             if not ip_address:
                 # hmmm....things went bad, lookup failed...bounce interface & exit
@@ -133,7 +133,7 @@ class NetworkConnectionTester(object):
                 ######################################################################
                 self.file_logger.warning("  We are not using the interface required to perform our tests due to a routing issue in this unit - attempt route addition to fix issue")
                 
-                if inject_default_route_ipv4(config_vars['connectivity_lookup_ipv4'], config_vars, self.file_logger):
+                if inject_default_route_ipv4(config_vars['connectivity_lookup'], config_vars, self.file_logger):
                 
                     self.adapter_obj.bounce_interface()
                     self.file_logger.info("  Checking if ipv4 route injection worked...")
@@ -150,45 +150,6 @@ class NetworkConnectionTester(object):
             # if we have no IPv4 address address, issue warning
             self.file_logger.warning("  No IPv4 address found on {} adapter. Unless this is an IPv6 environment, you will have issues.".format(self.probe_mode))
         
-        #################################################
-        # Check mgt physical interface up & connected
-        #################################################
-        if is_ipv6(config_vars['data_host']):
-            self.file_logger.info("  Reporting server is IPv6, will check connectivity later")
-        
-        else:
-            # Check if mgt_if up
-            mgt_interface = config_vars['mgt_if']
-            data_host = config_vars['data_host']
-
-            mgt_interface_obj = NetworkAdapter(mgt_interface, self.file_logger)
-
-            if not mgt_interface_obj.interface_up():
-                self.file_logger.error("Interface for mgt traffic ({})appears to be down, unable to proceed.".format(mgt_interface))
-                watchdog_obj.inc_watchdog_count()
-                self.adapter_obj.bounce_error_exit(lockf_obj)  # exit here
-            
-            #####################################################
-            # check if route to IPv4 address of server is via 
-            # mgt_if...fix with route injection if not
-            ####################################################
-            if not check_correct_mgt_interface(data_host, mgt_interface, self.file_logger):
-
-                self.file_logger.warning("  We are not using the interface required for mgt traffic due to a routing issue in this unit - attempt route addition to fix issue")
-
-                if inject_mgt_static_route_ipv4(data_host, config_vars, self.file_logger):
-
-                    self.file_logger.info("  Checking if route injection worked...")
-
-                    if check_correct_mgt_interface(data_host, mgt_interface, self.file_logger):
-                        self.file_logger.info("  Routing issue corrected OK.")
-                    else:
-                        self.file_logger.warning("  We still have a routing issue. Will have to exit as mgt traffic over correct interface not possible")
-                        self.file_logger.warning("  Suggest making static routing additions or adding an additional metric to the interface causing the issue.")
-                        self.file_logger.warning("  (*** Note ***: check you have configured the correct mgt interface if this message persists)")
-                        lockf_obj.delete_lock_file()
-                        sys.exit()
-
         #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*
         #
         # IPV6 Checks
@@ -251,48 +212,7 @@ class NetworkConnectionTester(object):
             
             else:
                 # no ipv4 but have an ipv6 address
-                self.file_logger.warning("  Interface only has IPv4 address, IPv6 tests will fail.")
-        
-
-        #################################################
-        # Check mgt physical interface up & connected
-        #################################################
-        if is_ipv4(config_vars['data_host']):
-            self.file_logger.info("  Reporting server is IPv4, nothing more to check.")
-        
-        else:
-            # Check if mgt_if up
-            mgt_interface = config_vars['mgt_if']
-            data_host = config_vars['data_host']
-
-            mgt_interface_obj = NetworkAdapter(mgt_interface, self.file_logger)
-
-            if not mgt_interface_obj.interface_up():
-                self.file_logger.error("Interface for mgt traffic ({})appears to be down, unable to proceed.".format(mgt_interface))
-                watchdog_obj.inc_watchdog_count()
-                self.adapter_obj.bounce_error_exit(lockf_obj)  # exit here
-            
-            #####################################################
-            # check if route to IPv6 address of server is via 
-            # mgt_if...fix with route injection if not
-            ####################################################
-            if not check_correct_mgt_interface(data_host, mgt_interface, self.file_logger):
-
-                self.file_logger.warning("  We are not using the interface required for mgt traffic due to a routing issue in this unit - attempt route addition to fix issue")
-
-                if inject_mgt_static_route_ipv4(data_host, config_vars, self.file_logger):
-
-                    self.file_logger.info("  Checking if route injection worked...")
-
-                    if check_correct_mgt_interface(data_host, mgt_interface, self.file_logger):
-                        self.file_logger.info("  Routing issue corrected OK.")
-                    else:
-                        self.file_logger.warning("  We still have a routing issue. Will have to exit as mgt traffic over correct interface not possible")
-                        self.file_logger.warning("  Suggest making static routing additions or adding an additional metric to the interface causing the issue.")
-                        self.file_logger.warning("  (*** Note ***: check you have configured the correct mgt interface if this message persists)")
-                        lockf_obj.delete_lock_file()
-                        sys.exit()
-        
+                self.file_logger.warning("  Interface only has IPv4 address, IPv6 tests will fail.")      
 
         # report adapter info if this is a wireless connection
         if self.probe_mode == 'wireless':

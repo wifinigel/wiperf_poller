@@ -22,9 +22,8 @@ class IperfTester(object):
     A class to perform a tcp & udp iperf3 tests
     """
 
-    def __init__(self, file_logger, platform):
+    def __init__(self, file_logger):
 
-        self.platform = platform
         self.file_logger = file_logger
 
 
@@ -197,7 +196,7 @@ class IperfTester(object):
                 return False
 
         # Run a ping to the iperf server to get an rtt to feed in to MOS score calc
-        ping_obj = PingTester(self.file_logger, platform=self.platform)
+        ping_obj = PingTester(self.file_logger)
         ping_obj.ping_host(server_hostname, 1) # one ping to seed arp cache
         
         ping_result = ping_obj.ping_host(server_hostname, 5)

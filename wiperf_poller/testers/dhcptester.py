@@ -13,14 +13,12 @@ class DhcpTester(object):
     A class to perform a DHCP release & renew and return the renewal time
     """
 
-    def __init__(self, file_logger, lockf_obj, platform="rpi"):
+    def __init__(self, file_logger, lockf_obj):
 
-        self.platform = platform
         self.file_logger = file_logger
 
         self.interface = ''
         self.duration = ''
-        self.platform = platform
         self.lockf_obj = lockf_obj
 
     def bounce_interface(self, interface, file_logger):
@@ -29,9 +27,9 @@ class DhcpTester(object):
         """
         import sys
 
-        adapter = WirelessAdapter(interface, file_logger, self.platform)
+        adapter = WirelessAdapter(interface, file_logger)
         self.file_logger.error("Bouncing WLAN interface")
-        adapter.bounce_wlan_interface()
+        adapter.bounce_interface()
         self.file_logger.error("Interface bounced: {}".format(interface))
 
         # remove lock file

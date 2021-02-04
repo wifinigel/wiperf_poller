@@ -38,10 +38,10 @@ class NetworkAdapter(object):
 
             return None
 
-    def ifconfig(self):
+    def get_if_status(self):
 
         ####################################################################
-        # Get interface IP address info using the iwconfig command
+        # Get interface status using 'ip link show <if name>' command
         ####################################################################
         try:
             cmd = "{} link show {}".format(IP_CMD, self.if_name)
@@ -56,13 +56,15 @@ class NetworkAdapter(object):
 
         self.file_logger.debug("Network interface config info: {}".format(if_info))
 
-        # Extract interface up/down status
+        # Extract interface up/down status (unless already set)
         if not self.if_status:
             pattern = r'state (.*?) mode'
             field_name = "if_status"
             extraction = self.field_extractor(field_name, pattern, if_info)
             if extraction:
                 self.if_status = extraction
+            else:
+                self.if_status = "Unknown"
 
         return True
 
@@ -70,8 +72,8 @@ class NetworkAdapter(object):
     def get_adapter_info(self):
         self.file_logger.debug("Getting adapter info...")
 
-        # get info using iwconfig cmd
-        if self.ifconfig() == False:
+        # get info using ip cmd
+        if self.get_if_status() == False:
             return False
 
         # get the values extracted and return in a list
@@ -84,7 +86,7 @@ class NetworkAdapter(object):
     def interface_up(self):
 
         """
-        Checks if network interface is up (assumes self.ifconfig() has been run)
+        Checks if network interface is up (assumes self.get_if_status() has been run)
 
         Returns:
             True: interface up
@@ -94,14 +96,20 @@ class NetworkAdapter(object):
             return True
         elif self.if_status == "DOWN":
             return False
+        # exception for loopback i/f as always up
+        elif self.if_name == 'lo':
+            return True
         else: 
-            raise ValueError("Unknown status: {} (should be 'UP' or 'DOWN'".format(self.if_status))
+            err_string = "Unknown status: {} (should be 'UP' or 'DOWN')".format(self.if_status)
+            self.file_logger.error(err_string)
+
+            raise ValueError(err_string)
 
 
     def get_adapter_ipv4_ip(self):
         '''
-        This method parses the output of the ifconfig command to figure out the
-        IPv4 address of the networkadapter.
+        This method parses the output of the 'ip -4 a show 'command to figure out 
+        the IPv4 address of the networkadapter.
 
         As this is a wrapper around a CLI command, it is likely to break at
         some stage
@@ -144,8 +152,8 @@ class NetworkAdapter(object):
     
     def get_adapter_ipv6_ip(self):
         '''
-        This method parses the output of the ifconfig command to figure out the
-        IPv6 address of the networkadapter.
+        This method parses the output of the 'ip -6 a show 'command to figure out 
+        the IPv4 address of the networkadapter.
 
         As this is a wrapper around a CLI command, it is likely to break at
         some stage
@@ -171,7 +179,7 @@ class NetworkAdapter(object):
         # Extract IP address info (e.g. inet6 2001:1:1:1:1::6/64 scope global)
         ip_re = re.search(r'inet6 .*?(\d+\:+.*?\/\d+ +scope +global)', self.ifconfig_info)
         if ip_re is None:
-            self.file_logger.error("No IPv6 global address found")
+            self.file_logger.info("  (Info only) No IPv6 global address found on {}".format(self.if_name))
             return False
         else:
             self.ip_addr_ipv6 = ip_re.group(1)
@@ -295,9 +303,6 @@ class NetworkAdapter(object):
         # clean up lock file & exit
         lockf_obj.delete_lock_file()
         sys.exit()
-
-    def get_if_status(self):
-        return self.if_status
 
     def get_ipaddr_ipv4(self):
         return self.ip_addr_ipv4

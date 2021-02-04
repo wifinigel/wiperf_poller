@@ -117,7 +117,10 @@ def read_local_config(config_file, file_logger):
     config_vars['test_offset'] = gen_sect.get('test_offset', '0')
 
     # connectivity DNS lookup - site used for initial DNS lookup when assessing if DNS working OK
-    config_vars['connectivity_lookup'] = gen_sect.get('connectivity_lookup', 'google.com')
+    config_vars['connectivity_lookup'] = gen_sect.get('connectivity_lookup', 'ipv4.google.com')
+    
+    config_vars['connectivity_lookup'] = gen_sect.get('connectivity_lookup', '')
+    config_vars['connectivity_lookup_ipv6'] = gen_sect.get('connectivity_lookup_ipv6', '')
 
 
     # unit bouncer - hours at which we'd like to bounce unit (e.g. 00, 04, 08, 12, 16, 20)

@@ -180,8 +180,7 @@ def main():
     # Run network checks
     #############################################
     # Note: test_issue flag not set by connection tests, as issues will result in process exit
-    file_logger.info("########## Network connection checks ##########")
-    connection_obj = ''
+    file_logger.info("###### Network testing path connection checks ######")
 
     status_file_obj.write_status_file("network check")
 
@@ -193,6 +192,8 @@ def main():
     file_logger.info("Checking {} connection is good...(layer 1/2 & routing for test traffic)".format(config_vars['probe_mode']))
     connection_obj = NetworkConnectionTester(file_logger, network_if, config_vars['probe_mode'])  
     connection_obj.run_tests(watchdog_obj, lockf_obj, config_vars, exporter_obj)
+
+    file_logger.info("###### Network mgt path connection checks ######")
 
     file_logger.info("Checking mgt connection is good via interface {}...".format(config_vars['mgt_if']))
     mgt_connection_obj = MgtConnectionTester(config_vars, file_logger)

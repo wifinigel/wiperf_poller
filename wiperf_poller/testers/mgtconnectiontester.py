@@ -9,7 +9,8 @@ from wiperf_poller.helpers.route import (check_correct_mgt_interface,
     inject_mgt_static_route_ipv4, 
     inject_mgt_static_route_ipv6, 
     is_ipv6, 
-    is_ipv4)
+    is_ipv4,
+    resolve_name)
 from wiperf_poller.helpers.os_cmds import NC_CMD
 
 class MgtConnectionTester(object):
@@ -28,7 +29,12 @@ class MgtConnectionTester(object):
 
     def check_mgt_connection(self, lockf_obj, watchdog_obj):
 
-        self.mgt_interface_obj = NetworkAdapter(self.mgt_interface, self.file_logger)
+        mgt_interface_obj = NetworkAdapter(self.mgt_interface, self.file_logger)
+        mgt_interface_obj.get_if_status()
+
+        # To avoid any issues later, convert host name to IP
+        # (IP address returned if already IP)
+        self.data_host = resolve_name(self.data_host, self.file_logger)
 
         #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*
         #         
@@ -45,10 +51,10 @@ class MgtConnectionTester(object):
         
         else:
             # Check if mgt_if up        
-            if not self.mgt_interface_obj.interface_up():
+            if not mgt_interface_obj.interface_up():
                 self.file_logger.error("Interface for mgt traffic ({}) appears to be down, unable to proceed.".format(self.mgt_interface))
                 watchdog_obj.inc_watchdog_count()
-                self.mgt_interface_obj.bounce_error_exit(lockf_obj)  # exit here
+                mgt_interface_obj.bounce_error_exit(lockf_obj)  # exit here
             
             #####################################################
             # check if route to IPv4 address of server is via 
@@ -71,6 +77,8 @@ class MgtConnectionTester(object):
                         lockf_obj.delete_lock_file()
                         sys.exit()
         
+        del mgt_interface_obj
+        
         #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*
         #
         # IPV6 Checks
@@ -90,11 +98,12 @@ class MgtConnectionTester(object):
 
             # Check if mgt_if up
             mgt_interface_obj = NetworkAdapter(self.mgt_interface, self.file_logger)
+            mgt_interface_obj.get_if_status()
 
             if not mgt_interface_obj.interface_up():
                 self.file_logger.error("Interface for mgt traffic ({}) appears to be down, unable to proceed.".format(self.mgt_interface))
                 watchdog_obj.inc_watchdog_count()
-                self.mgt_interface_obj.bounce_error_exit(lockf_obj)  # exit here
+                mgt_interface_obj.bounce_error_exit(lockf_obj)  # exit here
             
             #####################################################
             # check if route to IPv6 address of server is via 

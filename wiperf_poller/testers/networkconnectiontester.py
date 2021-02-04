@@ -232,7 +232,7 @@ class NetworkConnectionTester(object):
             results_dict['rx_mcs'] = self.adapter_obj.get_rx_mcs()
             results_dict['signal_level_dbm'] = self.adapter_obj.get_signal_level()
             results_dict['tx_retries'] = self.adapter_obj.get_tx_retries()
-            results_dict['ip_address_ipv4'] = self.adapter_obj.get_ipaddr_ipv4()
+            results_dict['ip_address'] = self.adapter_obj.get_ipaddr_ipv4()
             results_dict['ip_address_ipv6'] = self.adapter_obj.get_ipaddr_ipv6()
             results_dict['location'] = config_vars['location']
 
@@ -242,10 +242,10 @@ class NetworkConnectionTester(object):
             # dump out adapter info to log file
             self.file_logger.info("########## Wireless Connection ##########")
             self.file_logger.info("Wireless connection data: SSID:{}, BSSID:{}, Freq:{}, Center Freq:{}, Channel: {}, Channel Width: {}, Tx Phy rate:{}, \
-                Rx Phy rate:{}, Tx MCS: {}, Rx MCS: {}, RSSI:{}, Tx retries:{}, IP address:{}".format(
+                Rx Phy rate:{}, Tx MCS: {}, Rx MCS: {}, RSSI:{}, Tx retries:{}, IP address:{}, IP address (v6):{}".format(
                 results_dict['ssid'], results_dict['bssid'], results_dict['freq_ghz'], results_dict['center_freq_ghz'], results_dict['channel'], 
                 results_dict['channel_width'],  results_dict['tx_rate_mbps'], results_dict['rx_rate_mbps'], results_dict['tx_mcs'],
-                results_dict['rx_mcs'], results_dict['signal_level_dbm'], results_dict['tx_retries'], results_dict['ip_address']))
+                results_dict['rx_mcs'], results_dict['signal_level_dbm'], results_dict['tx_retries'], results_dict['ip_address'], results_dict['ip_address_ipv6']))
             # dump the results
             data_file = config_vars['network_data_file']
             test_name = "Network Tests"

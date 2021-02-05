@@ -100,6 +100,8 @@ class HttpTester(object):
             if http_target == '':
                 continue
 
+            self.file_logger.info(" HTTP test to : {}".format(http_target))
+
             # check test will go over correct interface
             #TODO: Check for correct URL format here: http://xxxx (otherwise split fails below & script exits)
             target_hostname = http_target.split('/')[2]

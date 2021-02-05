@@ -167,6 +167,10 @@ class NetworkAdapter(object):
             return False
         else:
             self.ip_addr_ipv6 = ip_re.group(1)
+        
+        self.file_logger.debug("IP Address = " + self.ip_addr_ipv6)
+
+        return self.ip_addr_ipv6
 
     def get_route_info_ipv4(self):
         '''

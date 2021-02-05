@@ -1,20 +1,15 @@
-'''
-A simple class to perform a DNS lookup against a number of targets and return the lookup time
-'''
 import time
 import socket
 from wiperf_poller.helpers.timefunc import get_timestamp
 from wiperf_poller.helpers.route import resolve_name
-
 
 class DnsTester(object):
     '''
     A class to perform a number of DNS lookups and return the lookup times
     '''
 
-    def __init__(self, file_logger, platform="rpi"):
+    def __init__(self, file_logger):
 
-        self.platform = platform
         self.file_logger = file_logger
 
         self.target = []
@@ -32,8 +27,6 @@ class DnsTester(object):
         information. The lookup time is returned (results are in mS):
 
         '''
-        # TODO: How do we handle empty targets & lookup failures (e.g. bad name)
-
         self.target = target
 
         self.file_logger.debug("  DNS test target: {}".format(self.target))

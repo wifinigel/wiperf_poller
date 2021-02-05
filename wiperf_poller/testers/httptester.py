@@ -14,9 +14,8 @@ class HttpTester(object):
     A simple class to perform a http get and return the time taken
     '''
 
-    def __init__(self, file_logger, platform="rpi"):
+    def __init__(self, file_logger):
 
-        self.platform = platform
         self.file_logger = file_logger
 
         self.http_target = ''
@@ -105,6 +104,10 @@ class HttpTester(object):
             # direct ipv6 address
             if "[" in target_hostname:
                 target_hostname = target_hostname[1: -1]
+
+                if config_vars['ipv6_tests_supported'] == False:
+                    self.file_logger.error("Failed: attempting to run IPv6 test, but IPV6 not configure on test interface")
+                    continue
 
             if check_correct_mode_interface(target_hostname, config_vars, self.file_logger):
                 pass

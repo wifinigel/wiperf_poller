@@ -1,7 +1,6 @@
 """
 Unit bounce functions
 
-TODO: Convert to object
 """
 import os
 import sys

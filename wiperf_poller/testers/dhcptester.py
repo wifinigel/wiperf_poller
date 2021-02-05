@@ -3,7 +3,7 @@ A simple class to perform a DHCP release & renew and return the renewal time
 """
 import time
 import subprocess
-from wiperf_poller.helpers.wirelessadapter import WirelessAdapter
+from wiperf_poller.helpers.networkadapter import NetworkAdapter
 from wiperf_poller.helpers.os_cmds import DHCLIENT_CMD
 from wiperf_poller.helpers.timefunc import get_timestamp
 
@@ -27,7 +27,7 @@ class DhcpTester(object):
         """
         import sys
 
-        adapter = WirelessAdapter(interface, file_logger)
+        adapter = NetworkAdapter(interface, file_logger)
         self.file_logger.error("Bouncing WLAN interface")
         adapter.bounce_interface()
         self.file_logger.error("Interface bounced: {}".format(interface))

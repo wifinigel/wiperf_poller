@@ -71,12 +71,6 @@ class NetworkConnectionTester(object):
 
     def run_tests(self, watchdog_obj, lockf_obj, config_vars, exporter_obj):
 
-        #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*
-        #         
-        # IPV4 Checks
-        #
-        #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*
-
         #################################################
         # Check testing physical interface up & connected
         #################################################
@@ -88,8 +82,14 @@ class NetworkConnectionTester(object):
         # ethernet: if we have no network connection (i.e. link down or no IP), no point in proceeding...exit
         else:
             self._check_interface_conn_up(watchdog_obj, lockf_obj)
-
-        self.file_logger.info("  Checking we have an IP address.")
+        
+        #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*
+        #         
+        # IPV4 Checks
+        #
+        #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*
+        self.file_logger.info("Network testing connection IPV4 tests ({})".format(self.testing_interface))
+        self.file_logger.info("  Checking we have an IPv4 address ({})".format(self.testing_interface))
 
         ##########################################################
         # Check testing interface has ipv4 address (if ipv4 used)
@@ -151,64 +151,73 @@ class NetworkConnectionTester(object):
         # IPV6 Checks
         #
         #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*
-        if self.adapter_obj.get_adapter_ipv6_ip():
+        self.file_logger.info("Network testing connection IPV6 tests ({})".format(self.testing_interface))
+        self.file_logger.info("  Checking we have an IPv6 address ({})".format(self.testing_interface))
 
-            #############################
-            # Check DNS is working (ipv6)
-            #############################
-            # final ipv6 connectivity check: see if we can resolve an address
-            # (network connection and DNS must be up)
-            self.file_logger.info("  Checking we can do an ipv6 DNS lookup to {}".format(config_vars['connectivity_lookup_ipv6']))
+        if config_vars['connectivity_lookup_ipv6']:
 
-            # Run a ping to seed arp cache - not interetsed in result
-            ping_obj = PingTester(self.file_logger)
-            ping_obj.ping_host(config_vars['connectivity_lookup_ipv6'], 1)
+            if self.adapter_obj.get_adapter_ipv6_ip():
 
-            ######################################################################
-            # Try a DNS lookup (IPv6) against configured name for Internet checks 
-            ######################################################################
-            ip_address = resolve_name(config_vars['connectivity_lookup_ipv6'], self.file_logger, ip_family="ipv6")
-            
-            if not ip_address:
-                # hmmm....things went bad, lookup failed...bounce interface & exit
-                self.file_logger.error("  DNS (ipv6) seems to be failing, bouncing interface.")
-                watchdog_obj.inc_watchdog_count()
-                self.adapter_obj.bounce_error_exit(lockf_obj)  # exit here
+                #############################
+                # Check DNS is working (ipv6)
+                #############################
+                # final ipv6 connectivity check: see if we can resolve an address
+                # (network connection and DNS must be up)
+                self.file_logger.info("  Checking we can do an ipv6 DNS lookup to {}".format(config_vars['connectivity_lookup_ipv6']))
 
-            # check we are going to the Internet over the correct interface for ipv4 tests
-            if check_correct_mode_interface_ipv6(ip_address, config_vars, self.file_logger):
+                # Run a ping to seed arp cache - not interetsed in result
+                ping_obj = PingTester(self.file_logger)
+                ping_obj.ping_host(config_vars['connectivity_lookup_ipv6'], 1)
 
-                self.file_logger.info("  Correct interface being used for ipv6 tests.")
-            
+                ######################################################################
+                # Try a DNS lookup (IPv6) against configured name for Internet checks 
+                ######################################################################
+                ip_address = resolve_name(config_vars['connectivity_lookup_ipv6'], self.file_logger, ip_family="ipv6")
+                
+                if not ip_address:
+                    # hmmm....things went bad, lookup failed...bounce interface & exit
+                    self.file_logger.error("  DNS (ipv6) seems to be failing, bouncing interface.")
+                    watchdog_obj.inc_watchdog_count()
+                    self.adapter_obj.bounce_error_exit(lockf_obj)  # exit here
+
+                # check we are going to the Internet over the correct interface for ipv4 tests
+                if check_correct_mode_interface_ipv6(ip_address, config_vars, self.file_logger):
+
+                    self.file_logger.info("  Correct interface being used for ipv6 tests.")
+                
+                else:
+                    ##########################################################################
+                    # We seem to be using wrong interface for testing, fix ipv6 default route 
+                    ##########################################################################
+                    self.file_logger.warning("  We are not using the interface required to perform our ipv6 tests due to a routing issue in this unit - attempt route addition to fix issue")
+                    
+                    if inject_default_route_ipv6(config_vars['connectivity_lookup_ipv6'], config_vars, self.file_logger):
+                    
+                        self.adapter_obj.bounce_interface()
+                        self.file_logger.info("  Checking if ipv6 route injection worked...")
+
+                        if check_correct_mode_interface_ipv6(ip_address, config_vars, self.file_logger):
+                            self.file_logger.info("  Routing issue (ipv6) corrected OK.")
+                        else:
+                            self.file_logger.warning("  We still have an ipv6 routing issue. Will have to exit as testing over correct interface not possible")
+                            self.file_logger.warning("  Suggest making static routing additions or adding an additional metric to the interface causing the issue.")
+                            lockf_obj.delete_lock_file()
+                            sys.exit()
+
             else:
-                ##########################################################################
-                # We seem to be using wrong interface for testing, fix ipv6 default route 
-                ##########################################################################
-                self.file_logger.warning("  We are not using the interface required to perform our ipv6 tests due to a routing issue in this unit - attempt route addition to fix issue")
-                
-                if inject_default_route_ipv6(config_vars['connectivity_lookup_ipv6'], config_vars, self.file_logger):
-                
-                    self.adapter_obj.bounce_interface()
-                    self.file_logger.info("  Checking if ipv6 route injection worked...")
+                if not self.adapter_obj.get_adapter_ipv4_ip():
 
-                    if check_correct_mode_interface_ipv6(ip_address, config_vars, self.file_logger):
-                        self.file_logger.info("  Routing issue (ipv6) corrected OK.")
-                    else:
-                        self.file_logger.warning("  We still have an ipv6 routing issue. Will have to exit as testing over correct interface not possible")
-                        self.file_logger.warning("  Suggest making static routing additions or adding an additional metric to the interface causing the issue.")
-                        lockf_obj.delete_lock_file()
-                        sys.exit()
-
+                    self.file_logger.error("  No ipv4 or ipv6 address, bouncing interface.")
+                    watchdog_obj.inc_watchdog_count()
+                    self.adapter_obj.bounce_error_exit(lockf_obj)  # exit here
+                
+                else:
+                    # no ipv4 but have an ipv6 address
+                    self.file_logger.warning("  Testing interface only has IPv4 address, IPv6 tests will fail if performed.")
         else:
-            if not self.adapter_obj.get_adapter_ipv4_ip():
-
-                self.file_logger.error("  No ipv4 or ipv6 address, bouncing interface.")
-                watchdog_obj.inc_watchdog_count()
-                self.adapter_obj.bounce_error_exit(lockf_obj)  # exit here
-            
-            else:
-                # no ipv4 but have an ipv6 address
-                self.file_logger.warning("  Testing interface only has IPv4 address, IPv6 tests will fail if performed.")      
+            self.file_logger.warning("  Config.ini parameter 'connectivity_lookup_ipv6' is not set, unable to test IPv6 connectivity")
+            # disable ipv6 tests
+            config_vars['ipv6_tests_supported'] = False
 
         # report adapter info if this is a wireless connection
         if self.probe_mode == 'wireless':

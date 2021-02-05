@@ -8,6 +8,7 @@ import requests
 from requests.exceptions import HTTPError
 import urllib3
 from wiperf_poller.helpers.timefunc import get_timestamp
+from wiperf_poller.helpers.viabilitychecker import TestViabilityChecker
 
 class HttpTester(object):
     '''
@@ -72,6 +73,9 @@ class HttpTester(object):
         self.file_logger.info("Starting HTTP tests...")
         status_file_obj.write_status_file("HTTP tests")
 
+        # create test viability checker
+        checker = TestViabilityChecker(config_vars, self.file_logger)
+
         # build targets list
         http_targets = []
         
@@ -104,10 +108,10 @@ class HttpTester(object):
             # direct ipv6 address
             if "[" in target_hostname:
                 target_hostname = target_hostname[1: -1]
-
-                if config_vars['ipv6_tests_supported'] == False:
-                    self.file_logger.error("Failed: attempting to run IPv6 test, but IPV6 not configure on test interface")
-                    continue
+            
+            # check if test to host is viable (based on probe ipv4/v6 support)
+            if not checker.check_test_host_viable(target_hostname):
+                continue
 
             if check_correct_mode_interface(target_hostname, config_vars, self.file_logger):
                 pass

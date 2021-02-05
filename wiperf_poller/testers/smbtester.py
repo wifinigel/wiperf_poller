@@ -11,6 +11,8 @@ import timeout_decorator
 from wiperf_poller.helpers.os_cmds import SMB_CP, SMB_MOUNT, MOUNT, LS_CMD, UMOUNT_CMD
 from wiperf_poller.helpers.route import inject_test_traffic_static_route
 from wiperf_poller.helpers.timefunc import get_timestamp
+from wiperf_poller.helpers.viabilitychecker import TestViabilityChecker
+
 
 class SmbTester(object):
     '''
@@ -231,6 +233,9 @@ class SmbTester(object):
 
         self.file_logger.info("Packages all present.")
 
+        # create test viability checker
+        checker = TestViabilityChecker(config_vars, self.file_logger)
+
         global_username = config_vars['smb_global_username']
         global_password = config_vars['smb_global_password']
 
@@ -265,6 +270,12 @@ class SmbTester(object):
 
             filename = config_vars['smb_filename'+ str(smb_index)]
             path = config_vars['smb_path'+ str(smb_index)]
+            
+            self.file_logger.info("Starting SMB test to target: {}{}".format(smb_host, path))
+
+            # check if test to host is viable (based on probe ipv4/v6 support)
+            if not checker.check_test_host_viable(smb_host):
+                continue
 
             # Check we have the correct route to the host under test
             if not check_correct_mode_interface(smb_host, config_vars, self.file_logger):

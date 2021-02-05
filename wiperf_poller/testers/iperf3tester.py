@@ -16,6 +16,7 @@ import timeout_decorator
 from wiperf_poller.testers.pingtester import PingTester
 from wiperf_poller.helpers.route import inject_test_traffic_static_route
 from wiperf_poller.helpers.timefunc import get_timestamp
+from wiperf_poller.helpers.viabilitychecker import TestViabilityChecker
 
 class IperfTester(object):
     """
@@ -114,6 +115,9 @@ class IperfTester(object):
         port = int(config_vars['iperf3_tcp_port'])
         server_hostname = config_vars['iperf3_tcp_server_hostname']
 
+        # create test viability checker
+        checker = TestViabilityChecker(config_vars, self.file_logger)
+
         self.file_logger.info("Starting iperf3 tcp test ({}:{})...".format(server_hostname, str(port)))
         status_file_obj.write_status_file("iperf3 tcp")
 
@@ -131,6 +135,10 @@ class IperfTester(object):
                 config_vars['test_issue_descr'] = "TCP iperf test failure (routing issue)"
                 return False
         
+        # check if test to host is viable (based on probe ipv4/v6 support)
+        if not checker.check_test_host_viable(server_hostname):
+            return False
+
         # run iperf test
         result = False
         try:
@@ -178,6 +186,9 @@ class IperfTester(object):
         server_hostname = config_vars['iperf3_udp_server_hostname']
         bandwidth = int(config_vars['iperf3_udp_bandwidth'])
 
+        # create test viability checker
+        checker = TestViabilityChecker(config_vars, self.file_logger)
+
         self.file_logger.info("Starting iperf3 udp test ({}:{})...".format(server_hostname, str(port)))
         status_file_obj.write_status_file("iperf3 udp")
 
@@ -194,6 +205,10 @@ class IperfTester(object):
                 config_vars['test_issue'] = True
                 config_vars['test_issue_descr'] = "UDP iperf test failure (routing issue)"
                 return False
+
+        # check if test to host is viable (based on probe ipv4/v6 support)
+        if not checker.check_test_host_viable(server_hostname):
+            return False
 
         # Run a ping to the iperf server to get an rtt to feed in to MOS score calc
         ping_obj = PingTester(self.file_logger)

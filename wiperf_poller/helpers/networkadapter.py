@@ -43,6 +43,7 @@ class NetworkAdapter(object):
         ####################################################################
         # Get interface status using 'ip link show <if name>' command
         ####################################################################
+        # TODO: replace with info from psutil
         try:
             cmd = "{} link show {}".format(IP_CMD, self.if_name)
             if_info = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True).decode()
@@ -68,20 +69,6 @@ class NetworkAdapter(object):
 
         return True
 
-
-    def get_adapter_info(self):
-        self.file_logger.debug("Getting adapter info...")
-
-        # get info using ip cmd
-        if self.get_if_status() == False:
-            return False
-
-        # get the values extracted and return in a list
-        results_list = [self.if_status]
-
-        self.file_logger.debug("Results list: {}".format(results_list))
-
-        return results_list
     
     def interface_up(self):
 
@@ -114,9 +101,7 @@ class NetworkAdapter(object):
         As this is a wrapper around a CLI command, it is likely to break at
         some stage
         '''
-
         #TODO: Use psutil for the interface info
-
         # Get interface info
         try:
             cmd = "{} -4 a show  {}".format(IP_CMD, self.if_name)
@@ -158,7 +143,6 @@ class NetworkAdapter(object):
         As this is a wrapper around a CLI command, it is likely to break at
         some stage
         '''
-
         #TODO: Use psutil for the interface info
 
         # Get interface info
@@ -255,7 +239,7 @@ class NetworkAdapter(object):
     def bounce_interface(self):
         '''
         If we run in to connectivity issues, we may like to try bouncing the
-        wireless interface to see if we can recover the connection.
+        network interface to see if we can recover the connection.
 
         Note: wlanpi must be added to sudoers group using visudo command on RPI
         '''
@@ -296,7 +280,6 @@ class NetworkAdapter(object):
         import sys
 
         self.file_logger.error("Attempting to recover by bouncing network interface...")
-        self.file_logger.error("Bouncing network interface")
         self.bounce_interface()
         self.file_logger.error("Bounce completed. Exiting script.")
 

@@ -40,7 +40,7 @@ def is_ipv4(ip_address):
     """
     Check if an address is in ivp4 format
     """     
-    return re.search(r'\d+.\d+.\d+.\d+', ip_address)
+    return re.search(r'\d+\.\d+\.\d+\.\d+', ip_address)
 
 
 def is_ipv6(ip_address):

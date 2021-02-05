@@ -53,7 +53,7 @@ class NetworkConnectionTester(object):
     def _check_interface_conn_up(self, watchdog_obj, lockf_obj):
 
         self.file_logger.info("Checking interface connection available.")
-        if self.adapter_obj.get_adapter_info() == False:
+        if self.adapter_obj.get_if_status() == False:
 
             self.file_logger.error("Unable to get interface info due to failure with ifconfig command")
             watchdog_obj.inc_watchdog_count()

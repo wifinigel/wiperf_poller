@@ -21,7 +21,7 @@ class TestViabilityChecker(object):
             if ipv4_tests_supported: 
                 return True
             else:
-                self.file_logger.error('Supplied target address is IPv4 ({}), but IPv4 testing not available (check interface for IPv4 address)'.format(host))
+                self.file_logger.error('  Supplied target address is IPv4 ({}), but IPv4 testing not available (check interface for IPv4 address)'.format(host))
                 return False
 
         elif re.match(r'\d+\:+', host):
@@ -29,7 +29,7 @@ class TestViabilityChecker(object):
             if ipv6_tests_supported: 
                 return True
             else:
-                self.file_logger.error('Supplied target address is IPv6 ({}), but IPv6 testing not available (check interface for IPv6 address)'.format(host))
+                self.file_logger.error('  Supplied target address is IPv6 ({}), but IPv6 testing not available (check interface for IPv6 address)'.format(host))
                 return False
         else: 
             # must be a hostname at this point, so attempt ipv4 name lookup
@@ -39,7 +39,7 @@ class TestViabilityChecker(object):
                 if ipv4_tests_supported:
                     return True
                 else:
-                    self.file_logger.error('Supplied hostname ({}) resolves as IPv4 address {}, but IPv4 testing not available (check interface for IPv4 address)'.format(host, ip_address))
+                    self.file_logger.error('  Supplied hostname ({}) resolves as IPv4 address {}, but IPv4 testing not available (check interface for IPv4 address)'.format(host, ip_address))
                     return False
             
             # must be a hostname at this point, so attempt ipv6 name lookup
@@ -49,11 +49,11 @@ class TestViabilityChecker(object):
                 if ipv6_tests_supported:
                     return True
                 else:
-                    self.file_logger.error('Supplied hostname ({}) resolves as IPv6 address {}, but IPv6 testing not available (check interface for IPv6 address)'.format(host, ip_address))
+                    self.file_logger.error('  Supplied hostname ({}) resolves as IPv6 address {}, but IPv6 testing not available (check interface for IPv6 address)'.format(host, ip_address))
                     return False
                    
         # everything we tried failed, not viable (but not sure what went wrong to get here...shouldn't be possible)
-        self.file_logger.error("Unknown resolution error: {}".format(host))
+        self.file_logger.error("  Unknown viability error: {}".format(host))
         return False
 
         

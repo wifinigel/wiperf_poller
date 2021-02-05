@@ -226,7 +226,7 @@ class SmbTester(object):
 
             if not package_installed:
                 self.file_logger.error("Unable to find required package: {}".format(package_name))
-                self.file_logger.error("Did you install cifs-utils? (apt-get install cifs-utils)")
+                self.file_logger.error("Did you install cifs-utils? (sudo apt-get install cifs-utils)")
                 return False
 
         self.file_logger.info("Packages all present.")

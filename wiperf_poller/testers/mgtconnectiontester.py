@@ -5,7 +5,8 @@ from socket import gethostbyname
 import requests
 
 from wiperf_poller.helpers.networkadapter import NetworkAdapter
-from wiperf_poller.helpers.route import (check_correct_mgt_interface, 
+from wiperf_poller.helpers.route import (
+    check_correct_mgt_interface, 
     inject_mgt_static_route_ipv4, 
     inject_mgt_static_route_ipv6, 
     is_ipv6, 
@@ -46,7 +47,7 @@ class MgtConnectionTester(object):
         # Check mgt physical interface up & connected
         #################################################
         # get 
-        if is_ipv6(self.data_host, self.file_logger):
+        if is_ipv6(self.data_host):
             self.file_logger.info("  Reporting server is IPv6, will check connectivity later")
         
         else:
@@ -87,13 +88,13 @@ class MgtConnectionTester(object):
         #################################################
         # Check mgt physical interface up & connected
         #################################################
-        if is_ipv4(self.data_host, self.file_logger):
+        if is_ipv4(self.data_host):
             self.file_logger.info("  Reporting server is IPv4, nothing more to check.")
         
         else:
             self.file_logger.info("  Checking IPv6 connectivity for mgt/reporting traffic")
 
-            if not is_ipv6(self.data_host, self.file_logger):
+            if not is_ipv6(self.data_host):
                 raise ValueError("Management IP not in IPv6 format.")
 
             # Check if mgt_if up
@@ -147,7 +148,7 @@ class MgtConnectionTester(object):
             response = dict()
             token = self.config_vars.get('splunk_token')    
             headers = {'Authorization':'Splunk '+ token}
-            if is_ipv6(self.data_host, self.file_logger): self.data_host = "[{}]".format(self.data_host)
+            if is_ipv6(self.data_host): self.data_host = "[{}]".format(self.data_host)
             url = "https://{}:{}/services/collector/event".format(self.data_host, self.data_port)
 
             # send auth request

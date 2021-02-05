@@ -8,7 +8,6 @@ import requests
 from requests.exceptions import HTTPError
 import urllib3
 from wiperf_poller.helpers.timefunc import get_timestamp
-from wiperf_poller.helpers.route import is_ipv6
 
 class HttpTester(object):
     '''

@@ -37,7 +37,7 @@ class SplunkExporter(object):
         if self.secure:
             scheme = 'https'
 
-        if is_ipv6(self.host, self.file_logger): 
+        if is_ipv6(self.host): 
             self.host = "[{}]".format(self.host)
 
         url = "{}://{}:{}{}".format(scheme, self.host, self.port, path)

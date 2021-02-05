@@ -5,15 +5,11 @@ from socket import gethostbyname
 from wiperf_poller.helpers.wirelessadapter import WirelessAdapter
 from wiperf_poller.helpers.networkadapter import NetworkAdapter
 from wiperf_poller.testers.mgtconnectiontester import MgtConnectionTester
-from wiperf_poller.helpers.route import (check_correct_mode_interface_ipv4,
+from wiperf_poller.helpers.route import (
+    check_correct_mode_interface_ipv4,
     check_correct_mode_interface_ipv6,
-    check_correct_mgt_interface,
     inject_default_route_ipv4,
     inject_default_route_ipv6,
-    inject_mgt_static_route_ipv4,
-    inject_mgt_static_route_ipv6,
-    is_ipv4,
-    is_ipv6,
     resolve_name)
 from wiperf_poller.testers.pingtester import PingTester
 from wiperf_poller.helpers.timefunc import time_synced

@@ -43,7 +43,7 @@ class IperfTester(object):
         if debug:
             self.file_logger.debug("TCP iperf server test params: server: {}, port: {}, protocol: {}, duration: {}".format(server_hostname, port, "TCP", duration))
 
-        self.file_logger.info("Starting tcp iperf3 test...")
+        self.file_logger.info("  Initiating tcp iperf3 test...")
 
         result = iperf_client.run()
         if result.error:
@@ -99,11 +99,11 @@ class IperfTester(object):
         if debug:
             self.file_logger.debug("UDP iperf server test params: server: {}, port: {}, protocol: {}, duration: {}, bandwidth: {}".format(server_hostname, port, 'udp', duration, bandwidth))
 
-        self.file_logger.info("Starting udp iperf3 test...")
+        self.file_logger.info("  Initiating udp iperf3 test...")
 
         result = iperf_client.run()
         if result.error:
-            self.file_logger.error("iperf UDP test error: {}".format(result.error))
+            self.file_logger.error("  iperf UDP test error: {}".format(result.error))
             result = False
 
         del iperf_client
@@ -125,12 +125,12 @@ class IperfTester(object):
         if not check_correct_mode_interface(server_hostname, config_vars, self.file_logger):
 
             # if route looks wrong, try to fix it
-            self.file_logger.warning("Unable to run tcp iperf test to {} as route to destination not over correct interface...injecting static route".format(server_hostname))
+            self.file_logger.warning("  Unable to run tcp iperf test to {} as route to destination not over correct interface...injecting static route".format(server_hostname))
 
             if not inject_test_traffic_static_route(server_hostname, config_vars, self.file_logger):
 
                 # route injection appears to have failed
-                self.file_logger.error("Unable to run iperf test to {} as route to destination not over correct interface...bypassing test".format(server_hostname))
+                self.file_logger.error("  Unable to run iperf test to {} as route to destination not over correct interface...bypassing test".format(server_hostname))
                 config_vars['test_issue'] = True
                 config_vars['test_issue_descr'] = "TCP iperf test failure (routing issue)"
                 return False
@@ -144,7 +144,7 @@ class IperfTester(object):
         try:
             result = self.tcp_iperf_client_test(server_hostname, duration=duration, port=port, debug=False)
         except:
-            self.file_logger.error("TCP iperf3 test process timed out.")
+            self.file_logger.error("  TCP iperf3 test process timed out.")
 
         if result:
 
@@ -161,7 +161,7 @@ class IperfTester(object):
             column_headers = list(results_dict.keys())
 
             # drop abbreviated results in log file
-            self.file_logger.info("Iperf3 tcp results - rx_mbps: {}, tx_mbps: {}, retransmits: {}, sent_bytes: {}, rec_bytes: {}".format(
+            self.file_logger.info("  Iperf3 tcp results - rx_mbps: {}, tx_mbps: {}, retransmits: {}, sent_bytes: {}, rec_bytes: {}".format(
                 results_dict['received_mbps'], results_dict['sent_mbps'], results_dict['retransmits'], results_dict['sent_bytes'],
                 results_dict['received_bytes']))
 
@@ -170,13 +170,13 @@ class IperfTester(object):
             test_name = "iperf3_tcp"
 
             if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger):
-                self.file_logger.info("Iperf3 tcp test ended.")
+                self.file_logger.info("  Iperf3 tcp test ended.")
                 return True
             else:
-                self.file_logger.error("Error sending iperf3 tcp test result.")
+                self.file_logger.error("  Error sending iperf3 tcp test result.")
                 return False
         else:
-            self.file_logger.error("iperf3 tcp test failed.")
+            self.file_logger.error("  iperf3 tcp test failed.")
             return False        
                        
     def run_udp_test(self, config_vars, status_file_obj, check_correct_mode_interface, exporter_obj):
@@ -196,12 +196,12 @@ class IperfTester(object):
         if not check_correct_mode_interface(server_hostname, config_vars, self.file_logger):
 
             # if route looks wrong, try to fix it
-            self.file_logger.warning("Unable to run udp iperf test to {} as route to destination not over correct interface...injecting static route".format(server_hostname))
+            self.file_logger.warning("  Unable to run udp iperf test to {} as route to destination not over correct interface...injecting static route".format(server_hostname))
 
             if not inject_test_traffic_static_route(server_hostname, config_vars, self.file_logger):
 
                 # route injection appears to have failed
-                self.file_logger.error("Unable to run udp iperf test to {} as route to destination not over correct interface...bypassing test".format(server_hostname))
+                self.file_logger.error("  Unable to run udp iperf test to {} as route to destination not over correct interface...bypassing test".format(server_hostname))
                 config_vars['test_issue'] = True
                 config_vars['test_issue_descr'] = "UDP iperf test failure (routing issue)"
                 return False
@@ -227,7 +227,7 @@ class IperfTester(object):
         try:
             result = self.udp_iperf_client_test(server_hostname, duration=duration, port=port, bandwidth=bandwidth, debug=False)
         except:
-            self.file_logger.error("UDP iperf3 test process timed out")
+            self.file_logger.error("  UDP iperf3 test process timed out")
 
         if result:
             
@@ -247,11 +247,11 @@ class IperfTester(object):
 
             # workaround for crazy jitter figures sometimes seen
             if results_dict['jitter_ms'] > 2000:
-                self.file_logger.error("Received very high jitter value({}), set to none".format(results_dict['jitter_ms']))
+                self.file_logger.error("  Received very high jitter value({}), set to none".format(results_dict['jitter_ms']))
                 results_dict['jitter_ms'] = 0.0
 
             # drop results in log file
-            self.file_logger.info("Iperf3 udp results - mbps: {}, packets: {}, lost_packets: {}, lost_percent: {}, jitter: {}, bytes: {}, mos_score: {}".format(
+            self.file_logger.info("  Iperf3 udp results - mbps: {}, packets: {}, lost_packets: {}, lost_percent: {}, jitter: {}, bytes: {}, mos_score: {}".format(
                 results_dict['mbps'], results_dict['packets'], results_dict['lost_packets'], results_dict['lost_percent'],
                 results_dict['jitter_ms'], results_dict['bytes'], results_dict['mos_score']))
 
@@ -260,12 +260,12 @@ class IperfTester(object):
             test_name = "iperf_udp"
 
             if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger):
-                self.file_logger.info("Iperf3 udp test ended.")
+                self.file_logger.info("  Iperf3 udp test ended.")
                 return True
             else:
-                self.file_logger.error("Issue sending iperf3 UDP results.")
+                self.file_logger.error("  Issue sending iperf3 UDP results.")
                 return False
 
         else:
-            self.file_logger.error("iperf3 udp test failed.")
+            self.file_logger.error("  iperf3 udp test failed.")
             return False

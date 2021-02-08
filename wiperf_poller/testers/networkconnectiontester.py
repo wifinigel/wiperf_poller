@@ -5,13 +5,15 @@ from socket import gethostbyname
 from wiperf_poller.helpers.wirelessadapter import WirelessAdapter
 from wiperf_poller.helpers.networkadapter import NetworkAdapter
 from wiperf_poller.testers.mgtconnectiontester import MgtConnectionTester
+from wiperf_poller.helpers.ipv6.route_ipv6 import (
+    check_correct_mode_interface_ipv6,
+    inject_default_route_ipv6,
+    resolve_name_ipv6)
 from wiperf_poller.helpers.route import (
     check_correct_mode_interface_ipv4,
-    check_correct_mode_interface_ipv6,
     inject_default_route_ipv4,
-    inject_default_route_ipv6,
-    resolve_name)
-from wiperf_poller.testers.pingtester import PingTester
+    resolve_name_ipv4)
+from wiperf_poller.testers.pingtester import PingTesterIpv4 as PingTester
 from wiperf_poller.helpers.timefunc import time_synced
 from wiperf_poller.helpers.timefunc import get_timestamp
 
@@ -68,21 +70,9 @@ class NetworkConnectionTester(object):
             self.adapter_obj.bounce_error_exit(lockf_obj)  # exit here
 
         return True
+    
+    def _ipv4_checks(self, watchdog_obj, lockf_obj, config_vars, exporter_obj):
 
-    def run_tests(self, watchdog_obj, lockf_obj, config_vars, exporter_obj):
-
-        #################################################
-        # Check testing physical interface up & connected
-        #################################################
-        # wireless: if we have no network connection (i.e. no bssid), no point in proceeding...exit
-        if self.probe_mode == 'wireless':
-
-            self._check_wireless_conn_up(watchdog_obj, lockf_obj)
-
-        # ethernet: if we have no network connection (i.e. link down or no IP), no point in proceeding...exit
-        else:
-            self._check_interface_conn_up(watchdog_obj, lockf_obj)
-        
         #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*
         #         
         # IPV4 Checks
@@ -110,7 +100,7 @@ class NetworkConnectionTester(object):
             ######################################################################
             # Try a DNS lookup (IPv4) against configured name for Internet checks 
             ######################################################################
-            ip_address = resolve_name(config_vars['connectivity_lookup'], self.file_logger, ip_family="ipv4")
+            ip_address = resolve_name_ipv4(config_vars['connectivity_lookup'], self.file_logger)
             
             if not ip_address:
                 # hmmm....things went bad, lookup failed...bounce interface & exit
@@ -145,7 +135,9 @@ class NetworkConnectionTester(object):
         else:
             # if we have no IPv4 address address, issue warning
             self.file_logger.warning("  No IPv4 address found on {} adapter. Unless this is an IPv6 environment, you will have issues.".format(self.probe_mode))
-        
+
+    def _ipv6_checks(self, watchdog_obj, lockf_obj, config_vars, exporter_obj):
+
         #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*
         #
         # IPV6 Checks
@@ -172,7 +164,7 @@ class NetworkConnectionTester(object):
                 ######################################################################
                 # Try a DNS lookup (IPv6) against configured name for Internet checks 
                 ######################################################################
-                ip_address = resolve_name(config_vars['connectivity_lookup_ipv6'], self.file_logger, ip_family="ipv6")
+                ip_address = resolve_name_ipv6(config_vars['connectivity_lookup_ipv6'], self.file_logger)
                 
                 if not ip_address:
                     # hmmm....things went bad, lookup failed...bounce interface & exit
@@ -218,6 +210,29 @@ class NetworkConnectionTester(object):
             self.file_logger.warning("  Config.ini parameter 'connectivity_lookup_ipv6' is not set, unable to test IPv6 connectivity")
             # disable ipv6 tests
             config_vars['ipv6_tests_supported'] = False
+
+    def run_tests(self, watchdog_obj, lockf_obj, config_vars, exporter_obj):
+
+        #################################################
+        # Check testing physical interface up & connected
+        #################################################
+        # wireless: if we have no network connection (i.e. no bssid), no point in proceeding...exit
+        if self.probe_mode == 'wireless':
+
+            self._check_wireless_conn_up(watchdog_obj, lockf_obj)
+
+        # ethernet: if we have no network connection (i.e. link down or no IP), no point in proceeding...exit
+        else:
+            self._check_interface_conn_up(watchdog_obj, lockf_obj)
+        
+        if config_vars['data_host_ip_type'] == 'ipv4':
+            self._ipv4_checks(watchdog_obj, lockf_obj, config_vars, exporter_obj)
+        
+        elif config_vars['data_host_ip_type'] == 'ipv6':
+            self._ipv6_checks(watchdog_obj, lockf_obj, config_vars, exporter_obj)
+        
+        else:
+            raise ValueError("Invalid ip type supplied: {} (should be ipv4 or iv6)".format(config_vars['data_host_ip_type']))
 
         # report adapter info if this is a wireless connection
         if self.probe_mode == 'wireless':

@@ -1,42 +1,30 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import json
 import logging
 import os
 import sys
 import time
 
 # our local modules
-from wiperf_poller.testers.dhcptester import DhcpTester
-from wiperf_poller.testers.dnstester import DnsTester
-from wiperf_poller.testers.httptester import HttpTester
-from wiperf_poller.testers.networkconnectiontester import NetworkConnectionTester
-from wiperf_poller.testers.mgtconnectiontester import MgtConnectionTester
-from wiperf_poller.testers.iperf3tester import IperfTester
-from wiperf_poller.testers.pingtester import PingTester
-from wiperf_poller.testers.speedtester import Speedtester
-from wiperf_poller.testers.smbtester import SmbTester
+from wiperf_poller._01_network_checks import run_network_checks
+from wiperf_poller._02_ipv4_tests import run_ipv4_tests
+from wiperf_poller._03_ipv6_tests import run_ipv6_tests
 
 from wiperf_poller.helpers.bouncer import Bouncer
 from wiperf_poller.helpers.config import read_local_config
 from wiperf_poller.helpers.error_messages import ErrorMessages
-from wiperf_poller.helpers.networkadapter import NetworkAdapter
+from wiperf_poller.exporters.exportresults import ResultsExporter
 from wiperf_poller.helpers.filelogger import FileLogger
 from wiperf_poller.helpers.lockfile import LockFile
+from wiperf_poller.helpers.networkadapter import NetworkAdapter
 from wiperf_poller.helpers.os_cmds import check_os_cmds
 from wiperf_poller.helpers.poll_status import PollStatus
 from wiperf_poller.helpers.remoteconfig import check_last_cfg_read
-from wiperf_poller.helpers.route import (check_correct_mode_interface_ipv4,
-    check_correct_mode_interface_ipv6,
-    check_correct_mode_interface)
+from wiperf_poller.exporters.spoolexporter import SpoolExporter
 from wiperf_poller.helpers.statusfile import StatusFile
 from wiperf_poller.helpers.watchdog import Watchdog
 from wiperf_poller.helpers.wirelessadapter import WirelessAdapter
-
-from wiperf_poller.exporters.exportresults import ResultsExporter
-from wiperf_poller.exporters.spoolexporter import SpoolExporter
-
 
 config_file = "/etc/wiperf/config.ini"
 log_file = "/var/log/wiperf_agent.log"
@@ -65,8 +53,6 @@ config_vars = read_local_config(config_file, file_logger)
 
 # set logging to debug if debugging enabled
 if DEBUG or (config_vars['debug'] == 'on'):
-    #rot_handler = file_logger.handlers[0]
-    #rot_handler.setLevel(logging.DEBUG)
     file_logger.setLevel(level=logging.DEBUG)
     file_logger.info("(Note: logging set to debug level.)")
 
@@ -111,14 +97,14 @@ elif probe_mode == "wireless":
 else:
     file_logger.info("Unknown probe mode: {} (exiting)".format(probe_mode))
 
-config_vars['ipv4_tests_supported'] = False
-config_vars['ipv6_tests_supported'] = False
+config_vars['ipv4_tests_possible'] = False
+config_vars['ipv6_tests_possible'] = False
 
 if adapter_obj.get_adapter_ipv4_ip():
-    config_vars['ipv4_tests_supported'] = True
+    config_vars['ipv4_tests_possible'] = True
 
 if adapter_obj.get_adapter_ipv6_ip():
-    config_vars['ipv6_tests_supported'] = True
+    config_vars['ipv6_tests_possible'] = True
 
 ###############################################################################
 # Main
@@ -130,18 +116,6 @@ def main():
     global watchdog_file
     global config_file
     global check_cfg_file
-
-    # if we have a config server specified, check to see if it's time
-    # to pull the config
-    file_logger.info("Checking if we use remote cfg file...")
-    if config_vars['cfg_url']:
-        
-        # if able to get cfg file, re-read params in case updated
-        if check_last_cfg_read(config_file, check_cfg_file, config_vars, file_logger):
-            config_vars = read_local_config(config_file, file_logger)
-
-    else:
-        file_logger.info("No remote cfg file confgured...using current local ini file.")
 
     # create watchdog if doesn't exist
     watchdog_obj.create_watchdog()
@@ -174,6 +148,21 @@ def main():
         # create lockfile with current timestamp to stop 2nd process starting
         file_logger.info("No lock file found. Creating lock file.")
         lockf_obj.write_lock_file()
+    
+    ###################################
+    # Check if remote cfg supported
+    ###################################
+    # if we have a config server specified, check to see if it's time
+    # to pull the config
+    file_logger.info("Checking if we use remote cfg file...")
+    if config_vars['cfg_url']:
+        
+        # if able to get cfg file, re-read params in case updated
+        if check_last_cfg_read(config_file, check_cfg_file, config_vars, file_logger):
+            config_vars = read_local_config(config_file, file_logger)
+
+    else:
+        file_logger.info("No remote cfg file confgured...using current local ini file.")
 
     # test issue flag - set if any tests hit major issues
     # to stall further testing
@@ -189,26 +178,10 @@ def main():
     # Run network checks
     #############################################
     # Note: test_issue flag not set by connection tests, as issues will result in process exit
-    file_logger.info("####### Network testing path connection checks #######")
-
-    status_file_obj.write_status_file("network check")
-
-    if config_vars['probe_mode'] == 'wireless':
-        network_if = wlan_if
-    else:
-        network_if = eth_if
+    checks_result = run_network_checks(file_logger, status_file_obj, config_vars, poll_obj, 
+        watchdog_obj, lockf_obj, exporter_obj)
     
-    file_logger.info("Checking {} connection is good...(layer 1/2 & routing for test traffic)".format(config_vars['probe_mode']))
-    network_connection_obj = NetworkConnectionTester(file_logger, network_if, config_vars['probe_mode'])  
-    network_connection_obj.run_tests(watchdog_obj, lockf_obj, config_vars, exporter_obj)
-
-    file_logger.info("####### Network mgt path connection checks #######")
-
-    file_logger.info("Checking mgt connection is good via interface {}...".format(config_vars['mgt_if']))
-    mgt_connection_obj = MgtConnectionTester(config_vars, file_logger)
-    mgt_connection_obj.check_mgt_connection(lockf_obj, watchdog_obj)
-    
-    poll_obj.network('OK') 
+    poll_obj.network(checks_result) 
     
     # update poll summary with IP
     poll_obj.ip(adapter_obj.get_adapter_ipv4_ip())
@@ -219,251 +192,37 @@ def main():
     ################################################
     file_logger.info("######## spooler checks ########")
     if config_vars['results_spool_enabled'] == 'yes':
-
-        # clear out old spooled files if required
-        spooler_obj.prune_old_files()
-
-        # if export method not spooler, mgt connect 
-        # must be OK. Empty spool queue 
-        if config_vars['exporter_type'] != 'spooler':
-
-            # check we have spooler dir
-            if spooler_obj.check_spool_dir_exists():
-                
-                # check number of files in spooler dir
-                file_list = spooler_obj.list_spool_files()
-
-                # step through spooled files & attempt to export
-                # (remove each spooled file as successfuly exported)
-                if len(file_list) > 0:
-
-                    for filename in file_list:
-
-                        full_file_name = "{}/{}".format(spooler_obj.spool_dir_root, filename)
-
-                        # read in the file as dict (from json)
-                        try:
-                            with open(full_file_name, "r") as json_file:
-                                results_list = json.load(json_file)
-                        except IOError as err:
-                            file_logger.error("JSON I/O file read error: {}".format(err))
-                            break
-                        
-                        for results_dict in results_list:
-
-                            # pull out the data source
-                            data_file = results_dict['data_source']
-                            results_dict.pop('data_source')
-
-                            column_headers = list(results_dict.keys())
-                            test_name = data_file
-
-                        # send the dict to exporter
-                        if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, file_logger):
-
-                            # remove data file
-                            os.remove(full_file_name)
-                            file_logger.info("Spooled results sent OK - {}".format(data_file))
-                        
-    
+        spooler_obj.process_spooled_files(exporter_obj)                        
     else:
         file_logger.info("Spooler not enabled.")
 
     #############################################
-    # Run speedtest (if enabled)
-    #############################################                                                                                                                                                                                                                      
-
-    file_logger.info("########## speedtest ##########")
-    if config_vars['speedtest_enabled'] == 'yes':
-
-        speedtest_obj = Speedtester(file_logger, config_vars)
-        test_passed = speedtest_obj.run_tests(status_file_obj, check_correct_mode_interface, config_vars, exporter_obj, lockf_obj)
-
-        if test_passed:
-            poll_obj.speedtest('Completed')
-        else:
-            poll_obj.speedtest('Failure')
+    # Run ipv4 tests, if enabled
+    #############################################          
+    if config_vars['ipv4_tests_enabled'] == 'yes':
+        file_logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        file_logger.info("~~~ IPv4 tests enabled. Initiating test cycle ~~~")
+        file_logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+        run_ipv4_tests(config_vars, file_logger, poll_obj, status_file_obj, exporter_obj, 
+            lockf_obj, adapter_obj, watchdog_obj)
     else:
-        file_logger.info("Speedtest not enabled in config file.")
-        poll_obj.speedtest('Not enabled')
+        file_logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        file_logger.info("~~~ IPv4 tests not enabled. Ignoring ~~~")
+        file_logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
 
-    #############################
-    # Run ping test (if enabled)
-    #############################
-    file_logger.info("########## ping tests ##########")
-    if config_vars['ping_enabled'] == 'yes' and config_vars['test_issue'] == False:
-
-        # run ping test
-        ping_obj = PingTester(file_logger)
-
-        # run test
-        tests_passed = ping_obj.run_tests(status_file_obj, config_vars, adapter_obj, check_correct_mode_interface, exporter_obj, watchdog_obj)
-
-        if tests_passed:
-            poll_obj.ping('Completed')
-        else:
-            poll_obj.ping('Failure')
-
+    #############################################
+    # Run ipv6 tests, if enabled
+    #############################################          
+    if config_vars['ipv6_tests_enabled'] == 'yes':
+        file_logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        file_logger.info("~~~ IPv6 tests enabled. Initiating test cycle ~~~")
+        file_logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+        run_ipv6_tests(config_vars, file_logger, poll_obj, status_file_obj, exporter_obj, 
+            lockf_obj, adapter_obj, watchdog_obj)
     else:
-        if config_vars['test_issue'] == True:
-            file_logger.info("Previous test failed: {}".format(config_vars['test_issue_descr']))
-            poll_obj.ping('Not run')
-        else:
-            file_logger.info("Ping test not enabled in config file, bypassing this test...")
-            poll_obj.ping('Not enabled')
-
-    ###################################
-    # Run DNS lookup tests (if enabled)
-    ###################################
-    file_logger.info("########## dns tests ##########")
-    if config_vars['dns_test_enabled'] == 'yes' and config_vars['test_issue'] == False:
-
-        dns_obj = DnsTester(file_logger)
-        tests_passed = dns_obj.run_tests(status_file_obj, config_vars, exporter_obj)
-
-        if tests_passed:
-            poll_obj.dns('Completed')
-        else:
-            poll_obj.dns('Failure')
-
-    else:
-        if config_vars['test_issue'] == True:
-            file_logger.info("Previous test failed: {}".format(config_vars['test_issue_descr']))
-            poll_obj.dns('Not run')
-        else:
-            file_logger.info("DNS test not enabled in config file, bypassing this test...")
-            poll_obj.dns('Not enabled')
-
-    #####################################
-    # Run HTTP lookup tests (if enabled)
-    #####################################
-    file_logger.info("########## http tests ##########")
-    if config_vars['http_test_enabled'] == 'yes' and config_vars['test_issue'] == False:
-
-        http_obj = HttpTester(file_logger)
-        tests_passed = http_obj.run_tests(status_file_obj, config_vars, exporter_obj, watchdog_obj, check_correct_mode_interface,)
-
-        if tests_passed:
-            poll_obj.http('Completed')
-        else:
-            poll_obj.http('Failure')
-
-    else:
-        if config_vars['test_issue'] == True:
-            file_logger.info("Previous test failed: {}".format(config_vars['test_issue_descr']))
-            poll_obj.http('Not run')
-        else:
-            file_logger.info("HTTP test not enabled in config file, bypassing this test...")
-            poll_obj.http('Not enabled')
-    
-    ###################################
-    # Run iperf3 tcp test (if enabled)
-    ###################################
-    file_logger.info("########## iperf3 tcp test ##########")
-    if config_vars['iperf3_tcp_enabled'] == 'yes' and config_vars['test_issue'] == False:
-
-        iperf3_tcp_obj = IperfTester(file_logger)
-        test_result = iperf3_tcp_obj.run_tcp_test(config_vars, status_file_obj, check_correct_mode_interface, exporter_obj)
-
-        if test_result:
-            poll_obj.iperf_tcp('Completed')
-        else:
-            poll_obj.iperf_tcp('Failed')
-
-    else:
-        if config_vars['test_issue'] == True:
-            file_logger.info("Previous test failed: {}".format(config_vars['test_issue_descr']))
-            poll_obj.iperf_tcp('Not run')
-        else:
-            file_logger.info("Iperf3 tcp test not enabled in config file, bypassing this test...")
-            poll_obj.iperf_tcp('Not enabled')
-
-    ###################################
-    # Run iperf3 udp test (if enabled)
-    ###################################
-    file_logger.info("########## iperf3 udp test ##########")
-    if config_vars['iperf3_udp_enabled'] == 'yes' and config_vars['test_issue'] == False:
-
-        iperf3_udp_obj = IperfTester(file_logger)
-        test_result = iperf3_udp_obj.run_udp_test(config_vars, status_file_obj, check_correct_mode_interface, exporter_obj)
-
-        if test_result:
-            poll_obj.iperf_udp('Completed')
-        else:
-            poll_obj.iperf_udp('Failed')
-    else:
-        if config_vars['test_issue'] == True:
-            file_logger.info("Previous test failed: {}".format(config_vars['test_issue_descr']))
-            poll_obj.iperf_udp('Not run')
-        else:
-            file_logger.info("Iperf3 udp test not enabled in config file, bypassing this test...")
-            poll_obj.iperf_udp('Not enabled')
-
-    #####################################
-    # Run DHCP renewal test (if enabled)
-    #####################################
-    file_logger.info("########## dhcp test ##########")
-    if config_vars['dhcp_test_enabled'] == 'yes' and config_vars['test_issue'] == False:
-
-        dhcp_obj = DhcpTester(file_logger, lockf_obj)
-        tests_passed = dhcp_obj.run_tests(status_file_obj, config_vars, exporter_obj)
-
-        if tests_passed:
-            poll_obj.dhcp('Completed')
-        else:
-            poll_obj.dhcp('Failure')
-
-    else:
-        if config_vars['test_issue'] == True:
-            file_logger.info("Previous test failed: {}".format(config_vars['test_issue_descr']))
-            poll_obj.dhcp('Not run')
-        else:
-            file_logger.info("DHCP test not enabled in config file, bypassing this test...")
-            poll_obj.dhcp('Not enabled')
-
-
-    #####################################
-    # Run SMB renewal test (if enabled)
-    #####################################
-    file_logger.info("########## SMB test ##########")
-    if config_vars['smb_enabled'] == 'yes' and config_vars['test_issue'] == False:
-
-        smb_obj = SmbTester(file_logger)
-        tests_passed = smb_obj.run_tests(status_file_obj, config_vars, adapter_obj, check_correct_mode_interface, exporter_obj, watchdog_obj)
-        if tests_passed:
-            poll_obj.smb('Completed')
-        else:
-            poll_obj.smb('Failure')
-
-    else:
-        if config_vars['test_issue'] == True:
-            file_logger.info("Previous test failed: {}".format(config_vars['test_issue_descr']))
-            poll_obj.smb('Not run')
-        else:
-            file_logger.info("smb test not enabled in config file, bypassing this test...")
-            poll_obj.smb('Not enabled')
-
-    #####################################
-    # Run WIFI time to authenticate test (if enabled)
-    #####################################
-    #file_logger.info("########## wireless time to authenticate test ##########")
-    #if config_vars['auth_enabled'] == 'yes' and config_vars['test_issue'] == False:
-
-    #    Auth_obj = AuthTester(file_logger, platform=platform)
-    #    tests_passed = Auth_obj.run_tests(status_file_obj, config_vars, adapter_obj, check_correct_mode_interface, exporter_obj, watchdog_obj)
-    #    if tests_passed:
-    #        poll_obj.auth('Completed')
-    #    else:
-    #        poll_obj.auth('Failure')
-
-    #else:
-    #    if config_vars['test_issue'] == True:
-    #        file_logger.info("Previous test failed: {}".format(config_vars['test_issue_descr']))
-    #        poll_obj.auth('Not run')
-    #    else:
-    #        file_logger.info("Authentication test not enabled in config file, bypassing this test...")
-    #        poll_obj.auth('Not enabled')
-
+        file_logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        file_logger.info("~~~ IPv6 tests not enabled. Ignoring ~~~")  
+        file_logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")                                                                                                                                                                                                 
 
     #####################################
     # Tidy up before exit
@@ -492,13 +251,12 @@ def main():
     if config_vars['unit_bouncer']:
         bouncer_obj.check_for_bounce()
 
+
 def run():
     main()
-
 
 ###############################################################################
 # End main
 ###############################################################################
-
 if __name__ == "__main__":
     main()

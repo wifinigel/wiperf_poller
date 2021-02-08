@@ -6,7 +6,7 @@ import json
 from wiperf_poller.helpers.os_cmds import LIBRESPEED_CMD
 from wiperf_poller.helpers.timefunc import get_timestamp
 
-class Speedtester(object):
+class SpeedtesterIpv4():
     """
     Class to implement speedtest server tests for wiperf
     """
@@ -262,12 +262,12 @@ mbytes_received: {}, latency_ms: {}, jitter_ms: {}, client_ip: {}, provider: {}'
             'provider': provider}
 
 
-    def run_tests(self, status_file_obj, check_correct_mode_interface, config_vars, exporter_obj, lockf_obj):
+    def run_tests(self, status_file_obj, check_correct_mode_interface_ipv4, config_vars, exporter_obj, lockf_obj):
 
         self.file_logger.info("Starting speedtest ({})...".format(config_vars['provider']))
         status_file_obj.write_status_file("speedtest")
 
-        if check_correct_mode_interface('8.8.8.8', config_vars, self.file_logger):
+        if check_correct_mode_interface_ipv4('8.8.8.8', config_vars, self.file_logger):
 
             self.file_logger.info("Speedtest in progress....please wait.")
 
@@ -294,7 +294,7 @@ mbytes_received: {}, latency_ms: {}, jitter_ms: {}, client_ip: {}, provider: {}'
                 # define column headers for CSV
                 column_headers = list(speedtest_results.keys())
 
-                self.file_logger.info("Speedtest ended.")
+                self.file_logger.info("Speedtest ended.\n")
 
                 # dump the results
                 data_file = config_vars['speedtest_data_file']

@@ -13,12 +13,12 @@ import signal
 from iperf3 import Client
 import timeout_decorator
 
-from wiperf_poller.testers.pingtester import PingTester
-from wiperf_poller.helpers.route import inject_test_traffic_static_route
+from wiperf_poller.testers.pingtester import PingTesterIpv4 as PingTester
+from wiperf_poller.helpers.route import inject_test_traffic_static_route_ipv4 as inject_test_traffic_static_route
 from wiperf_poller.helpers.timefunc import get_timestamp
-from wiperf_poller.helpers.viabilitychecker import TestViabilityChecker
+from wiperf_poller.helpers.viabilitychecker import TestViabilityCheckerIpv4 as TestViabilityChecker
 
-class IperfTester(object):
+class IperfTesterIpv4(object):
     """
     A class to perform a tcp & udp iperf3 tests
     """
@@ -109,7 +109,7 @@ class IperfTester(object):
         del iperf_client
         return result
 
-    def run_tcp_test(self, config_vars, status_file_obj, check_correct_mode_interface, exporter_obj):
+    def run_tcp_test(self, config_vars, status_file_obj, check_correct_mode_interface_ipv4, exporter_obj):
 
         duration = int(config_vars['iperf3_tcp_duration'])
         port = int(config_vars['iperf3_tcp_port'])
@@ -122,7 +122,7 @@ class IperfTester(object):
         status_file_obj.write_status_file("iperf3 tcp")
 
         # check test to iperf3 server will go via wlan interface
-        if not check_correct_mode_interface(server_hostname, config_vars, self.file_logger):
+        if not check_correct_mode_interface_ipv4(server_hostname, config_vars, self.file_logger):
 
             # if route looks wrong, try to fix it
             self.file_logger.warning("  Unable to run tcp iperf test to {} as route to destination not over correct interface...injecting static route".format(server_hostname))
@@ -170,16 +170,16 @@ class IperfTester(object):
             test_name = "iperf3_tcp"
 
             if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger):
-                self.file_logger.info("  Iperf3 tcp test ended.")
+                self.file_logger.info("  Iperf3 tcp test ended.\n")
                 return True
             else:
                 self.file_logger.error("  Error sending iperf3 tcp test result.")
                 return False
         else:
-            self.file_logger.error("  iperf3 tcp test failed.")
+            self.file_logger.error("  iperf3 tcp test failed.\n")
             return False        
                        
-    def run_udp_test(self, config_vars, status_file_obj, check_correct_mode_interface, exporter_obj):
+    def run_udp_test(self, config_vars, status_file_obj, check_correct_mode_interface_ipv4, exporter_obj):
 
         duration = int(config_vars['iperf3_udp_duration'])
         port = int(config_vars['iperf3_udp_port'])
@@ -193,7 +193,7 @@ class IperfTester(object):
         status_file_obj.write_status_file("iperf3 udp")
 
         # check test to iperf3 server will go via correct interface
-        if not check_correct_mode_interface(server_hostname, config_vars, self.file_logger):
+        if not check_correct_mode_interface_ipv4(server_hostname, config_vars, self.file_logger):
 
             # if route looks wrong, try to fix it
             self.file_logger.warning("  Unable to run udp iperf test to {} as route to destination not over correct interface...injecting static route".format(server_hostname))
@@ -260,12 +260,12 @@ class IperfTester(object):
             test_name = "iperf_udp"
 
             if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger):
-                self.file_logger.info("  Iperf3 udp test ended.")
+                self.file_logger.info("  Iperf3 udp test ended.\n")
                 return True
             else:
                 self.file_logger.error("  Issue sending iperf3 UDP results.")
                 return False
 
         else:
-            self.file_logger.error("  iperf3 udp test failed.")
+            self.file_logger.error("  iperf3 udp test failed.\n")
             return False

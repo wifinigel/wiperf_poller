@@ -8,9 +8,9 @@ import requests
 from requests.exceptions import HTTPError
 import urllib3
 from wiperf_poller.helpers.timefunc import get_timestamp
-from wiperf_poller.helpers.viabilitychecker import TestViabilityChecker
+from wiperf_poller.helpers.viabilitychecker import TestViabilityCheckerIpv4 as TestViabilityChecker
 
-class HttpTester(object):
+class HttpTesterIpv4(object):
     '''
     A simple class to perform a http get and return the time taken
     '''
@@ -68,7 +68,7 @@ class HttpTester(object):
         # return status code & elapsed duration in mS
         return (self.http_status_code, self.http_get_duration, self.http_server_response_time)
     
-    def run_tests(self, status_file_obj, config_vars, exporter_obj, watchd, check_correct_mode_interface,):
+    def run_tests(self, status_file_obj, config_vars, exporter_obj, watchd, check_correct_mode_interface_ipv4,):
 
         self.file_logger.info("Starting HTTP tests...")
         status_file_obj.write_status_file("HTTP tests")
@@ -115,7 +115,7 @@ class HttpTester(object):
             if not checker.check_test_host_viable(target_hostname):
                 continue
 
-            if check_correct_mode_interface(target_hostname, config_vars, self.file_logger):
+            if check_correct_mode_interface_ipv4(target_hostname, config_vars, self.file_logger):
                 pass
             else:
                 self.file_logger.error(
@@ -170,7 +170,7 @@ class HttpTester(object):
                     self.file_logger.error("  HTTP test had issue and failed, check agent.log")
                     tests_passed = False
 
-                self.file_logger.info("  HTTP test ended.")
+                self.file_logger.info("  HTTP test ended.\n")
 
                 # Make sure we don't delete data file next time around
                 delete_file = False

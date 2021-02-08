@@ -93,7 +93,7 @@ class PollStatus():
         test_name = "wiperf-poll-status"
 
         if exporter_obj.send_results(self.config_vars, results_dict, column_headers, data_file, test_name, self.file_logger):
-            self.file_logger.info("Poll status info sent.")
+            self.file_logger.info("Poll status info sent.\n")
             return True
         else:
             self.file_logger.error("Issue sending poll status info.")

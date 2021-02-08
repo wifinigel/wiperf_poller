@@ -9,10 +9,10 @@ import subprocess
 from sys import stderr
 from wiperf_poller.helpers.os_cmds import PING_CMD
 from wiperf_poller.helpers.timefunc import get_timestamp
-from wiperf_poller.helpers.route import resolve_name
-from wiperf_poller.helpers.viabilitychecker import TestViabilityChecker
+from wiperf_poller.helpers.route import resolve_name_ipv4
+from wiperf_poller.helpers.viabilitychecker import TestViabilityCheckerIpv4 as TestViabilityChecker
 
-class PingTester(object):
+class PingTesterIpv4(object):
     '''
     A class to ping a host - a basic wrapper around a CLI ping command
     '''
@@ -141,7 +141,7 @@ class PingTester(object):
             'rtt_avg': self.rtt_avg,
             'rtt_mdev': self.rtt_mdev}
 
-    def run_tests(self, status_file_obj, config_vars, adapter, check_correct_mode_interface, exporter_obj, watchd):
+    def run_tests(self, status_file_obj, config_vars, adapter, check_correct_mode_interface_ipv4, exporter_obj, watchd):
 
         self.file_logger.info("Starting ping test...")
         status_file_obj.write_status_file("Ping tests")
@@ -159,7 +159,7 @@ class PingTester(object):
             ping_host = config_vars[target_name]
 
             if ping_host:
-                ping_host_ip = resolve_name(ping_host, self.file_logger)
+                ping_host_ip = resolve_name_ipv4(ping_host, self.file_logger)
                 ping_hosts.append( { 'hostname': ping_host, 'ip': ping_host_ip } )
 
         ping_count = config_vars['ping_count']
@@ -178,7 +178,7 @@ class PingTester(object):
                 continue
 
             # check tests will go over correct interface
-            if check_correct_mode_interface(ping_host['ip'], config_vars, self.file_logger):
+            if check_correct_mode_interface_ipv4(ping_host['ip'], config_vars, self.file_logger):
                 self.ping_host(ping_host['ip'], 1)
             else:
                 self.file_logger.error(
@@ -247,7 +247,7 @@ class PingTester(object):
                 data_file = config_vars['ping_data_file']
                 test_name = "Ping"
                 if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger):
-                    self.file_logger.info("  Ping test ended.")
+                    self.file_logger.info("  Ping test ended.\n")
                 else:
                     self.file_logger.error("  Issue sending ping results.")
                     tests_passed = False

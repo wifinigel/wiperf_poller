@@ -112,7 +112,7 @@ class AuthTester(object):
 
         return { 'auth_time': elapsed_time }
 
-    def run_tests(self, status_file_obj, config_vars, adapter, check_correct_mode_interface, exporter_obj, watchd):
+    def run_tests(self, status_file_obj, config_vars, adapter, check_correct_mode_interface_ipv4, exporter_obj, watchd):
 
         self.file_logger.info("Starting Authentication benchmark...")
         status_file_obj.write_status_file("Auth tests")

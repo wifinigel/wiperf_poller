@@ -1,19 +1,25 @@
 import time
 import socket
 from wiperf_poller.helpers.timefunc import get_timestamp
-from wiperf_poller.helpers.route import resolve_name
+from wiperf_poller.helpers.route import resolve_name_ipv4 as resolve_name
 
-class DnsTester(object):
+class DnsTesterIpv4(object):
     '''
     A class to perform a number of DNS lookups and return the lookup times
     '''
 
-    def __init__(self, file_logger):
+    def __init__(self, file_logger, config_vars):
 
         self.file_logger = file_logger
 
         self.target = []
         self.dns_result = 0
+        
+        self.test_name = "DNS (IPv4)"
+        self.test_name_prefix = "dns_target"
+        self.num_dns_targets = int(config_vars['dns_targets_count']) + 1
+        self.data_file = config_vars['dns_data_file']
+
 
     def dns_single_lookup(self, target):
         '''
@@ -57,12 +63,9 @@ class DnsTester(object):
         # build targets list
         dns_targets = []
         
-        # get specifed number of targets (format: 'dns_target1')
-        num_dns_targets = int(config_vars['dns_targets_count']) + 1
-
         # read in all target data
-        for target_num in range(1, num_dns_targets):
-            target_name = 'dns_target{}'.format(target_num)
+        for target_num in range(1, self.num_dns_targets):
+            target_name = '{}{}'.format(self.test_name_prefix, target_num)
             dns_targets.append(config_vars[target_name])
 
         dns_index = 0
@@ -81,15 +84,6 @@ class DnsTester(object):
 
             if dns_result:
 
-                # summarise result for log
-                if "^v6" in dns_target:
-                    dns_target, _ = dns_target.split('^')
-                    dns_target += " (ipv6)"
-                
-                if "^v4" in dns_target:
-                    dns_target, _ = dns_target.split('^')
-                    dns_target += " (ipv4)"
-
                 result_str = ' {}: {}ms'.format(dns_target, dns_result)
 
                 # drop abbreviated results in log file
@@ -106,10 +100,8 @@ class DnsTester(object):
                 column_headers = list(results_dict.keys())
 
                 # dump the results
-                data_file = config_vars['dns_data_file']
-                test_name = "DNS"
-                if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger, delete_data_file=delete_file):
-                    self.file_logger.info("  DNS test ended.")
+                if exporter_obj.send_results(config_vars, results_dict, column_headers, self.data_file, self.test_name, self.file_logger, delete_data_file=delete_file):
+                    self.file_logger.info("  DNS test ended.\n")
                 else:
                     self.file_logger.error("  Issue sending DNS results.")
                     tests_passed = False

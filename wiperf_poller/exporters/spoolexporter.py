@@ -86,7 +86,7 @@ class SpoolExporter(object):
         file_list = self.list_spool_files()
 
         if not file_list:
-            self.file_logger.info("No files to prune.")
+            self.file_logger.info("No files to prune.\n")
             return True
 
         # determine cut-off time for files as per max-age policy
@@ -183,6 +183,55 @@ class SpoolExporter(object):
 
         # dump data in to json format file
         return self._dump_json_data(data_file, dict_data)
+
+
+    def process_spooled_files(self, exporter_obj):
+
+        # clear out old spooled files if required
+        self.prune_old_files()
+
+        # if export method not spooler, mgt connect 
+        # must be OK. Empty spool queue 
+        if self.config_vars['exporter_type'] != 'spooler':
+
+            # check we have spooler dir
+            if self.check_spool_dir_exists():
+                
+                # check number of files in spooler dir
+                file_list = self.list_spool_files()
+
+                # step through spooled files & attempt to export
+                # (remove each spooled file as successfuly exported)
+                if len(file_list) > 0:
+
+                    for filename in file_list:
+
+                        full_file_name = "{}/{}".format(self.spool_dir_root, filename)
+
+                        # read in the file as dict (from json)
+                        try:
+                            with open(full_file_name, "r") as json_file:
+                                results_list = json.load(json_file)
+                        except IOError as err:
+                            self.file_logger.error("JSON I/O file read error: {}".format(err))
+                            break
+                        
+                        for results_dict in results_list:
+
+                            # pull out the data source
+                            data_file = results_dict['data_source']
+                            results_dict.pop('data_source')
+
+                            column_headers = list(results_dict.keys())
+                            test_name = data_file
+
+                        # send the dict to exporter
+                        if exporter_obj.send_results(self.config_vars, results_dict, column_headers, data_file, test_name, self.file_logger):
+
+                            # remove data file
+                            os.remove(full_file_name)
+                            self.file_logger.info("Spooled results sent OK - {}".format(data_file))
+
 
 
 

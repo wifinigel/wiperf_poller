@@ -5,13 +5,16 @@ from socket import gethostbyname
 import requests
 
 from wiperf_poller.helpers.networkadapter import NetworkAdapter
+from wiperf_poller.helpers.ipv6.route_ipv6 import (
+    check_correct_mgt_interface_ipv6, 
+    inject_mgt_static_route_ipv6,
+    resolve_name_ipv6)
 from wiperf_poller.helpers.route import (
-    check_correct_mgt_interface, 
-    inject_mgt_static_route_ipv4, 
-    inject_mgt_static_route_ipv6, 
+    check_correct_mgt_interface_ipv4, 
+    inject_mgt_static_route_ipv4,
     is_ipv6, 
     is_ipv4,
-    resolve_name)
+    resolve_name_ipv4)
 from wiperf_poller.helpers.os_cmds import NC_CMD
 
 class MgtConnectionTester(object):
@@ -35,7 +38,7 @@ class MgtConnectionTester(object):
 
         # To avoid any issues later, convert host name to IP
         # (IP address returned if already IP)
-        self.data_host = resolve_name(self.data_host, self.file_logger)
+        self.data_host = resolve_name_ipv4(self.data_host, self.file_logger)
 
         #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*
         #         
@@ -61,7 +64,7 @@ class MgtConnectionTester(object):
             # check if route to IPv4 address of server is via 
             # mgt_if...fix with route injection if not
             ####################################################
-            if not check_correct_mgt_interface(self.data_host, self.mgt_interface, self.file_logger):
+            if not check_correct_mgt_interface_ipv4(self.data_host, self.mgt_interface, self.file_logger):
 
                 self.file_logger.warning("  We are not using the interface required for IPv4 mgt traffic due to a routing issue in this unit - attempt route addition to fix issue")
 
@@ -69,7 +72,7 @@ class MgtConnectionTester(object):
 
                     self.file_logger.info("  Checking if IPv4 route injection worked...")
 
-                    if check_correct_mgt_interface(self.data_host, self.mgt_interface, self.file_logger):
+                    if check_correct_mgt_interface_ipv4(self.data_host, self.mgt_interface, self.file_logger):
                         self.file_logger.info("  IPv4 Routing issue corrected OK.")
                     else:
                         self.file_logger.warning("  We still have an IPv4 routing issue. Will have to exit as mgt traffic over correct interface not possible")
@@ -110,7 +113,7 @@ class MgtConnectionTester(object):
             # check if route to IPv6 address of server is via 
             # mgt_if...fix with route injection if not
             ####################################################
-            if not check_correct_mgt_interface(self.data_host, self.mgt_interface, self.file_logger):
+            if not check_correct_mgt_interface_ipv6(self.data_host, self.mgt_interface, self.file_logger):
 
                 self.file_logger.warning("  We are not using the interface required for IPv6 mgt traffic due to a routing issue in this unit - attempt route addition to fix issue")
 
@@ -118,7 +121,7 @@ class MgtConnectionTester(object):
 
                     self.file_logger.info("  Checking if  IPv6 route injection worked...")
 
-                    if check_correct_mgt_interface(self.data_host, self.mgt_interface, self.file_logger):
+                    if check_correct_mgt_interface_ipv6(self.data_host, self.mgt_interface, self.file_logger):
                         self.file_logger.info("   IPv6 Routing issue corrected OK.")
                     else:
                         self.file_logger.warning("  We still have an  IPv6 routing issue. Will have to exit as mgt traffic over correct interface not possible")

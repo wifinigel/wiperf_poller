@@ -8,6 +8,139 @@ import configparser
 import os
 import sys
 
+def read_tests_config(config, ip_suffix=""):
+
+    test_vars = {}
+
+    # Get Speedtest config params
+    speed_sect = config['Speedtest{}'.format(ip_suffix)]
+    test_vars['speedtest_enabled'] = speed_sect.get('enabled', 'no')
+    test_vars['provider'] = speed_sect.get('provider', 'ookla')
+    test_vars['server_id'] = speed_sect.get('server_id', '')
+    test_vars['librespeed_args'] = speed_sect.get('librespeed_args', '')
+    test_vars['speedtest_data_file'] = speed_sect.get('speedtest_data_file', 'wiperf-speedtest')
+    test_vars['http_proxy'] = speed_sect.get('http_proxy', '')
+    test_vars['https_proxy'] = speed_sect.get('https_proxy', '')
+    test_vars['no_proxy'] = speed_sect.get('no_proxy', '')
+    # set env vars if they are specified in the config file
+    for proxy_var in ['http_proxy', 'https_proxy', 'no_proxy']:
+
+        if test_vars[proxy_var]:
+            os.environ[proxy_var] = test_vars[proxy_var]
+
+    # Get Ping config params
+    ping_sect = config['Ping_Test{}'.format(ip_suffix)]
+    test_vars['ping_enabled'] = ping_sect.get('enabled', 'no')
+    test_vars['ping_targets_count'] = ping_sect.get('ping_targets_count', 5)
+    test_vars['ping_data_file'] = ping_sect.get('ping_data_file', 'wiperf-ping')
+
+    # get specifed number of targets (format: 'ping_host1')
+    num_ping_targets = int(test_vars['ping_targets_count']) + 1
+
+    for target_num in range(1, num_ping_targets):
+        target_name = 'ping_host{}'.format(target_num)
+        # format: test_vars["ping_host1"]
+        test_vars[target_name] = ping_sect.get(target_name, '')
+
+    test_vars['ping_count'] = ping_sect.get('ping_count', 10)
+    test_vars['ping_timeout'] = ping_sect.get('ping_timeout', 1)
+    test_vars['ping_interval'] = ping_sect.get('ping_interval', 0.2)
+
+    # Get iperf3 tcp test params
+    iperft_sect = config['Iperf3_tcp_test{}'.format(ip_suffix)]
+    test_vars['iperf3_tcp_enabled'] = iperft_sect.get('enabled', 'no')
+    test_vars['iperf3_tcp_data_file'] = iperft_sect.get('iperf3_tcp_data_file', 'wiperf-iperf3-tcp')
+    test_vars['iperf3_tcp_server_hostname'] = iperft_sect.get('server_hostname', '')
+    test_vars['iperf3_tcp_port'] = iperft_sect.get('port', '')
+    test_vars['iperf3_tcp_duration'] = iperft_sect.get('duration', '')
+
+    # Get iperf3 udp test params
+    iperfu_sect = config['Iperf3_udp_test{}'.format(ip_suffix)]
+    test_vars['iperf3_udp_enabled'] = iperfu_sect.get('enabled', 'no')
+    test_vars['iperf3_udp_data_file'] = iperfu_sect.get('iperf3_udp_data_file', 'wiperf-iperf3-udp')
+    test_vars['iperf3_udp_server_hostname'] = iperfu_sect.get('server_hostname', '')
+    test_vars['iperf3_udp_port'] = iperfu_sect.get('port', '')
+    test_vars['iperf3_udp_duration'] = iperfu_sect.get('duration', '')
+    test_vars['iperf3_udp_bandwidth'] = iperfu_sect.get('bandwidth', '')
+
+    # Get DNS test params
+    dns_sect = config['DNS_test{}'.format(ip_suffix)]
+    test_vars['dns_test_enabled'] = dns_sect.get('enabled', 'no')
+    test_vars['dns_targets_count'] = dns_sect.get('dns_targets_count', 5)
+    test_vars['dns_data_file'] = dns_sect.get('dns_data_file', 'wiperf-dns')
+
+    # get specifed number of targets (format: 'dns_target1')
+    num_dns_targets = int(test_vars['dns_targets_count']) + 1
+
+    for target_num in range(1, num_dns_targets):
+        target_name = 'dns_target{}'.format(target_num)
+        # format: test_vars["dns_target1"]
+        test_vars[target_name] = dns_sect.get(target_name, '')
+
+    # Get http test params
+    http_sect = config['HTTP_test{}'.format(ip_suffix)]
+    test_vars['http_test_enabled'] = http_sect.get('enabled', 'no')
+    test_vars['http_targets_count'] = http_sect.get('http_targets_count', 5)
+    test_vars['http_data_file'] = http_sect.get('http_data_file', 'wiperf-http')
+
+    # get specifed number of targets (format: 'http_target1')
+    num_http_targets = int(test_vars['http_targets_count']) + 1
+
+    for target_num in range(1, num_http_targets):
+        target_name = 'http_target{}'.format(target_num)
+        # format: test_vars["http_target1"]
+        test_vars[target_name] = http_sect.get(target_name, '')
+
+    # Get DHCP test params
+    dhcp_sect = config['DHCP_test{}'.format(ip_suffix)]
+    test_vars['dhcp_test_enabled'] = dhcp_sect.get('enabled', 'no')
+    test_vars['dhcp_test_mode'] = dhcp_sect.get('mode', 'passive')
+    test_vars['dhcp_data_file'] = dhcp_sect.get('dhcp_data_file', 'wiperf-dhcp')
+
+    # Get SMB test config params
+    smb_sect = config['SMB_test{}'.format(ip_suffix)]
+    test_vars['smb_enabled'] = smb_sect.get('enabled', 'no')
+    test_vars['smb_data_file'] = smb_sect.get('smb_data_file', 'wiperf-smb')
+    test_vars['smb_targets_count'] = smb_sect.get('smb_targets_count', 5)
+
+    test_vars['smb_global_username'] = smb_sect.get('smb_global_username', ' ')
+    test_vars['smb_global_password'] = smb_sect.get('smb_global_password', ' ')
+
+    # get specifed number of targets 
+    # format: 
+    #   test_vars['smb_host1'] = smb_sect.get('smb_host1', '')
+    #   test_vars['smb_username1'] = smb_sect.get('smb_username1', ' ')
+    #   test_vars['smb_password1'] = smb_sect.get('smb_password1', ' ')
+    #   test_vars['smb_path1'] = smb_sect.get('smb_path1', '')
+    #   test_vars['smb_filename1'] = smb_sect.get('smb_filename1','')
+    
+    num_smb_targets = int(test_vars['smb_targets_count']) + 1
+
+    for target_num in range(1, num_smb_targets):
+
+        host = 'smb_host{}'.format(target_num)
+        # format: test_vars['smb_host1']
+        test_vars[host] = smb_sect.get(host, '')
+
+        username = 'smb_username{}'.format(target_num)
+        # format: test_vars['smb_username1']
+        test_vars[username] = smb_sect.get(username, '')
+
+        password = 'smb_password{}'.format(target_num)
+        # format: test_vars['smb_password1']
+        test_vars[password] = smb_sect.get(password, '')
+
+        path = 'smb_path{}'.format(target_num)
+        # format: test_vars['smb_path1']
+        test_vars[path] = smb_sect.get(path, '')
+
+        filename = 'smb_filename{}'.format(target_num)
+        # format: test_vars['smb_filename1']
+        test_vars[filename] = smb_sect.get(filename, '')
+    
+    return test_vars
+
+
 def read_local_config(config_file, file_logger):
     '''
     Read in and return all config file variables. 
@@ -173,137 +306,7 @@ def read_local_config(config_file, file_logger):
     # IPv4 tests enabled?
     if config_vars['ipv4_tests_enabled'] == 'yes':
 
-        # Get Speedtest config params
-        speed_sect = config['Speedtest']
-        config_vars['speedtest_enabled'] = speed_sect.get('enabled', 'no')
-        config_vars['provider'] = speed_sect.get('provider', 'ookla')
-        config_vars['server_id'] = speed_sect.get('server_id', '')
-        config_vars['librespeed_args'] = speed_sect.get('librespeed_args', '')
-        config_vars['speedtest_data_file'] = speed_sect.get('speedtest_data_file', 'wiperf-speedtest')
-        config_vars['http_proxy'] = speed_sect.get('http_proxy', '')
-        config_vars['https_proxy'] = speed_sect.get('https_proxy', '')
-        config_vars['no_proxy'] = speed_sect.get('no_proxy', '')
-        # set env vars if they are specified in the config file
-        for proxy_var in ['http_proxy', 'https_proxy', 'no_proxy']:
-
-            if config_vars[proxy_var]:
-                os.environ[proxy_var] = config_vars[proxy_var]
-
-        # Get Ping config params
-        ping_sect = config['Ping_Test']
-        config_vars['ping_enabled'] = ping_sect.get('enabled', 'no')
-        config_vars['ping_targets_count'] = ping_sect.get('ping_targets_count', 5)
-        config_vars['ping_data_file'] = ping_sect.get('ping_data_file', 'wiperf-ping')
-
-        # get specifed number of targets (format: 'ping_host1')
-        num_ping_targets = int(config_vars['ping_targets_count']) + 1
-
-        for target_num in range(1, num_ping_targets):
-            target_name = 'ping_host{}'.format(target_num)
-            # format: config_vars["ping_host1"]
-            config_vars[target_name] = ping_sect.get(target_name, '')
-
-        config_vars['ping_count'] = ping_sect.get('ping_count', 10)
-        config_vars['ping_timeout'] = ping_sect.get('ping_timeout', 1)
-        config_vars['ping_interval'] = ping_sect.get('ping_interval', 0.2)
-
-        # Get iperf3 tcp test params
-        iperft_sect = config['Iperf3_tcp_test']
-        config_vars['iperf3_tcp_enabled'] = iperft_sect.get('enabled', 'no')
-        config_vars['iperf3_tcp_data_file'] = iperft_sect.get('iperf3_tcp_data_file', 'wiperf-iperf3-tcp')
-        config_vars['iperf3_tcp_server_hostname'] = iperft_sect.get('server_hostname', '')
-        config_vars['iperf3_tcp_port'] = iperft_sect.get('port', '')
-        config_vars['iperf3_tcp_duration'] = iperft_sect.get('duration', '')
-
-        # Get iperf3 udp test params
-        iperfu_sect = config['Iperf3_udp_test']
-        config_vars['iperf3_udp_enabled'] = iperfu_sect.get('enabled', 'no')
-        config_vars['iperf3_udp_data_file'] = iperfu_sect.get('iperf3_udp_data_file', 'wiperf-iperf3-udp')
-        config_vars['iperf3_udp_server_hostname'] = iperfu_sect.get('server_hostname', '')
-        config_vars['iperf3_udp_port'] = iperfu_sect.get('port', '')
-        config_vars['iperf3_udp_duration'] = iperfu_sect.get('duration', '')
-        config_vars['iperf3_udp_bandwidth'] = iperfu_sect.get('bandwidth', '')
-
-        # Get DNS test params
-        dns_sect = config['DNS_test']
-        config_vars['dns_test_enabled'] = dns_sect.get('enabled', 'no')
-        config_vars['dns_targets_count'] = dns_sect.get('dns_targets_count', 5)
-        config_vars['dns_data_file'] = dns_sect.get('dns_data_file', 'wiperf-dns')
-
-        # get specifed number of targets (format: 'dns_target1')
-        num_dns_targets = int(config_vars['dns_targets_count']) + 1
-
-        for target_num in range(1, num_dns_targets):
-            target_name = 'dns_target{}'.format(target_num)
-            # format: config_vars["dns_target1"]
-            config_vars[target_name] = dns_sect.get(target_name, '')
-
-        # Get http test params
-        http_sect = config['HTTP_test']
-        config_vars['http_test_enabled'] = http_sect.get('enabled', 'no')
-        config_vars['http_targets_count'] = http_sect.get('http_targets_count', 5)
-        config_vars['http_data_file'] = http_sect.get('http_data_file', 'wiperf-http')
-
-        # get specifed number of targets (format: 'http_target1')
-        num_http_targets = int(config_vars['http_targets_count']) + 1
-
-        for target_num in range(1, num_http_targets):
-            target_name = 'http_target{}'.format(target_num)
-            # format: config_vars["http_target1"]
-            config_vars[target_name] = http_sect.get(target_name, '')
-
-        # Get DHCP test params
-        dhcp_sect = config['DHCP_test']
-        config_vars['dhcp_test_enabled'] = dhcp_sect.get('enabled', 'no')
-        config_vars['dhcp_test_mode'] = dhcp_sect.get('mode', 'passive')
-        config_vars['dhcp_data_file'] = dhcp_sect.get('dhcp_data_file', 'wiperf-dhcp')
-
-        # Get SMB test config params
-        smb_sect = config['SMB_test']
-        config_vars['smb_enabled'] = smb_sect.get('enabled', 'no')
-        config_vars['smb_data_file'] = smb_sect.get('smb_data_file', 'wiperf-smb')
-        config_vars['smb_targets_count'] = smb_sect.get('smb_targets_count', 5)
-
-        config_vars['smb_global_username'] = smb_sect.get('smb_global_username', ' ')
-        config_vars['smb_global_password'] = smb_sect.get('smb_global_password', ' ')
-
-        # get specifed number of targets 
-        # format: 
-        #   config_vars['smb_host1'] = smb_sect.get('smb_host1', '')
-        #   config_vars['smb_username1'] = smb_sect.get('smb_username1', ' ')
-        #   config_vars['smb_password1'] = smb_sect.get('smb_password1', ' ')
-        #   config_vars['smb_path1'] = smb_sect.get('smb_path1', '')
-        #   config_vars['smb_filename1'] = smb_sect.get('smb_filename1','')
-        
-        num_smb_targets = int(config_vars['smb_targets_count']) + 1
-
-        for target_num in range(1, num_smb_targets):
-
-            host = 'smb_host{}'.format(target_num)
-            # format: config_vars['smb_host1']
-            config_vars[host] = smb_sect.get(host, '')
-
-            username = 'smb_username{}'.format(target_num)
-            # format: config_vars['smb_username1']
-            config_vars[username] = smb_sect.get(username, '')
-
-            password = 'smb_password{}'.format(target_num)
-            # format: config_vars['smb_password1']
-            config_vars[password] = smb_sect.get(password, '')
-
-            path = 'smb_path{}'.format(target_num)
-            # format: config_vars['smb_path1']
-            config_vars[path] = smb_sect.get(path, '')
-
-            filename = 'smb_filename{}'.format(target_num)
-            # format: config_vars['smb_filename1']
-            config_vars[filename] = smb_sect.get(filename, '')
-
-
-        # Get Authentication test config params
-        #auth_sect = config['Auth_test']
-        #config_vars['auth_enabled'] = auth_sect.get('enabled', 'no')
-        #config_vars['auth_data_file'] = auth_sect.get('auth_data_file', 'wiperf-auth')
+        config_vars['ipv4'] = read_tests_config(config, ip_suffix="")
     
     ###################################
     # ipv6 tests
@@ -312,13 +315,16 @@ def read_local_config(config_file, file_logger):
     # IPv6 tests enabled?
     if config_vars['ipv6_tests_enabled'] == 'yes':
 
+        config_vars['ipv6'] = read_tests_config(config, ip_suffix="_ipv6")
+
+        """
         # Get Speedtest config params
         speed_ipv6_sect = config['Speedtest_ipv6']
-        config_vars['speedtest_ipv6_enabled'] = speed_ipv6_sect.get('enabled', 'no')
+        config_vars['speedtest_enabled_ipv6'] = speed_ipv6_sect.get('enabled', 'no')
         config_vars['provider_ipv6'] = speed_ipv6_sect.get('provider', 'ookla')
         config_vars['server_id_ipv6'] = speed_ipv6_sect.get('server_id', '')
         config_vars['librespeed_args_ipv6'] = speed_ipv6_sect.get('librespeed_args', '')
-        config_vars['speedtest_ipv6_data_file'] = speed_ipv6_sect.get('speedtest_data_file', 'wiperf-speedtest-ipv6')
+        config_vars['speedtest_data_file_ipv6'] = speed_ipv6_sect.get('speedtest_data_file', 'wiperf-speedtest-ipv6')
         config_vars['http_proxy_ipv6'] = speed_ipv6_sect.get('http_proxy', '')
         config_vars['https_proxy_ipv6'] = speed_ipv6_sect.get('https_proxy', '')
         config_vars['no_proxy_ipv6'] = speed_ipv6_sect.get('no_proxy', '')
@@ -330,112 +336,113 @@ def read_local_config(config_file, file_logger):
 
         # Get Ping config params
         ping_ipv6_sect = config['Ping_Test_ipv6']
-        config_vars['ping_ipv6_enabled'] = ping_ipv6_sect.get('enabled', 'no')
-        config_vars['ping_ipv6_targets_count'] = ping_ipv6_sect.get('ping_targets_count', 5)
-        config_vars['ping_ipv6_data_file'] = ping_ipv6_sect.get('ping_data_file', 'wiperf-ping-ipv6')
+        config_vars['ping_enabled_ipv6'] = ping_ipv6_sect.get('enabled', 'no')
+        config_vars['ping_targets_count_ipv6'] = ping_ipv6_sect.get('ping_targets_count', 5)
+        config_vars['ping_data_file_ipv6'] = ping_ipv6_sect.get('ping_data_file', 'wiperf-ping-ipv6')
 
         # get specifed number of targets (format: 'ping_host1')
-        num_ping_targets = int(config_vars['ping_ipv6_targets_count']) + 1
+        num_ping_targets = int(config_vars['ping_targets_count_ipv6']) + 1
 
         for target_num in range(1, num_ping_targets):
-            target_name = 'ping_ipv6_host{}'.format(target_num)
-            # format: config_vars["ping_ipv6_host1"]
+            target_name = 'ping_host_ipv6_{}'.format(target_num)
+            # format: config_vars["ping_host_ipv6_1"]
             config_vars[target_name] = ping_ipv6_sect.get(target_name, '')
 
-        config_vars['ping_ipv6_count'] = ping_ipv6_sect.get('ping_count', 10)
-        config_vars['ping_ipv6_timeout'] = ping_ipv6_sect.get('ping_timeout', 1)
-        config_vars['ping_ipv6_interval'] = ping_ipv6_sect.get('ping_interval', 0.2)
+        config_vars['ping_count_ipv6'] = ping_ipv6_sect.get('ping_count', 10)
+        config_vars['ping_timeout_ipv6'] = ping_ipv6_sect.get('ping_timeout', 1)
+        config_vars['ping_interval_ipv6'] = ping_ipv6_sect.get('ping_interval', 0.2)
 
         # Get iperf3 tcp test params
         iperft_ipv6_sect = config['Iperf3_tcp_test']
-        config_vars['iperf3_ipv6_tcp_enabled'] = iperft_ipv6_sect.get('enabled', 'no')
-        config_vars['iperf3_ipv6_tcp_data_file'] = iperft_ipv6_sect.get('iperf3_tcp_data_file', 'wiperf-iperf3-tcp-ipv6')
-        config_vars['iperf3_ipv6_tcp_server_hostname'] = iperft_ipv6_sect.get('server_hostname', '')
-        config_vars['iperf3_ipv6_tcp_port'] = iperft_ipv6_sect.get('port', '')
-        config_vars['iperf3_ipv6_tcp_duration'] = iperft_ipv6_sect.get('duration', '')
+        config_vars['iperf3_tcp_enabled_ipv6'] = iperft_ipv6_sect.get('enabled', 'no')
+        config_vars['iperf3_tcp_data_file_ipv6'] = iperft_ipv6_sect.get('iperf3_tcp_data_file', 'wiperf-iperf3-tcp-ipv6')
+        config_vars['iperf3_tcp_server_hostname_ipv6'] = iperft_ipv6_sect.get('server_hostname', '')
+        config_vars['iperf3_tcp_port_ipv6'] = iperft_ipv6_sect.get('port', '')
+        config_vars['iperf3_tcp_duration_ipv6'] = iperft_ipv6_sect.get('duration', '')
 
         # Get iperf3 udp test params
-        iperfu_ipv6_sect = config['Iperf3_udp_test']
-        config_vars['iperf3_ipv6_udp_enabled'] = iperfu_ipv6_sect.get('enabled', 'no')
-        config_vars['iperf3_ipv6_udp_data_file'] = iperfu_ipv6_sect.get('iperf3_udp_data_file', 'wiperf-iperf3-udp-ipv6')
-        config_vars['iperf3_ipv6_udp_server_hostname'] = iperfu_ipv6_sect.get('server_hostname', '')
-        config_vars['iperf3_ipv6_udp_port'] = iperfu_ipv6_sect.get('port', '')
-        config_vars['iperf3_ipv6_udp_duration'] = iperfu_ipv6_sect.get('duration', '')
-        config_vars['iperf3_ipv6_udp_bandwidth'] = iperfu_ipv6_sect.get('bandwidth', '')
+        iperfu_ipv6_sect = config['Iperf3_udp_test_ipv6']
+        config_vars['iperf3_udp_enabled_ipv6'] = iperfu_ipv6_sect.get('enabled', 'no')
+        config_vars['iperf3_udp_data_file_ipv6'] = iperfu_ipv6_sect.get('iperf3_udp_data_file', 'wiperf-iperf3-udp-ipv6')
+        config_vars['iperf3_udp_server_hostname_ipv6'] = iperfu_ipv6_sect.get('server_hostname', '')
+        config_vars['iperf3_udp_port_ipv6'] = iperfu_ipv6_sect.get('port', '')
+        config_vars['iperf3_udp_duration_ipv6'] = iperfu_ipv6_sect.get('duration', '')
+        config_vars['iperf3_udp_bandwidth_ipv6'] = iperfu_ipv6_sect.get('bandwidth', '')
 
         # Get DNS test params
-        dns_ipv6_sect = config['DNS_test']
-        config_vars['dns_ipv6_test_enabled'] = dns_ipv6_sect.get('enabled', 'no')
-        config_vars['dns_ipv6_targets_count'] = dns_ipv6_sect.get('dns_targets_count', 5)
-        config_vars['dns_ipv6_data_file'] = dns_ipv6_sect.get('dns_data_file', 'wiperf-dns-ipv6')
+        dns_ipv6_sect = config['DNS_test_ipv6']
+        config_vars['dns_test_enabled_ipv6'] = dns_ipv6_sect.get('enabled', 'no')
+        config_vars['dns_targets_count_ipv6'] = dns_ipv6_sect.get('dns_targets_count', 5)
+        config_vars['dns_data_file_ipv6'] = dns_ipv6_sect.get('dns_data_file', 'wiperf-dns-ipv6')
 
         # get specifed number of targets (format: 'dns_target1')
-        num_dns_targets = int(config_vars['dns_ipv6_targets_count']) + 1
+        num_dns_targets = int(config_vars['dns_targets_count_ipv6']) + 1
 
         for target_num in range(1, num_dns_targets):
-            target_name = 'dns_ipv6_target{}'.format(target_num)
-            # format: config_vars["dns_target1"]
+            target_name = 'dns_target_ipv6_{}'.format(target_num)
+            # format: config_vars["dns_target_ipv6_1"]
             config_vars[target_name] = dns_ipv6_sect.get(target_name, '')
 
         # Get http test params
-        http_ipv6_sect = config['HTTP_test']
-        config_vars['http_ipv6_test_enabled'] = http_ipv6_sect.get('enabled', 'no')
-        config_vars['http_ipv6_targets_count'] = http_ipv6_sect.get('http_targets_count', 5)
-        config_vars['http_ipv6_data_file'] = http_ipv6_sect.get('http_data_file', 'wiperf-http-ipv6')
+        http_ipv6_sect = config['HTTP_test_ipv6']
+        config_vars['http_test_enabled_ipv6'] = http_ipv6_sect.get('enabled', 'no')
+        config_vars['http_targets_count_ipv6'] = http_ipv6_sect.get('http_targets_count', 5)
+        config_vars['http_data_file_ipv6'] = http_ipv6_sect.get('http_data_file', 'wiperf-http-ipv6')
 
         # get specifed number of targets (format: 'http_target1')
-        num_http_targets = int(config_vars['http_ipv6_targets_count']) + 1
+        num_http_targets = int(config_vars['http_targets_count_ipv6']) + 1
 
         for target_num in range(1, num_http_targets):
-            target_name = 'http_ipv6_target{}'.format(target_num)
-            # format: config_vars["http_ipv6_target1"]
+            target_name = 'http_target_ipv6_{}'.format(target_num)
+            # format: config_vars["http_target_ipv6_1"]
             config_vars[target_name] = http_ipv6_sect.get(target_name, '')
 
         # Get DHCP test params
-        dhcp_ipv6_sect = config['DHCP_test']
-        config_vars['dhcp_ipv6_test_enabled'] = dhcp_ipv6_sect.get('enabled', 'no')
-        config_vars['dhcp_ipv6_test_mode'] = dhcp_ipv6_sect.get('mode', 'passive')
-        config_vars['dhcp_ipv6_data_file'] = dhcp_ipv6_sect.get('dhcp_data_file', 'wiperf-dhcp')
+        dhcp_ipv6_sect = config['DHCP_test_ipv6']
+        config_vars['dhcp_test_enabled_ipv6'] = dhcp_ipv6_sect.get('enabled', 'no')
+        config_vars['dhcp_test_mode_ipv6'] = dhcp_ipv6_sect.get('mode', 'passive')
+        config_vars['dhcp_data_file_ipv6'] = dhcp_ipv6_sect.get('dhcp_data_file', 'wiperf-dhcp')
 
         # Get SMB test config params
-        smb_ipv6_sect = config['SMB_test']
-        config_vars['smb_ipv6_enabled'] = smb_ipv6_sect.get('enabled', 'no')
-        config_vars['smb_ipv6_data_file'] = smb_ipv6_sect.get('smb_data_file', 'wiperf-smb-ipv6')
-        config_vars['smb_ipv6_targets_count'] = smb_ipv6_sect.get('smb_targets_count', 5)
+        smb_ipv6_sect = config['SMB_test_ipv6']
+        config_vars['smb_enabled_ipv6'] = smb_ipv6_sect.get('enabled', 'no')
+        config_vars['smb_data_file_ipv6'] = smb_ipv6_sect.get('smb_data_file', 'wiperf-smb-ipv6')
+        config_vars['smb_targets_count_ipv6'] = smb_ipv6_sect.get('smb_targets_count', 5)
 
-        config_vars['smb_ipv6_global_username'] = smb_ipv6_sect.get('smb_global_username', ' ')
-        config_vars['smb_ipv6_global_password'] = smb_ipv6_sect.get('smb_global_password', ' ')
+        config_vars['smb_global_username_ipv6'] = smb_ipv6_sect.get('smb_global_username', ' ')
+        config_vars['smb_global_password_ipv6'] = smb_ipv6_sect.get('smb_global_password', ' ')
 
         # get specifed number of targets 
         # format: 
-        #   config_vars['smb_ipv6_host1'] = smb_ipv6_sect.get('smb_host1', '')
-        #   config_vars['smb_ipv6_username1'] = smb_ipv6_sect.get('smb_username1', ' ')
-        #   config_vars['smb_ipv6_password1'] = smb_ipv6_sect.get('smb_password1', ' ')
-        #   config_vars['smb_ipv6_path1'] = smb_ipv6_sect.get('smb_path1', '')
-        #   config_vars['smb_ipv6_filename1'] = smb_ipv6_sect.get('smb_filename1','')
+        #   config_vars['smb_host_ipv6_1'] = smb_ipv6_sect.get('smb_host1', '')
+        #   config_vars['smb_username_ipv6_1'] = smb_ipv6_sect.get('smb_username1', ' ')
+        #   config_vars['smb_password_ipv6_1'] = smb_ipv6_sect.get('smb_password1', ' ')
+        #   config_vars['smb_path1_ipv6_'] = smb_ipv6_sect.get('smb_path1', '')
+        #   config_vars['smb_filename_ipv6_1'] = smb_ipv6_sect.get('smb_filename1','')
         
-        num_smb_targets = int(config_vars['smb_ipv6_targets_count']) + 1
+        num_smb_targets = int(config_vars['smb_targets_count_ipv6']) + 1
 
         for target_num in range(1, num_smb_targets):
 
-            host = 'smb_ipv6_host{}'.format(target_num)
+            host = 'smb_host+ipv6_{}'.format(target_num)
             # format: config_vars['smb_ipv6_host1']
             config_vars[host] = smb_ipv6_sect.get(host, '')
 
-            username = 'smb_ipv6_username{}'.format(target_num)
+            username = 'smb_username_ipv6_{}'.format(target_num)
             # format: config_vars['smb_username1']
             config_vars[username] = smb_ipv6_sect.get(username, '')
 
-            password = 'smb_ipv6_password{}'.format(target_num)
+            password = 'smb_password_ipv6_{}'.format(target_num)
             # format: config_vars['smb_password1']
             config_vars[password] = smb_ipv6_sect.get(password, '')
 
-            path = 'smb_ipv6_path{}'.format(target_num)
+            path = 'smb_path_ipv6_{}'.format(target_num)
             # format: config_vars['smb_path1']
             config_vars[path] = smb_ipv6_sect.get(path, '')
 
-            filename = 'smb_ipv6_filename{}'.format(target_num)
+            filename = 'smb_filename_ipv6_{}'.format(target_num)
             # format: config_vars['smb_filename1']
             config_vars[filename] = smb_ipv6_sect.get(filename, '')
+        """
 
     return config_vars

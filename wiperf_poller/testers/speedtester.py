@@ -11,10 +11,13 @@ class SpeedtesterIpv4():
     Class to implement speedtest server tests for wiperf
     """
 
-    def __init__(self, file_logger, config_vars):
+    def __init__(self, file_logger, config_vars, resolve_name):
 
         self.file_logger = file_logger
         self.config_vars = config_vars
+        self.test_name = "Speedtest"
+        self.wan_target = 'ipv4.google.com'
+        self.resolve_name = resolve_name
 
     def librespeed(self, server_id='', args='', DEBUG=False):
         """
@@ -262,12 +265,14 @@ mbytes_received: {}, latency_ms: {}, jitter_ms: {}, client_ip: {}, provider: {}'
             'provider': provider}
 
 
-    def run_tests(self, status_file_obj, check_correct_mode_interface_ipv4, config_vars, exporter_obj, lockf_obj):
+    def run_tests(self, status_file_obj, check_correct_mode_interface, config_vars, exporter_obj, lockf_obj):
 
         self.file_logger.info("Starting speedtest ({})...".format(config_vars['provider']))
         status_file_obj.write_status_file("speedtest")
 
-        if check_correct_mode_interface_ipv4('8.8.8.8', config_vars, self.file_logger):
+        self.wan_target = self.resolve_name(self.wan_target, self.file_logger)
+
+        if check_correct_mode_interface(self.wan_target, config_vars, self.file_logger):
 
             self.file_logger.info("Speedtest in progress....please wait.")
 
@@ -298,8 +303,8 @@ mbytes_received: {}, latency_ms: {}, jitter_ms: {}, client_ip: {}, provider: {}'
 
                 # dump the results
                 data_file = config_vars['speedtest_data_file']
-                test_name = "Speedtest"
-                if exporter_obj.send_results(config_vars, speedtest_results, column_headers, data_file, test_name, self.file_logger):
+
+                if exporter_obj.send_results(config_vars, speedtest_results, column_headers, data_file, self.test_name, self.file_logger):
                     self.file_logger.info("Speedtest results sent OK.")
                     return True
                 else:

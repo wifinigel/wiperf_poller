@@ -27,6 +27,13 @@ class IperfTesterIpv4(object):
 
         self.file_logger = file_logger
 
+        self.tcp_test_name = "iperf3_tcp"
+        self.udp_test_name = "iperf3_udp"
+
+        self.TestViabilityChecker = TestViabilityChecker
+        self.PingTester = PingTester
+        self.inject_test_traffic_static_route = inject_test_traffic_static_route
+
 
     @timeout_decorator.timeout(60, use_signals=False)
     def tcp_iperf_client_test(self, server_hostname, duration=10, port=5201, debug=False):
@@ -109,25 +116,25 @@ class IperfTesterIpv4(object):
         del iperf_client
         return result
 
-    def run_tcp_test(self, config_vars, status_file_obj, check_correct_mode_interface_ipv4, exporter_obj):
+    def run_tcp_test(self, config_vars, status_file_obj, check_correct_mode_interface, exporter_obj):
 
         duration = int(config_vars['iperf3_tcp_duration'])
         port = int(config_vars['iperf3_tcp_port'])
         server_hostname = config_vars['iperf3_tcp_server_hostname']
 
         # create test viability checker
-        checker = TestViabilityChecker(config_vars, self.file_logger)
+        checker = self.TestViabilityChecker(config_vars, self.file_logger)
 
         self.file_logger.info("Starting iperf3 tcp test ({}:{})...".format(server_hostname, str(port)))
         status_file_obj.write_status_file("iperf3 tcp")
 
         # check test to iperf3 server will go via wlan interface
-        if not check_correct_mode_interface_ipv4(server_hostname, config_vars, self.file_logger):
+        if not check_correct_mode_interface(server_hostname, config_vars, self.file_logger):
 
             # if route looks wrong, try to fix it
             self.file_logger.warning("  Unable to run tcp iperf test to {} as route to destination not over correct interface...injecting static route".format(server_hostname))
 
-            if not inject_test_traffic_static_route(server_hostname, config_vars, self.file_logger):
+            if not self.inject_test_traffic_static_route(server_hostname, config_vars, self.file_logger):
 
                 # route injection appears to have failed
                 self.file_logger.error("  Unable to run iperf test to {} as route to destination not over correct interface...bypassing test".format(server_hostname))
@@ -167,9 +174,8 @@ class IperfTesterIpv4(object):
 
             # dump the results
             data_file = config_vars['iperf3_tcp_data_file']
-            test_name = "iperf3_tcp"
 
-            if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger):
+            if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, self.tcp_test_name, self.file_logger):
                 self.file_logger.info("  Iperf3 tcp test ended.\n")
                 return True
             else:
@@ -179,7 +185,7 @@ class IperfTesterIpv4(object):
             self.file_logger.error("  iperf3 tcp test failed.\n")
             return False        
                        
-    def run_udp_test(self, config_vars, status_file_obj, check_correct_mode_interface_ipv4, exporter_obj):
+    def run_udp_test(self, config_vars, status_file_obj, check_correct_mode_interface, exporter_obj):
 
         duration = int(config_vars['iperf3_udp_duration'])
         port = int(config_vars['iperf3_udp_port'])
@@ -187,18 +193,18 @@ class IperfTesterIpv4(object):
         bandwidth = int(config_vars['iperf3_udp_bandwidth'])
 
         # create test viability checker
-        checker = TestViabilityChecker(config_vars, self.file_logger)
+        checker = self.TestViabilityChecker(config_vars, self.file_logger)
 
         self.file_logger.info("Starting iperf3 udp test ({}:{})...".format(server_hostname, str(port)))
         status_file_obj.write_status_file("iperf3 udp")
 
         # check test to iperf3 server will go via correct interface
-        if not check_correct_mode_interface_ipv4(server_hostname, config_vars, self.file_logger):
+        if not check_correct_mode_interface(server_hostname, config_vars, self.file_logger):
 
             # if route looks wrong, try to fix it
             self.file_logger.warning("  Unable to run udp iperf test to {} as route to destination not over correct interface...injecting static route".format(server_hostname))
 
-            if not inject_test_traffic_static_route(server_hostname, config_vars, self.file_logger):
+            if not self.inject_test_traffic_static_route(server_hostname, config_vars, self.file_logger):
 
                 # route injection appears to have failed
                 self.file_logger.error("  Unable to run udp iperf test to {} as route to destination not over correct interface...bypassing test".format(server_hostname))
@@ -211,7 +217,7 @@ class IperfTesterIpv4(object):
             return False
 
         # Run a ping to the iperf server to get an rtt to feed in to MOS score calc
-        ping_obj = PingTester(self.file_logger)
+        ping_obj = self.PingTester(self.file_logger)
         ping_obj.ping_host(server_hostname, 1) # one ping to seed arp cache
         
         ping_result = ping_obj.ping_host(server_hostname, 5)
@@ -257,9 +263,8 @@ class IperfTesterIpv4(object):
 
             # dump the results
             data_file = config_vars['iperf3_udp_data_file']
-            test_name = "iperf_udp"
 
-            if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger):
+            if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, self.udp_test_name, self.file_logger):
                 self.file_logger.info("  Iperf3 udp test ended.\n")
                 return True
             else:

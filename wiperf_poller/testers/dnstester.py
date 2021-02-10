@@ -19,6 +19,7 @@ class DnsTesterIpv4(object):
         self.test_name_prefix = "dns_target"
         self.num_dns_targets = int(config_vars['dns_targets_count']) + 1
         self.data_file = config_vars['dns_data_file']
+        self.resolve_name = resolve_name
 
 
     def dns_single_lookup(self, target):
@@ -42,7 +43,7 @@ class DnsTesterIpv4(object):
         #       out single-case anonmalies
 
         start = time.time()
-        ip_address = resolve_name(target, self.file_logger)
+        ip_address = self.resolve_name(target, self.file_logger)
         
         if not ip_address:
             return False

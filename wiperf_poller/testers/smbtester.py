@@ -9,7 +9,7 @@ import os
 import subprocess
 import timeout_decorator
 from wiperf_poller.helpers.os_cmds import SMB_CP, SMB_MOUNT, MOUNT, LS_CMD, UMOUNT_CMD
-from wiperf_poller.helpers.route import inject_test_traffic_static_route_ipv4
+from wiperf_poller.helpers.route import inject_test_traffic_static_route_ipv4 as inject_test_traffic_static_route
 from wiperf_poller.helpers.timefunc import get_timestamp
 from wiperf_poller.helpers.viabilitychecker import TestViabilityCheckerIpv4 as TestViabilityChecker
 
@@ -31,6 +31,9 @@ class SmbTesterIpv4():
         self.test_time = ''
         self.time_to_transfer = ''
         self.mount_point = '/tmp/share'
+        self.test_name = "SMB"
+        self.inject_test_traffic_static_route = inject_test_traffic_static_route
+        self.TestViabilityChecker = TestViabilityChecker
 
     def _create_mount_point(self, mount_point):
         """
@@ -208,7 +211,7 @@ class SmbTesterIpv4():
             'rate':self.transfert_rate}
 
 
-    def run_tests(self, status_file_obj, config_vars, adapter, check_correct_mode_interface_ipv4, exporter_obj, watchd):
+    def run_tests(self, status_file_obj, config_vars, adapter, check_correct_mode_interface, exporter_obj, watchd):
 
         self.file_logger.info("Starting SMB test...")
         status_file_obj.write_status_file("SMB tests")
@@ -234,7 +237,7 @@ class SmbTesterIpv4():
         self.file_logger.info("Packages all present.")
 
         # create test viability checker
-        checker = TestViabilityChecker(config_vars, self.file_logger)
+        checker = self.TestViabilityChecker(config_vars, self.file_logger)
 
         global_username = config_vars['smb_global_username']
         global_password = config_vars['smb_global_password']
@@ -278,12 +281,12 @@ class SmbTesterIpv4():
                 continue
 
             # Check we have the correct route to the host under test
-            if not check_correct_mode_interface_ipv4(smb_host, config_vars, self.file_logger):
+            if not check_correct_mode_interface(smb_host, config_vars, self.file_logger):
 
                 # if route looks wrong, try to fix it
                 self.file_logger.warning("  Unable to run SMB test to {} as route to destination not over correct interface...injecting static route".format(smb_host))
 
-                if not inject_test_traffic_static_route_ipv4(smb_host, config_vars, self.file_logger):
+                if not self.inject_test_traffic_static_route(smb_host, config_vars, self.file_logger):
 
                     # route injection appears to have failed
                     self.file_logger.error("  Unable to run SMB test to {} as route to destination not over correct interface...bypassing test".format(smb_host))
@@ -349,9 +352,8 @@ class SmbTesterIpv4():
                 
                 # dump the results
                 data_file = config_vars['smb_data_file']
-                test_name = "SMB"
 
-                if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger, delete_data_file=delete_file):
+                if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, self.test_name, self.file_logger, delete_data_file=delete_file):
                     self.file_logger.info("  SMB test ended.\n")
                 else:
                     self.file_logger.error("  Issue sending SMB results.")

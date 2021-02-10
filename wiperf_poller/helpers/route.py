@@ -25,7 +25,7 @@ def resolve_name_ipv4(hostname, file_logger):
         return hostname  
     
     if is_ipv6(hostname):
-        raise ValueError("IPv6 address passed to resolve_name_ipv4(), should be IPv4")
+        raise ValueError("IPv6 address passed to resolve_name_ipv4(), should be IPv4: {}".format(hostname))
 
     try:
         ip_address = socket.getaddrinfo(hostname, 0, family=socket.AF_INET)[0][4][0]
@@ -117,6 +117,7 @@ def check_correct_mode_interface_ipv4(host, config_vars, file_logger):
     """
     Check that mgt traffic will go over correct interface for the selected mode
     """
+    # this could be a hostname, try a name resolution just in case
     ip_address = resolve_name_ipv4(host, file_logger)
 
     # check test traffic will go via correct interface depending on mode

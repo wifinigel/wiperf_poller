@@ -7,6 +7,7 @@ import warnings
 import requests
 from requests.exceptions import HTTPError
 import urllib3
+import requests.packages.urllib3.util.connection as urllib3_cn
 from wiperf_poller.helpers.timefunc import get_timestamp
 from wiperf_poller.helpers.viabilitychecker import TestViabilityCheckerIpv4 as TestViabilityChecker
 
@@ -23,6 +24,12 @@ class HttpTesterIpv4(object):
         self.http_get_duration = 0
         self.http_server_response_time = 0
         self.http_status_code = 0
+        self.TestViabilityChecker = TestViabilityChecker
+        self.urllib3_cn = urllib3_cn
+
+        self.urllib3_cn.allowed_gai_family = socket.AF_INET
+
+        self.test_name = "DNS (IPv4)"
 
     def http_get(self, http_target):
         '''
@@ -68,13 +75,13 @@ class HttpTesterIpv4(object):
         # return status code & elapsed duration in mS
         return (self.http_status_code, self.http_get_duration, self.http_server_response_time)
     
-    def run_tests(self, status_file_obj, config_vars, exporter_obj, watchd, check_correct_mode_interface_ipv4,):
+    def run_tests(self, status_file_obj, config_vars, exporter_obj, watchd, check_correct_mode_interface,):
 
         self.file_logger.info("Starting HTTP tests...")
         status_file_obj.write_status_file("HTTP tests")
 
         # create test viability checker
-        checker = TestViabilityChecker(config_vars, self.file_logger)
+        checker = self.TestViabilityChecker(config_vars, self.file_logger)
 
         # build targets list
         http_targets = []
@@ -115,7 +122,7 @@ class HttpTesterIpv4(object):
             if not checker.check_test_host_viable(target_hostname):
                 continue
 
-            if check_correct_mode_interface_ipv4(target_hostname, config_vars, self.file_logger):
+            if check_correct_mode_interface(target_hostname, config_vars, self.file_logger):
                 pass
             else:
                 self.file_logger.error(
@@ -157,8 +164,7 @@ class HttpTesterIpv4(object):
 
                     # dump the results
                     data_file = config_vars['http_data_file']
-                    test_name = "HTTP"
-                    if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, test_name, self.file_logger, delete_data_file=delete_file):
+                    if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, self.test_name, self.file_logger, delete_data_file=delete_file):
                         self.file_logger.info("  HTTP results sent OK.")
                     else:
                         self.file_logger.error("  Issue sending HTTP results")

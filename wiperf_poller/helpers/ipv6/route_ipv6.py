@@ -120,12 +120,15 @@ def check_correct_mode_interface_ipv6(ip_address, config_vars, file_logger):
     """
     Check that mgt traffic will go over correct interface for the selected mode
     """
+    # this could be a hostname, try a name resolution just in case
+    ip_address = resolve_name_ipv6(ip_address, file_logger)
+
     # check test traffic will go via correct interface depending on mode
     test_traffic_interface= get_test_traffic_interface_ipv6(config_vars, file_logger)
-    
+   
     # get i/f name for route
     if not is_ipv6(ip_address):
-        raise ValueError("IP address supplied is not IPv4 format")
+        raise ValueError("IP address supplied is not IPv6 format: {}".format(ip_address))
 
     route_to_dest = get_first_route_to_dest_ipv6(ip_address, file_logger)
 

@@ -7,7 +7,6 @@ import warnings
 import requests
 from requests.exceptions import HTTPError
 import urllib3
-import requests.packages.urllib3.util.connection as urllib3_cn
 from wiperf_poller.helpers.timefunc import get_timestamp
 from wiperf_poller.helpers.viabilitychecker import TestViabilityCheckerIpv4 as TestViabilityChecker
 
@@ -25,9 +24,6 @@ class HttpTesterIpv4(object):
         self.http_server_response_time = 0
         self.http_status_code = 0
         self.TestViabilityChecker = TestViabilityChecker
-        self.urllib3_cn = urllib3_cn
-
-        self.urllib3_cn.allowed_gai_family = socket.AF_INET
 
         self.test_name = "DNS (IPv4)"
 

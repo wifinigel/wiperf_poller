@@ -101,6 +101,8 @@ class NetworkAdapter(object):
         As this is a wrapper around a CLI command, it is likely to break at
         some stage
         '''
+        self.file_logger.info("Getting adapter IPv4 info: {}".format(self.if_name))
+
         #TODO: Use psutil for the interface info
         # Get interface info
         try:
@@ -108,11 +110,12 @@ class NetworkAdapter(object):
             self.ifconfig_info = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True).decode()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
-            error_descr = "Issue getting interface info (ipv4) using ip command to get IP info: {}".format(
-                output)
-
+            error_descr = "Issue getting interface info (ipv4) using ip command to get IP info: {}".format(output)
             self.file_logger.error("{}".format(error_descr))
-            self.file_logger.error("Returning error...")
+            if re.match('.* (does not exist)', output):
+                self.file_logger.error("Exiting.")
+                sys.exit()
+
             return False
 
         self.file_logger.debug("Interface config info: {}".format(self.ifconfig_info))
@@ -145,17 +148,20 @@ class NetworkAdapter(object):
         '''
         #TODO: Use psutil for the interface info
 
+        self.file_logger.info("Getting adapter IPv6 info: {}".format(self.if_name))
+
         # Get interface info
         try:
             cmd = "{} -6 a show  {}".format(IP_CMD, self.if_name)
             self.ifconfig_info = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True).decode()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
-            error_descr = "Issue getting interface info using ip command to get IP info: {}".format(
-                output)
-
+            error_descr = "Issue getting interface info (ipv6) using ip command to get IP info: {}".format(output)
             self.file_logger.error("{}".format(error_descr))
-            self.file_logger.error("Returning error...")
+            if re.match('.* (does not exist)', output):
+                self.file_logger.error("Exiting.")
+                sys.exit()
+            
             return False
 
         self.file_logger.debug("Interface config info: {}".format(self.ifconfig_info))

@@ -174,7 +174,7 @@ def inject_default_route_ipv6(ip_address, config_vars, file_logger):
   
     # delete and re-add route with a new metric
     try:
-        del_route_cmd = "{} route del ".format(IP_CMD) + route_to_dest
+        del_route_cmd = "{} -6 route del ".format(IP_CMD) + route_to_dest
         subprocess.run(del_route_cmd, shell=True)
         file_logger.info("  [Route Injection (ipv6)] Deleting route: {}".format(route_to_dest))
     except subprocess.CalledProcessError as proc_exc:
@@ -183,7 +183,7 @@ def inject_default_route_ipv6(ip_address, config_vars, file_logger):
     
     try:
         modified_route = re.sub(r"metric (\d+)", "metric 1024", route_to_dest)
-        add_route_cmd = "{} route add  ".format(IP_CMD) + modified_route
+        add_route_cmd = "{} -6 route add  ".format(IP_CMD) + modified_route
         subprocess.run(add_route_cmd, shell=True)
         file_logger.info("  [Route Injection (ipv6)] Re-adding deleted route with new metric: {}".format(modified_route))
     except subprocess.CalledProcessError as proc_exc:
@@ -197,8 +197,8 @@ def inject_default_route_ipv6(ip_address, config_vars, file_logger):
 
     # inject a new route with the required interface
     try:
-        new_route = "default dev {} metric 1023".format(test_traffic_interface)
-        add_route_cmd = "{} route add  ".format(IP_CMD) + new_route
+        new_route = "default dev {} metric 1".format(test_traffic_interface)
+        add_route_cmd = "{} -6 route add  ".format(IP_CMD) + new_route
         subprocess.run(add_route_cmd, shell=True)
         file_logger.info("  [Route Injection (ipv6)] Adding new route: {}".format(new_route))
     except subprocess.CalledProcessError as proc_exc:

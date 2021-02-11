@@ -100,5 +100,6 @@ def check_os_cmds(file_logger):
             file_logger.error("Unable to find required OS command: {}".format(cmd_name))
             return False
     
+    file_logger.info("Required OS commands checked OK.")
     return True
 

@@ -7,7 +7,6 @@ import sys
 import time
 
 # our local modules
-from wiperf_poller._01_network_checks import run_network_checks
 from wiperf_poller._02_ipv4_tests import run_ipv4_tests
 from wiperf_poller._03_ipv6_tests import run_ipv6_tests
 
@@ -25,6 +24,8 @@ from wiperf_poller.exporters.spoolexporter import SpoolExporter
 from wiperf_poller.helpers.statusfile import StatusFile
 from wiperf_poller.helpers.watchdog import Watchdog
 from wiperf_poller.helpers.wirelessadapter import WirelessAdapter
+from wiperf_poller.testers.networkconnectiontester import NetworkConnectionTester
+from wiperf_poller.testers.mgtconnectiontester import MgtConnectionTester
 
 config_file = "/etc/wiperf/config.ini"
 log_file = "/var/log/wiperf_agent.log"
@@ -100,11 +101,13 @@ else:
 config_vars['ipv4_tests_possible'] = False
 config_vars['ipv6_tests_possible'] = False
 
-if adapter_obj.get_adapter_ipv4_ip():
-    config_vars['ipv4_tests_possible'] = True
+if config_vars['ipv4_enabled'] == 'yes':
+    if adapter_obj.get_adapter_ipv4_ip():
+        config_vars['ipv4_tests_possible'] = True
 
-if adapter_obj.get_adapter_ipv6_ip():
-    config_vars['ipv6_tests_possible'] = True
+if config_vars['ipv6_enabled'] == 'yes':
+    if adapter_obj.get_adapter_ipv6_ip():
+        config_vars['ipv6_tests_possible'] = True
 
 ###############################################################################
 # Main
@@ -177,15 +180,37 @@ def main():
     #############################################
     # Run network checks
     #############################################
-    # Note: test_issue flag not set by connection tests, as issues will result in process exit
-    checks_result = run_network_checks(file_logger, status_file_obj, config_vars, poll_obj, 
-        watchdog_obj, lockf_obj, exporter_obj)
+    wlan_if = config_vars['wlan_if']
+    eth_if = config_vars['eth_if']
     
-    poll_obj.network(checks_result) 
+    if config_vars['probe_mode'] == 'wireless':
+        network_if = wlan_if
+    else:
+        network_if = eth_if
+    
+    # Note: test_issue flag not set by connection tests, as issues will result in process exit
+    network_connection_obj = NetworkConnectionTester(file_logger, network_if, config_vars['probe_mode'])  
+    network_connection_obj.run_tests(watchdog_obj, lockf_obj, config_vars, exporter_obj, status_file_obj)
+      
+    poll_obj.network("OK") 
     
     # update poll summary with IP
     poll_obj.ip(adapter_obj.get_adapter_ipv4_ip())
     poll_obj.ip_v6(adapter_obj.get_adapter_ipv6_ip())
+
+    #############################################
+    # Reporting platform connectivity checks
+    #############################################
+    mgt_connection_obj =  MgtConnectionTester(config_vars, file_logger)
+    mgt_connection_obj.check_mgt_connection(lockf_obj, watchdog_obj)
+
+    # report wireless connection info if using a wireless connection
+    if config_vars['probe_mode'] == 'wireless':
+        file_logger.info("Reporting wireless connection check results")
+        network_connection_obj.report_wireless_check_results(lockf_obj, config_vars, exporter_obj)
+
+    lockf_obj.delete_lock_file()
+    sys.exit()
 
     ################################################
     # Empty results spool queue if required/enabled

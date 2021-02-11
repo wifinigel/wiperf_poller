@@ -257,8 +257,8 @@ def read_local_config(config_file, file_logger):
     config_vars['test_offset'] = gen_sect.get('test_offset', '0')
 
     # which test types are enabled
-    config_vars['ipv4_tests_enabled'] = gen_sect.get('ipv4_tests_enabled', 'yes')
-    config_vars['ipv6_tests_enabled'] = gen_sect.get('ipv6_tests_enabled', 'no')
+    config_vars['ipv4_enabled'] = gen_sect.get('ipv4_enabled', 'yes')
+    config_vars['ipv6_enabled'] = gen_sect.get('ipv6_enabled', 'no')
 
     # connectivity DNS lookup - site used for initial DNS lookup when assessing if DNS working OK
     config_vars['connectivity_lookup'] = gen_sect.get('connectivity_lookup', 'ipv4.google.com')
@@ -304,145 +304,145 @@ def read_local_config(config_file, file_logger):
     ###################################
 
     # IPv4 tests enabled?
-    if config_vars['ipv4_tests_enabled'] == 'yes':
+    #if config_vars['ipv4_tests_enabled'] == 'yes':
 
-        config_vars['ipv4'] = read_tests_config(config, ip_suffix="")
+    config_vars['ipv4'] = read_tests_config(config, ip_suffix="")
     
     ###################################
     # ipv6 tests
     ###################################
 
     # IPv6 tests enabled?
-    if config_vars['ipv6_tests_enabled'] == 'yes':
+    #if config_vars['ipv6_tests_enabled'] == 'yes':
 
-        config_vars['ipv6'] = read_tests_config(config, ip_suffix="_ipv6")
+    #    config_vars['ipv6'] = read_tests_config(config, ip_suffix="_ipv6")
 
-        """
-        # Get Speedtest config params
-        speed_ipv6_sect = config['Speedtest_ipv6']
-        config_vars['speedtest_enabled_ipv6'] = speed_ipv6_sect.get('enabled', 'no')
-        config_vars['provider_ipv6'] = speed_ipv6_sect.get('provider', 'ookla')
-        config_vars['server_id_ipv6'] = speed_ipv6_sect.get('server_id', '')
-        config_vars['librespeed_args_ipv6'] = speed_ipv6_sect.get('librespeed_args', '')
-        config_vars['speedtest_data_file_ipv6'] = speed_ipv6_sect.get('speedtest_data_file', 'wiperf-speedtest-ipv6')
-        config_vars['http_proxy_ipv6'] = speed_ipv6_sect.get('http_proxy', '')
-        config_vars['https_proxy_ipv6'] = speed_ipv6_sect.get('https_proxy', '')
-        config_vars['no_proxy_ipv6'] = speed_ipv6_sect.get('no_proxy', '')
-        # set env vars if they are specified in the config file
-        for proxy_var in ['http_proxy_ipv6', 'https_proxy_ipv6', 'no_proxy_ipv6']:
+    """
+    # Get Speedtest config params
+    speed_ipv6_sect = config['Speedtest_ipv6']
+    config_vars['speedtest_enabled_ipv6'] = speed_ipv6_sect.get('enabled', 'no')
+    config_vars['provider_ipv6'] = speed_ipv6_sect.get('provider', 'ookla')
+    config_vars['server_id_ipv6'] = speed_ipv6_sect.get('server_id', '')
+    config_vars['librespeed_args_ipv6'] = speed_ipv6_sect.get('librespeed_args', '')
+    config_vars['speedtest_data_file_ipv6'] = speed_ipv6_sect.get('speedtest_data_file', 'wiperf-speedtest-ipv6')
+    config_vars['http_proxy_ipv6'] = speed_ipv6_sect.get('http_proxy', '')
+    config_vars['https_proxy_ipv6'] = speed_ipv6_sect.get('https_proxy', '')
+    config_vars['no_proxy_ipv6'] = speed_ipv6_sect.get('no_proxy', '')
+    # set env vars if they are specified in the config file
+    for proxy_var in ['http_proxy_ipv6', 'https_proxy_ipv6', 'no_proxy_ipv6']:
 
-            if config_vars[proxy_var]:
-                os.environ[proxy_var] = config_vars[proxy_var]
+        if config_vars[proxy_var]:
+            os.environ[proxy_var] = config_vars[proxy_var]
 
-        # Get Ping config params
-        ping_ipv6_sect = config['Ping_Test_ipv6']
-        config_vars['ping_enabled_ipv6'] = ping_ipv6_sect.get('enabled', 'no')
-        config_vars['ping_targets_count_ipv6'] = ping_ipv6_sect.get('ping_targets_count', 5)
-        config_vars['ping_data_file_ipv6'] = ping_ipv6_sect.get('ping_data_file', 'wiperf-ping-ipv6')
+    # Get Ping config params
+    ping_ipv6_sect = config['Ping_Test_ipv6']
+    config_vars['ping_enabled_ipv6'] = ping_ipv6_sect.get('enabled', 'no')
+    config_vars['ping_targets_count_ipv6'] = ping_ipv6_sect.get('ping_targets_count', 5)
+    config_vars['ping_data_file_ipv6'] = ping_ipv6_sect.get('ping_data_file', 'wiperf-ping-ipv6')
 
-        # get specifed number of targets (format: 'ping_host1')
-        num_ping_targets = int(config_vars['ping_targets_count_ipv6']) + 1
+    # get specifed number of targets (format: 'ping_host1')
+    num_ping_targets = int(config_vars['ping_targets_count_ipv6']) + 1
 
-        for target_num in range(1, num_ping_targets):
-            target_name = 'ping_host_ipv6_{}'.format(target_num)
-            # format: config_vars["ping_host_ipv6_1"]
-            config_vars[target_name] = ping_ipv6_sect.get(target_name, '')
+    for target_num in range(1, num_ping_targets):
+        target_name = 'ping_host_ipv6_{}'.format(target_num)
+        # format: config_vars["ping_host_ipv6_1"]
+        config_vars[target_name] = ping_ipv6_sect.get(target_name, '')
 
-        config_vars['ping_count_ipv6'] = ping_ipv6_sect.get('ping_count', 10)
-        config_vars['ping_timeout_ipv6'] = ping_ipv6_sect.get('ping_timeout', 1)
-        config_vars['ping_interval_ipv6'] = ping_ipv6_sect.get('ping_interval', 0.2)
+    config_vars['ping_count_ipv6'] = ping_ipv6_sect.get('ping_count', 10)
+    config_vars['ping_timeout_ipv6'] = ping_ipv6_sect.get('ping_timeout', 1)
+    config_vars['ping_interval_ipv6'] = ping_ipv6_sect.get('ping_interval', 0.2)
 
-        # Get iperf3 tcp test params
-        iperft_ipv6_sect = config['Iperf3_tcp_test']
-        config_vars['iperf3_tcp_enabled_ipv6'] = iperft_ipv6_sect.get('enabled', 'no')
-        config_vars['iperf3_tcp_data_file_ipv6'] = iperft_ipv6_sect.get('iperf3_tcp_data_file', 'wiperf-iperf3-tcp-ipv6')
-        config_vars['iperf3_tcp_server_hostname_ipv6'] = iperft_ipv6_sect.get('server_hostname', '')
-        config_vars['iperf3_tcp_port_ipv6'] = iperft_ipv6_sect.get('port', '')
-        config_vars['iperf3_tcp_duration_ipv6'] = iperft_ipv6_sect.get('duration', '')
+    # Get iperf3 tcp test params
+    iperft_ipv6_sect = config['Iperf3_tcp_test']
+    config_vars['iperf3_tcp_enabled_ipv6'] = iperft_ipv6_sect.get('enabled', 'no')
+    config_vars['iperf3_tcp_data_file_ipv6'] = iperft_ipv6_sect.get('iperf3_tcp_data_file', 'wiperf-iperf3-tcp-ipv6')
+    config_vars['iperf3_tcp_server_hostname_ipv6'] = iperft_ipv6_sect.get('server_hostname', '')
+    config_vars['iperf3_tcp_port_ipv6'] = iperft_ipv6_sect.get('port', '')
+    config_vars['iperf3_tcp_duration_ipv6'] = iperft_ipv6_sect.get('duration', '')
 
-        # Get iperf3 udp test params
-        iperfu_ipv6_sect = config['Iperf3_udp_test_ipv6']
-        config_vars['iperf3_udp_enabled_ipv6'] = iperfu_ipv6_sect.get('enabled', 'no')
-        config_vars['iperf3_udp_data_file_ipv6'] = iperfu_ipv6_sect.get('iperf3_udp_data_file', 'wiperf-iperf3-udp-ipv6')
-        config_vars['iperf3_udp_server_hostname_ipv6'] = iperfu_ipv6_sect.get('server_hostname', '')
-        config_vars['iperf3_udp_port_ipv6'] = iperfu_ipv6_sect.get('port', '')
-        config_vars['iperf3_udp_duration_ipv6'] = iperfu_ipv6_sect.get('duration', '')
-        config_vars['iperf3_udp_bandwidth_ipv6'] = iperfu_ipv6_sect.get('bandwidth', '')
+    # Get iperf3 udp test params
+    iperfu_ipv6_sect = config['Iperf3_udp_test_ipv6']
+    config_vars['iperf3_udp_enabled_ipv6'] = iperfu_ipv6_sect.get('enabled', 'no')
+    config_vars['iperf3_udp_data_file_ipv6'] = iperfu_ipv6_sect.get('iperf3_udp_data_file', 'wiperf-iperf3-udp-ipv6')
+    config_vars['iperf3_udp_server_hostname_ipv6'] = iperfu_ipv6_sect.get('server_hostname', '')
+    config_vars['iperf3_udp_port_ipv6'] = iperfu_ipv6_sect.get('port', '')
+    config_vars['iperf3_udp_duration_ipv6'] = iperfu_ipv6_sect.get('duration', '')
+    config_vars['iperf3_udp_bandwidth_ipv6'] = iperfu_ipv6_sect.get('bandwidth', '')
 
-        # Get DNS test params
-        dns_ipv6_sect = config['DNS_test_ipv6']
-        config_vars['dns_test_enabled_ipv6'] = dns_ipv6_sect.get('enabled', 'no')
-        config_vars['dns_targets_count_ipv6'] = dns_ipv6_sect.get('dns_targets_count', 5)
-        config_vars['dns_data_file_ipv6'] = dns_ipv6_sect.get('dns_data_file', 'wiperf-dns-ipv6')
+    # Get DNS test params
+    dns_ipv6_sect = config['DNS_test_ipv6']
+    config_vars['dns_test_enabled_ipv6'] = dns_ipv6_sect.get('enabled', 'no')
+    config_vars['dns_targets_count_ipv6'] = dns_ipv6_sect.get('dns_targets_count', 5)
+    config_vars['dns_data_file_ipv6'] = dns_ipv6_sect.get('dns_data_file', 'wiperf-dns-ipv6')
 
-        # get specifed number of targets (format: 'dns_target1')
-        num_dns_targets = int(config_vars['dns_targets_count_ipv6']) + 1
+    # get specifed number of targets (format: 'dns_target1')
+    num_dns_targets = int(config_vars['dns_targets_count_ipv6']) + 1
 
-        for target_num in range(1, num_dns_targets):
-            target_name = 'dns_target_ipv6_{}'.format(target_num)
-            # format: config_vars["dns_target_ipv6_1"]
-            config_vars[target_name] = dns_ipv6_sect.get(target_name, '')
+    for target_num in range(1, num_dns_targets):
+        target_name = 'dns_target_ipv6_{}'.format(target_num)
+        # format: config_vars["dns_target_ipv6_1"]
+        config_vars[target_name] = dns_ipv6_sect.get(target_name, '')
 
-        # Get http test params
-        http_ipv6_sect = config['HTTP_test_ipv6']
-        config_vars['http_test_enabled_ipv6'] = http_ipv6_sect.get('enabled', 'no')
-        config_vars['http_targets_count_ipv6'] = http_ipv6_sect.get('http_targets_count', 5)
-        config_vars['http_data_file_ipv6'] = http_ipv6_sect.get('http_data_file', 'wiperf-http-ipv6')
+    # Get http test params
+    http_ipv6_sect = config['HTTP_test_ipv6']
+    config_vars['http_test_enabled_ipv6'] = http_ipv6_sect.get('enabled', 'no')
+    config_vars['http_targets_count_ipv6'] = http_ipv6_sect.get('http_targets_count', 5)
+    config_vars['http_data_file_ipv6'] = http_ipv6_sect.get('http_data_file', 'wiperf-http-ipv6')
 
-        # get specifed number of targets (format: 'http_target1')
-        num_http_targets = int(config_vars['http_targets_count_ipv6']) + 1
+    # get specifed number of targets (format: 'http_target1')
+    num_http_targets = int(config_vars['http_targets_count_ipv6']) + 1
 
-        for target_num in range(1, num_http_targets):
-            target_name = 'http_target_ipv6_{}'.format(target_num)
-            # format: config_vars["http_target_ipv6_1"]
-            config_vars[target_name] = http_ipv6_sect.get(target_name, '')
+    for target_num in range(1, num_http_targets):
+        target_name = 'http_target_ipv6_{}'.format(target_num)
+        # format: config_vars["http_target_ipv6_1"]
+        config_vars[target_name] = http_ipv6_sect.get(target_name, '')
 
-        # Get DHCP test params
-        dhcp_ipv6_sect = config['DHCP_test_ipv6']
-        config_vars['dhcp_test_enabled_ipv6'] = dhcp_ipv6_sect.get('enabled', 'no')
-        config_vars['dhcp_test_mode_ipv6'] = dhcp_ipv6_sect.get('mode', 'passive')
-        config_vars['dhcp_data_file_ipv6'] = dhcp_ipv6_sect.get('dhcp_data_file', 'wiperf-dhcp')
+    # Get DHCP test params
+    dhcp_ipv6_sect = config['DHCP_test_ipv6']
+    config_vars['dhcp_test_enabled_ipv6'] = dhcp_ipv6_sect.get('enabled', 'no')
+    config_vars['dhcp_test_mode_ipv6'] = dhcp_ipv6_sect.get('mode', 'passive')
+    config_vars['dhcp_data_file_ipv6'] = dhcp_ipv6_sect.get('dhcp_data_file', 'wiperf-dhcp')
 
-        # Get SMB test config params
-        smb_ipv6_sect = config['SMB_test_ipv6']
-        config_vars['smb_enabled_ipv6'] = smb_ipv6_sect.get('enabled', 'no')
-        config_vars['smb_data_file_ipv6'] = smb_ipv6_sect.get('smb_data_file', 'wiperf-smb-ipv6')
-        config_vars['smb_targets_count_ipv6'] = smb_ipv6_sect.get('smb_targets_count', 5)
+    # Get SMB test config params
+    smb_ipv6_sect = config['SMB_test_ipv6']
+    config_vars['smb_enabled_ipv6'] = smb_ipv6_sect.get('enabled', 'no')
+    config_vars['smb_data_file_ipv6'] = smb_ipv6_sect.get('smb_data_file', 'wiperf-smb-ipv6')
+    config_vars['smb_targets_count_ipv6'] = smb_ipv6_sect.get('smb_targets_count', 5)
 
-        config_vars['smb_global_username_ipv6'] = smb_ipv6_sect.get('smb_global_username', ' ')
-        config_vars['smb_global_password_ipv6'] = smb_ipv6_sect.get('smb_global_password', ' ')
+    config_vars['smb_global_username_ipv6'] = smb_ipv6_sect.get('smb_global_username', ' ')
+    config_vars['smb_global_password_ipv6'] = smb_ipv6_sect.get('smb_global_password', ' ')
 
-        # get specifed number of targets 
-        # format: 
-        #   config_vars['smb_host_ipv6_1'] = smb_ipv6_sect.get('smb_host1', '')
-        #   config_vars['smb_username_ipv6_1'] = smb_ipv6_sect.get('smb_username1', ' ')
-        #   config_vars['smb_password_ipv6_1'] = smb_ipv6_sect.get('smb_password1', ' ')
-        #   config_vars['smb_path1_ipv6_'] = smb_ipv6_sect.get('smb_path1', '')
-        #   config_vars['smb_filename_ipv6_1'] = smb_ipv6_sect.get('smb_filename1','')
-        
-        num_smb_targets = int(config_vars['smb_targets_count_ipv6']) + 1
+    # get specifed number of targets 
+    # format: 
+    #   config_vars['smb_host_ipv6_1'] = smb_ipv6_sect.get('smb_host1', '')
+    #   config_vars['smb_username_ipv6_1'] = smb_ipv6_sect.get('smb_username1', ' ')
+    #   config_vars['smb_password_ipv6_1'] = smb_ipv6_sect.get('smb_password1', ' ')
+    #   config_vars['smb_path1_ipv6_'] = smb_ipv6_sect.get('smb_path1', '')
+    #   config_vars['smb_filename_ipv6_1'] = smb_ipv6_sect.get('smb_filename1','')
+    
+    num_smb_targets = int(config_vars['smb_targets_count_ipv6']) + 1
 
-        for target_num in range(1, num_smb_targets):
+    for target_num in range(1, num_smb_targets):
 
-            host = 'smb_host+ipv6_{}'.format(target_num)
-            # format: config_vars['smb_ipv6_host1']
-            config_vars[host] = smb_ipv6_sect.get(host, '')
+        host = 'smb_host+ipv6_{}'.format(target_num)
+        # format: config_vars['smb_ipv6_host1']
+        config_vars[host] = smb_ipv6_sect.get(host, '')
 
-            username = 'smb_username_ipv6_{}'.format(target_num)
-            # format: config_vars['smb_username1']
-            config_vars[username] = smb_ipv6_sect.get(username, '')
+        username = 'smb_username_ipv6_{}'.format(target_num)
+        # format: config_vars['smb_username1']
+        config_vars[username] = smb_ipv6_sect.get(username, '')
 
-            password = 'smb_password_ipv6_{}'.format(target_num)
-            # format: config_vars['smb_password1']
-            config_vars[password] = smb_ipv6_sect.get(password, '')
+        password = 'smb_password_ipv6_{}'.format(target_num)
+        # format: config_vars['smb_password1']
+        config_vars[password] = smb_ipv6_sect.get(password, '')
 
-            path = 'smb_path_ipv6_{}'.format(target_num)
-            # format: config_vars['smb_path1']
-            config_vars[path] = smb_ipv6_sect.get(path, '')
+        path = 'smb_path_ipv6_{}'.format(target_num)
+        # format: config_vars['smb_path1']
+        config_vars[path] = smb_ipv6_sect.get(path, '')
 
-            filename = 'smb_filename_ipv6_{}'.format(target_num)
-            # format: config_vars['smb_filename1']
-            config_vars[filename] = smb_ipv6_sect.get(filename, '')
-        """
+        filename = 'smb_filename_ipv6_{}'.format(target_num)
+        # format: config_vars['smb_filename1']
+        config_vars[filename] = smb_ipv6_sect.get(filename, '')
+    """
 
     return config_vars

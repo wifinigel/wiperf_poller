@@ -31,58 +31,47 @@ class MgtConnectionTester(object):
         self.exporter_type = config_vars['exporter_type']
         self.mgt_interface = config_vars['mgt_if']
 
-    def check_mgt_connection(self, lockf_obj, watchdog_obj):
 
-        mgt_interface_obj = NetworkAdapter(self.mgt_interface, self.file_logger)
-        mgt_interface_obj.get_if_status()
-
-        # To avoid any issues later, convert host name to IP
-        # (IP address returned if already IP)
-        self.data_host = resolve_name_ipv4(self.data_host, self.file_logger)
+    def _ipv4_checks(self, mgt_interface_obj, watchdog_obj, lockf_obj):
 
         #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*
         #         
         # IPV4 Checks
         #
         #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*
-
         #################################################
         # Check mgt physical interface up & connected
         #################################################
-        # get 
-        if is_ipv6(self.data_host):
-            self.file_logger.info("  Reporting server is IPv6, will check connectivity later")
+        self.file_logger.info("Checking IPv4 connectivity for mgt/reporting traffic")
+
+        if not is_ipv4(self.data_host):
+            raise ValueError("Management IP not in IPv6 format.")
+       
+        #####################################################
+        # check if route to IPv4 address of server is via 
+        # mgt_if...fix with route injection if not
+        ####################################################
+        if not check_correct_mgt_interface_ipv4(self.data_host, self.mgt_interface, self.file_logger):
+
+            self.file_logger.warning("  We are not using the interface required for IPv4 mgt traffic due to a routing issue in this unit - attempt route addition to fix issue")
+
+            if inject_mgt_static_route_ipv4(self.data_host, self.config_vars, self.file_logger):
+
+                self.file_logger.info("  Checking if IPv4 route injection worked...")
+
+                if check_correct_mgt_interface_ipv4(self.data_host, self.mgt_interface, self.file_logger):
+                    self.file_logger.info("  IPv4 Routing issue corrected OK.")
+                else:
+                    self.file_logger.warning("  We still have an IPv4 routing issue. Will have to exit as mgt traffic over correct interface not possible")
+                    self.file_logger.warning("  Suggest making static routing additions or adding an additional metric to the interface causing the issue.")
+                    self.file_logger.warning("  (*** Note ***: check you have configured the correct mgt interface if this message persists)")
+                    lockf_obj.delete_lock_file()
+                    sys.exit()
         
-        else:
-            # Check if mgt_if up        
-            if not mgt_interface_obj.interface_up():
-                self.file_logger.error("Interface for mgt traffic ({}) appears to be down, unable to proceed.".format(self.mgt_interface))
-                watchdog_obj.inc_watchdog_count()
-                mgt_interface_obj.bounce_error_exit(lockf_obj)  # exit here
-            
-            #####################################################
-            # check if route to IPv4 address of server is via 
-            # mgt_if...fix with route injection if not
-            ####################################################
-            if not check_correct_mgt_interface_ipv4(self.data_host, self.mgt_interface, self.file_logger):
-
-                self.file_logger.warning("  We are not using the interface required for IPv4 mgt traffic due to a routing issue in this unit - attempt route addition to fix issue")
-
-                if inject_mgt_static_route_ipv4(self.data_host, self.config_vars, self.file_logger):
-
-                    self.file_logger.info("  Checking if IPv4 route injection worked...")
-
-                    if check_correct_mgt_interface_ipv4(self.data_host, self.mgt_interface, self.file_logger):
-                        self.file_logger.info("  IPv4 Routing issue corrected OK.")
-                    else:
-                        self.file_logger.warning("  We still have an IPv4 routing issue. Will have to exit as mgt traffic over correct interface not possible")
-                        self.file_logger.warning("  Suggest making static routing additions or adding an additional metric to the interface causing the issue.")
-                        self.file_logger.warning("  (*** Note ***: check you have configured the correct mgt interface if this message persists)")
-                        lockf_obj.delete_lock_file()
-                        sys.exit()
+        return True
         
-        del mgt_interface_obj
-        
+    def _ipv6_checks(self, mgt_interface_obj, watchdog_obj, lockf_obj):
+
         #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*
         #
         # IPV6 Checks
@@ -91,49 +80,36 @@ class MgtConnectionTester(object):
         #################################################
         # Check mgt physical interface up & connected
         #################################################
-        if is_ipv4(self.data_host):
-            self.file_logger.info("  Reporting server is IPv4, nothing more to check.")
-        
-        else:
-            self.file_logger.info("  Checking IPv6 connectivity for mgt/reporting traffic")
+        self.file_logger.info("Checking IPv6 connectivity for mgt/reporting traffic")
 
-            if not is_ipv6(self.data_host):
-                raise ValueError("Management IP not in IPv6 format.")
-
-            # Check if mgt_if up
-            mgt_interface_obj = NetworkAdapter(self.mgt_interface, self.file_logger)
-            mgt_interface_obj.get_if_status()
-
-            if not mgt_interface_obj.interface_up():
-                self.file_logger.error("Interface for mgt traffic ({}) appears to be down, unable to proceed.".format(self.mgt_interface))
-                watchdog_obj.inc_watchdog_count()
-                mgt_interface_obj.bounce_error_exit(lockf_obj)  # exit here
-            
-            #####################################################
-            # check if route to IPv6 address of server is via 
-            # mgt_if...fix with route injection if not
-            ####################################################
-            if not check_correct_mgt_interface_ipv6(self.data_host, self.mgt_interface, self.file_logger):
-
-                self.file_logger.warning("  We are not using the interface required for IPv6 mgt traffic due to a routing issue in this unit - attempt route addition to fix issue")
-
-                if inject_mgt_static_route_ipv6(self.data_host, self.config_vars, self.file_logger):
-
-                    self.file_logger.info("  Checking if  IPv6 route injection worked...")
-
-                    if check_correct_mgt_interface_ipv6(self.data_host, self.mgt_interface, self.file_logger):
-                        self.file_logger.info("   IPv6 Routing issue corrected OK.")
-                    else:
-                        self.file_logger.warning("  We still have an  IPv6 routing issue. Will have to exit as mgt traffic over correct interface not possible")
-                        self.file_logger.warning("  Suggest making static routing additions or adding an additional metric to the interface causing the issue.")
-                        self.file_logger.warning("  (*** Note ***: check you have configured the correct mgt interface if this message persists)")
-                        lockf_obj.delete_lock_file()
-                        sys.exit()
-
+        if not is_ipv6(self.data_host):
+            raise ValueError("Management IP not in IPv6 format.")
+       
         #####################################################
         # check if route to IPv6 address of server is via 
         # mgt_if...fix with route injection if not
         ####################################################
+        if not check_correct_mgt_interface_ipv6(self.data_host, self.mgt_interface, self.file_logger):
+
+            self.file_logger.warning("  We are not using the interface required for IPv6 mgt traffic due to a routing issue in this unit - attempt route addition to fix issue")
+
+            if inject_mgt_static_route_ipv6(self.data_host, self.config_vars, self.file_logger):
+
+                self.file_logger.info("  Checking if  IPv6 route injection worked...")
+
+                if check_correct_mgt_interface_ipv6(self.data_host, self.mgt_interface, self.file_logger):
+                    self.file_logger.info("   IPv6 Routing issue corrected OK.")
+                else:
+                    self.file_logger.warning("  We still have an  IPv6 routing issue. Will have to exit as mgt traffic over correct interface not possible")
+                    self.file_logger.warning("  Suggest making static routing additions or adding an additional metric to the interface causing the issue.")
+                    self.file_logger.warning("  (*** Note ***: check you have configured the correct mgt interface if this message persists)")
+                    lockf_obj.delete_lock_file()
+                    sys.exit()
+    
+        return True
+
+    def _check_mgt_ports(self):
+
         # if we are using hec, make sure we can access the hec network port, otherwise we are wasting our time
         if self.exporter_type == 'splunk':
             self.file_logger.info("  Checking port connection to Splunk server {}, port: {}".format(self.data_host, self.data_port))
@@ -208,4 +184,56 @@ class MgtConnectionTester(object):
             self.file_logger.info("  Unknown exporter type configured in config.ini: {} (exiting)".format(self.exporter_type))
             sys.exit()
 
+    ##############################
+    # Run checks
+    ##############################
+    def check_mgt_connection(self, lockf_obj, watchdog_obj):
 
+        self.file_logger.info("### Reporting/mgt server connectivty checks. ###")
+
+        # create network adapter object for interface designated as mgt i/f
+        # (use generic adapter, as all info required is non-wireless)
+
+        mgt_interface_obj = NetworkAdapter(self.mgt_interface, self.file_logger)
+        mgt_interface_obj.get_if_status() # populate obj with i/f info
+
+        if not self.data_host:
+            self.file_logger.warning("   No management platform name/address configured!!!")
+            return False
+        
+        # check if mgt interface is up, no point in proceeding otherwise
+        if not mgt_interface_obj.interface_up():
+            self.file_logger.error("   Interface for mgt traffic ({}) appears to be down, unable to proceed.".format(self.mgt_interface))
+            watchdog_obj.inc_watchdog_count()
+            mgt_interface_obj.bounce_error_exit(lockf_obj)  # exit here
+        
+        checks_result = False
+
+        # perform checks
+        if is_ipv4(self.data_host):
+            checks_result = self._ipv4_checks(mgt_interface_obj, watchdog_obj, lockf_obj)
+        
+        elif is_ipv6(self.data_host):
+            checks_result = self._ipv6_checks(mgt_interface_obj, watchdog_obj, lockf_obj)
+        
+        else:
+            # must be hostname, try both lookup options
+            ip_address_v4 = resolve_name_ipv4(self.data_host, self.file_logger)
+            ip_address_v6 = resolve_name_ipv6(self.data_host, self.file_logger)
+
+            # try using ipv4 IP address or IPv6 addressm whichever is available
+            if ip_address_v4:
+               checks_result =  self._ipv4_checks(mgt_interface_obj, watchdog_obj, lockf_obj)
+            elif ip_address_v6:
+                checks_result = self._ipv6_checks(mgt_interface_obj, watchdog_obj, lockf_obj)
+            else:
+                # no luck resolving name
+                self.file_logger.warning("   Unable to resolve management platform name/address : {}".format(self.data_host))
+                return False
+        
+        # if we had any issues with IPv4/v6 cmgt connectivity, return failure
+        if not checks_result:
+            return False
+        
+        # check connectivity to network mgt platform based on platform being used 
+        return self._check_mgt_ports()

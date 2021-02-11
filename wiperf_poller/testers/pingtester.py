@@ -35,7 +35,7 @@ class PingTesterIpv4(object):
 
         self.test_name = "Ping"
 
-    def ping_host(self, host, count, ping_timeout=1, ping_interval=0.2):
+    def ping_host(self, host, count, ping_timeout=1, ping_interval=0.2, silent=False):
         '''
         This function will run a ping test and return an analysis of the results
 
@@ -64,8 +64,9 @@ class PingTesterIpv4(object):
             ping_output = subprocess.check_output(cmd_string, stderr=subprocess.STDOUT, shell=True).decode().splitlines()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
-            error = "Hit an error when pinging {} : {}".format(str(host), str(output))
-            self.file_logger.error(error)
+            if silent == False:
+                error = "Hit an error when pinging {} : {}".format(str(host), str(output))
+                self.file_logger.error(error)
 
             #stderr.write(str(error))
 

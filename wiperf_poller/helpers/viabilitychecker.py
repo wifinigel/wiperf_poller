@@ -14,7 +14,7 @@ class TestViabilityCheckerIpv4(object):
     def check_test_host_viable(self, host):
 
         ipv4_tests_possible = self.config_vars['ipv4_tests_possible']
-        ipv4_tests_enabled = self.config_vars['ipv4_tests_enabled']
+        ipv4_tests_enabled = self.config_vars['ipv4_enabled']
 
         if not ipv4_tests_enabled == 'yes':
             self.file_logger.error('  Test not viable as IPv4 tests not enabled')

@@ -14,7 +14,7 @@ class TestViabilityCheckerIpv6(object):
     def check_test_host_viable(self, host):
 
         ipv6_tests_possible = self.config_vars['ipv6_tests_possible']
-        ipv6_tests_enabled = self.config_vars['ipv6_tests_enabled']
+        ipv6_tests_enabled = self.config_vars['ipv6_enabled']
 
         if not ipv6_tests_enabled == 'yes':
             self.file_logger.error('  Test not viable as IPv6 tests not enabled')

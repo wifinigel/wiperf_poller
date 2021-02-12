@@ -9,8 +9,10 @@ import subprocess
 from sys import stderr
 from wiperf_poller.helpers.os_cmds import PING_CMD
 from wiperf_poller.helpers.timefunc import get_timestamp
-from wiperf_poller.helpers.route import resolve_name_ipv4 as resolve_name
-from wiperf_poller.helpers.viabilitychecker import TestViabilityCheckerIpv4 as TestViabilityChecker
+from wiperf_poller.helpers.route import resolve_name, check_correct_mode_interface_ipv4, is_ipv4, is_ipv6
+from wiperf_poller.helpers.ipv6.route_ipv6 import check_correct_mode_interface_ipv6
+from wiperf_poller.helpers.viabilitychecker import TestViabilityCheckerIpv4
+from wiperf_poller.helpers.ipv6.viabilitychecker_ipv6 import TestViabilityCheckerIpv6
 
 class PingTesterIpv4(object):
     '''
@@ -31,7 +33,6 @@ class PingTesterIpv4(object):
         self.rtt_max = ''
         self.rtt_mdev = ''
         self.resolve_name = resolve_name
-        self.TestViabilityChecker = TestViabilityChecker
 
         self.test_name = "Ping"
 
@@ -146,74 +147,74 @@ class PingTesterIpv4(object):
             'rtt_avg': self.rtt_avg,
             'rtt_mdev': self.rtt_mdev}
 
-    def run_tests(self, status_file_obj, config_vars, adapter, check_correct_mode_interface, exporter_obj, watchd):
+    def run_tests(self, status_file_obj, config_vars, adapter, exporter_obj, watchd):
 
         self.file_logger.info("Starting ping test...")
         status_file_obj.write_status_file("Ping tests")
 
-        # create test viability checker
-        checker = self.TestViabilityChecker(config_vars, self.file_logger)
-
-        # read in ping hosts (format: 'ping_host1')
+        # read in ping hosts (format: 'ping_host1') & perform intial ping if test viable
         num_ping_targets = int(config_vars['ping_targets_count']) + 1
 
+        ping_count = config_vars['ping_count']
+        tests_passed = True
         ping_hosts = []
 
         for target_num in range(1, num_ping_targets):
+            
             target_name = 'ping_host{}'.format(target_num)
             ping_host = config_vars[target_name]
 
-            if ping_host:
-                ping_host_ip = self.resolve_name(ping_host, self.file_logger)
-                ping_hosts.append( { 'hostname': ping_host, 'ip': ping_host_ip } )
-
-        ping_count = config_vars['ping_count']
-      
-        tests_passed = True
-
-        # initial ping to populate arp cache and avoid arp timeput for first test ping
-        for ping_host in ping_hosts:
-            if ping_host['hostname'] == '':
+            if ping_host == '':
                 continue
+            
+            ping_host_ip = self.resolve_name(ping_host, self.file_logger, config_vars)
 
-            self.file_logger.info("Initial ping to host: {} ({})".format(ping_host['hostname'], ping_host['ip']))
+            # initial ping to populate arp cache and avoid arp timeput for first test ping
+            self.file_logger.info("Initial ping to host: {} ({})".format(ping_host, ping_host_ip))
+      
+            # check tests is viable and will go over correct interface
+            if is_ipv4(ping_host_ip):
+                TestViabilityChecker = TestViabilityCheckerIpv4
+                check_correct_mode_interface = check_correct_mode_interface_ipv4
+            elif is_ipv6(ping_host_ip):
+                TestViabilityChecker = TestViabilityCheckerIpv6
+                check_correct_mode_interface = check_correct_mode_interface_ipv6
+            else:
+                raise ValueError("  Ping host IP does not match known address format: {}".format(ping_host_ip))
 
             # check if test to host is viable (based on probe ipv4/v6 support)
-            if not checker.check_test_host_viable(ping_host['ip']):
+            checker = TestViabilityChecker(config_vars, self.file_logger)
+            if not checker.check_test_host_viable(ping_host_ip):
+                self.file_logger.error("  Ping target test not viable, will not be tested ({} / {})".format(ping_host, ping_host_ip))
                 continue
-
-            # check tests will go over correct interface
-            if check_correct_mode_interface(ping_host['ip'], config_vars, self.file_logger):
-                self.ping_host(ping_host['ip'], 1)
+            
+            # check if ping target addres will use the correct interface
+            if check_correct_mode_interface(ping_host_ip, config_vars, self.file_logger):
+                self.ping_host(ping_host_ip, 1, silent=True)
             else:
-                self.file_logger.error(
-                    "Unable to ping {} ({}) as route to destination not over correct interface...bypassing ping tests".format(ping_host['hostname'], ping_host['ip']))
+                self.file_logger.error("  Unable to ping {} ({}) as route to destination not over correct interface...bypassing ping test".format(ping_host, ping_host_ip))
                 # we will break here if we have an issue as something bad has happened...don't want to run more tests
                 config_vars['test_issue'] = True
                 tests_passed = False
-                break
+                continue
+            
+            # Entry looks good for testing, add to list of test targets
+            ping_hosts.append( { 'hostname': ping_host, 'ip': ping_host_ip } )
 
-        # run actual ping tests
+        # run actual ping tests to ping test targets
         ping_index = 0
         all_tests_fail = True
 
         for ping_host in ping_hosts:
 
-            # bail if we have had DNS issues
+            # bail if we have had previous major test issues
             if config_vars['test_issue'] == True:
                 self.file_logger.error("As we had previous issues, bypassing ping tests.")
                 break
 
             ping_index += 1
 
-            if ping_host['hostname'] == '':
-                continue
-
             self.file_logger.info("ping test to host: {} ({})".format(ping_host['hostname'], ping_host['ip']))
-
-            # check if test to host is viable (based on probe ipv4/v6 support)
-            if not checker.check_test_host_viable(ping_host['ip']):
-                continue
 
             ping_result = self.ping_host(ping_host['ip'], ping_count)
 
@@ -221,15 +222,6 @@ class PingTesterIpv4(object):
             ping_result['host'] = ping_host['hostname']
 
             results_dict = {}
-
-            # fix v4/v6 designator for logs/reports
-            if "^v6" in ping_result['host']:
-                ping_result['host'], _ = ping_result['host'].split('^')
-                ping_result['host'] += " (ipv6)"
-            
-            if "^v4" in ping_result['host']:
-                ping_result['host'], _ = ping_result['host'].split('^')
-                ping_result['host'] += " (ipv4)"
 
             # ping results
             if ping_result:

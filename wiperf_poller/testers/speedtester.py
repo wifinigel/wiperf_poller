@@ -11,13 +11,25 @@ class SpeedtesterIpv4():
     Class to implement speedtest server tests for wiperf
     """
 
-    def __init__(self, file_logger, config_vars, resolve_name):
+    def __init__(self, file_logger, config_vars, resolve_name, adapter_obj):
 
         self.file_logger = file_logger
         self.config_vars = config_vars
         self.test_name = "Speedtest"
-        self.wan_target = 'ipv4.google.com'
+        self.wan_target = config_vars['connectivity_lookup']
         self.resolve_name = resolve_name
+        self.adapter_obj = adapter_obj
+        self.adapter_ip = self.adapter_obj.get_adapter_ipv4_ip()
+        self.librespeed_ip_ver = '--ipv4'
+
+        self.speedtest_enabled = config_vars['speedtest_enabled']
+        self.provider = config_vars['provider']
+        self.server_id = config_vars['server_id']
+        self.librespeed_args = config_vars['librespeed_args']
+        self.speedtest_data_file = config_vars['speedtest_data_file']
+        self.http_proxy = config_vars['http_proxy']
+        self.https_proxy = config_vars['https_proxy']
+        self.no_proxy = config_vars['no_proxy']
 
     def librespeed(self, server_id='', args='', DEBUG=False):
         """
@@ -61,14 +73,13 @@ class SpeedtesterIpv4():
             }
 
         """
-
         # check command exists
         if not LIBRESPEED_CMD:
             self.file_logger.error("Librespeed-cli command does not appear to be installed, unable to perform test.")
             return False
         
         # define command to run
-        cmd = "{} --json".format(LIBRESPEED_CMD)
+        cmd = "{} {} --json".format(LIBRESPEED_CMD, self.librespeed_ip_ver)
 
         if server_id:
             cmd += " --server {}".format(server_id)
@@ -209,7 +220,7 @@ mbytes_received: {}, latency_ms: {}, jitter_ms: {}, client_ip: {}, provider: {}'
 
         # perform Speedtest
         try:
-            st = speedtest.Speedtest()
+            st = speedtest.Speedtest(source_address=self.adapter_ip)
         except Exception as error:
             self.file_logger.error("Speedtest error: {}".format(error))
             return False
@@ -267,8 +278,14 @@ mbytes_received: {}, latency_ms: {}, jitter_ms: {}, client_ip: {}, provider: {}'
 
     def run_tests(self, status_file_obj, check_correct_mode_interface, config_vars, exporter_obj, lockf_obj):
 
-        self.file_logger.info("Starting speedtest ({})...".format(config_vars['provider']))
+        self.file_logger.info("Starting speedtest ({})...".format(self.provider))
         status_file_obj.write_status_file("speedtest")
+
+        if not self.adapter_ip:
+            self.file_logger.error("Unable to run Speedtest test interface has no valid IP address")
+            config_vars['test_issue'] = True
+            config_vars['test_issue_descr'] = "Speedtest test failure - no interface IP address"
+            return False
 
         self.wan_target = self.resolve_name(self.wan_target, self.file_logger)
 
@@ -279,16 +296,16 @@ mbytes_received: {}, latency_ms: {}, jitter_ms: {}, client_ip: {}, provider: {}'
             # speedtest returns false if there are any issues
             speedtest_results = {}
 
-            if config_vars['provider'] == 'ookla':
+            if self.provider == 'ookla':
                 self.file_logger.debug("Running Ookla speedtest.")
-                speedtest_results = self.ooklaspeedtest(config_vars['server_id'])
+                speedtest_results = self.ooklaspeedtest(self.server_id)
                 
-            elif config_vars['provider'] == 'librespeed':
+            elif self.provider == 'librespeed':
                 self.file_logger.debug("Running Librespeed speedtest.")
-                speedtest_results = self.librespeed(server_id=config_vars['server_id'], args=config_vars['librespeed_args'])
+                speedtest_results = self.librespeed(server_id=self.server_id, args=self.librespeed_args)
 
             else:
-                self.file_logger.error("Unknown speedtest provider: {}".format(config_vars['provider']))
+                self.file_logger.error("Unknown speedtest provider: {}".format(self.provider))
                 return False
 
             if not speedtest_results == False:
@@ -302,7 +319,7 @@ mbytes_received: {}, latency_ms: {}, jitter_ms: {}, client_ip: {}, provider: {}'
                 self.file_logger.info("Speedtest ended.\n")
 
                 # dump the results
-                data_file = config_vars['speedtest_data_file']
+                data_file = self.speedtest_data_file
 
                 if exporter_obj.send_results(config_vars, speedtest_results, column_headers, data_file, self.test_name, self.file_logger):
                     self.file_logger.info("Speedtest results sent OK.")

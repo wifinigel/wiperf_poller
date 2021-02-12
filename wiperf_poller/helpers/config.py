@@ -24,7 +24,21 @@ def read_tests_config(config, ip_suffix=""):
     test_vars['no_proxy'] = speed_sect.get('no_proxy', '')
     # set env vars if they are specified in the config file
     for proxy_var in ['http_proxy', 'https_proxy', 'no_proxy']:
-
+        if test_vars[proxy_var]:
+            os.environ[proxy_var] = test_vars[proxy_var]
+    
+    # Get Speedtest IPv6 config params
+    speed_sect = config['SpeedtestIpv6']
+    test_vars['speedtest_enabled_ipv6'] = speed_sect.get('enabled', 'no')
+    test_vars['provider_ipv6'] = speed_sect.get('provider', 'ookla')
+    test_vars['server_id_ipv6'] = speed_sect.get('server_id', '')
+    test_vars['librespeed_args_ipv6'] = speed_sect.get('librespeed_args', '')
+    test_vars['speedtest_data_file_ipv6'] = speed_sect.get('speedtest_data_file', 'wiperf-speedtest')
+    test_vars['http_proxy_ipv6'] = speed_sect.get('http_proxy', '')
+    test_vars['https_proxy_ipv6'] = speed_sect.get('https_proxy', '')
+    test_vars['no_proxy_ipv6'] = speed_sect.get('no_proxy', '')
+    # set env vars if they are specified in the config file
+    for proxy_var in ['http_proxy_ipv6', 'https_proxy_ipv6', 'no_proxy_ipv6']:
         if test_vars[proxy_var]:
             os.environ[proxy_var] = test_vars[proxy_var]
 

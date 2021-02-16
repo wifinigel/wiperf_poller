@@ -7,10 +7,12 @@ from wiperf_poller.helpers.networkadapter import NetworkAdapter
 from wiperf_poller.helpers.ipv6.route_ipv6 import (
     check_correct_mode_interface_ipv6,
     inject_default_route_ipv6,
+    remove_duplicate_interface_route_ipv6,
     resolve_name_ipv6)
 from wiperf_poller.helpers.route import (
     check_correct_mode_interface_ipv4,
     inject_default_route_ipv4,
+    remove_duplicate_interface_route_ipv4,
     resolve_name_ipv4)
 from wiperf_poller.testers.pingtester import PingTesterIpv4 as PingTester
 from wiperf_poller.helpers.timefunc import time_synced
@@ -102,7 +104,6 @@ Rx Phy rate:{}, Tx MCS: {}, Rx MCS: {}, RSSI:{}, Tx retries:{}, IP address (v4):
         # IPV4 Checks
         #
         #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*
-        self.file_logger.info("Network testing connection IPV4 tests ({})".format(self.testing_interface))
         self.file_logger.info("  Checking we have an IPv4 address ({})".format(self.testing_interface))
 
         ##########################################################
@@ -127,10 +128,11 @@ Rx Phy rate:{}, Tx MCS: {}, Rx MCS: {}, RSSI:{}, Tx retries:{}, IP address (v4):
             ip_address = resolve_name_ipv4(config_vars['connectivity_lookup'], self.file_logger)
             
             if not ip_address:
-                # hmmm....things went bad, lookup failed...bounce interface & exit
-                self.file_logger.error("  DNS seems to be failing, bouncing interface {}.".format(self.testing_interface))
+                # hmmm....things went bad, lookup failed...report & exit
+                self.file_logger.error("  DNS (ipv4) seems to be failing, please verify network connectivity (exiting).")
                 watchdog_obj.inc_watchdog_count()
-                self.adapter_obj.bounce_error_exit(lockf_obj)  # exit here
+                lockf_obj.delete_lock_file()
+                sys.exit()
 
             # check we are going to the Internet over the correct interface for ipv4 tests
             if check_correct_mode_interface_ipv4(ip_address, config_vars, self.file_logger):
@@ -155,6 +157,16 @@ Rx Phy rate:{}, Tx MCS: {}, Rx MCS: {}, RSSI:{}, Tx retries:{}, IP address (v4):
                         self.file_logger.warning("  Suggest making static routing additions or adding an additional metric to the interface causing the issue.")
                         lockf_obj.delete_lock_file()
                         sys.exit()
+                else:
+                    self.file_logger.error("  Routing issue (ipv4) - exiting.")
+                    lockf_obj.delete_lock_file()
+                    sys.exit()
+            ######################################################################
+            # Check if we have any duplicate local interface route entries
+            #  (i.e. when two interfaces on same subnet) - fix duplicates
+            ######################################################################
+            remove_duplicate_interface_route_ipv4(self.adapter_obj.get_adapter_ipv4_ip(), 
+                self.testing_interface, self.file_logger)
         
         else:
             # if we have no IPv4 address address, issue warning
@@ -167,7 +179,6 @@ Rx Phy rate:{}, Tx MCS: {}, Rx MCS: {}, RSSI:{}, Tx retries:{}, IP address (v4):
         # IPV6 Checks
         #
         #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*
-        self.file_logger.info("Network testing connection IPV6 tests ({})".format(self.testing_interface))
         self.file_logger.info("  Checking if we have an IPv6 address ({})".format(self.testing_interface))
 
         if config_vars['connectivity_lookup_ipv6']:
@@ -191,10 +202,11 @@ Rx Phy rate:{}, Tx MCS: {}, Rx MCS: {}, RSSI:{}, Tx retries:{}, IP address (v4):
                 ip_address = resolve_name_ipv6(config_vars['connectivity_lookup_ipv6'], self.file_logger)
                 
                 if not ip_address:
-                    # hmmm....things went bad, lookup failed...bounce interface & exit
-                    self.file_logger.error("  DNS (ipv6) seems to be failing, bouncing interface.")
+                    # hmmm....things went bad, lookup failed...report & exit
+                    self.file_logger.error("  DNS (ipv6) seems to be failing, please verify network connectivity (exiting).")
                     watchdog_obj.inc_watchdog_count()
-                    self.adapter_obj.bounce_error_exit(lockf_obj)  # exit here
+                    lockf_obj.delete_lock_file()
+                    sys.exit()
 
                 # check we are going to the Internet over the correct interface for ipv4 tests
                 if check_correct_mode_interface_ipv6(ip_address, config_vars, self.file_logger):
@@ -219,6 +231,17 @@ Rx Phy rate:{}, Tx MCS: {}, Rx MCS: {}, RSSI:{}, Tx retries:{}, IP address (v4):
                             self.file_logger.warning("  Suggest making static routing additions or adding an additional metric to the interface causing the issue.")
                             lockf_obj.delete_lock_file()
                             sys.exit()
+                    else:
+                        self.file_logger.error("  Routing issue (ipv6) - exiting.")
+                        lockf_obj.delete_lock_file()
+                        sys.exit()
+                
+                ######################################################################
+                # Check if we have any duplicate local interface route entries
+                #  (i.e. when two interfaces on same subnet) - fix duplicates
+                ######################################################################
+                remove_duplicate_interface_route_ipv6(self.adapter_obj.get_adapter_ipv6_ip(), 
+                    self.testing_interface, self.file_logger)
 
             else:
                 if not self.adapter_obj.get_adapter_ipv4_ip():
@@ -230,6 +253,9 @@ Rx Phy rate:{}, Tx MCS: {}, Rx MCS: {}, RSSI:{}, Tx retries:{}, IP address (v4):
                 else:
                     # no ipv4 but have an ipv6 address
                     self.file_logger.warning("  Testing interface only has IPv4 address, IPv6 tests will fail if performed.")
+                
+                # no IPv6 address, so cannot support tests
+                config_vars['ipv6_tests_supported'] = False
         else:
             self.file_logger.warning("  Config.ini parameter 'connectivity_lookup_ipv6' is not set, unable to test IPv6 connectivity")
             # disable ipv6 tests
@@ -254,6 +280,10 @@ Rx Phy rate:{}, Tx MCS: {}, Rx MCS: {}, RSSI:{}, Tx retries:{}, IP address (v4):
         ########################################################
         # IPv4 connectivity checks (inc route injection if req)
         ########################################################
+        self.file_logger.info("~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*")
+        self.file_logger.info("Network testing connection IPV4 tests ({})".format(self.testing_interface))
+        self.file_logger.info("~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*")
+        
         if config_vars['ipv4_enabled'] == 'yes':
             self._ipv4_checks(watchdog_obj, lockf_obj, config_vars, exporter_obj)
         else:
@@ -263,6 +293,10 @@ Rx Phy rate:{}, Tx MCS: {}, Rx MCS: {}, RSSI:{}, Tx retries:{}, IP address (v4):
         ########################################################
         # IPv6 connectivity checks (inc route injection if req)
         ########################################################
+        self.file_logger.info("~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*")
+        self.file_logger.info("Network testing connection IPV6 tests ({})".format(self.testing_interface))
+        self.file_logger.info("~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*")
+        
         if config_vars['ipv6_enabled'] == 'yes':
             self._ipv6_checks(watchdog_obj, lockf_obj, config_vars, exporter_obj)
         else: 

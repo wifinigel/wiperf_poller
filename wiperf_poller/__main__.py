@@ -7,8 +7,7 @@ import sys
 import time
 
 # our local modules
-from wiperf_poller._02_ipv4_tests import run_ipv4_tests
-from wiperf_poller._03_ipv6_tests import run_ipv6_tests
+from wiperf_poller.run_network_tests import run_tests
 
 from wiperf_poller.helpers.bouncer import Bouncer
 from wiperf_poller.helpers.config import read_local_config
@@ -45,6 +44,7 @@ DEBUG = 0
 
 # set up our error_log file & initialize
 file_logger = FileLogger(log_file, error_log_file)
+file_logger.info(" ")
 file_logger.info("*****************************************************")
 file_logger.info(" Starting logging...")
 file_logger.info("*****************************************************")
@@ -101,12 +101,15 @@ else:
 config_vars['ipv4_tests_possible'] = False
 config_vars['ipv6_tests_possible'] = False
 
+adapter_ipv4_addr = adapter_obj.get_adapter_ipv4_ip()
+adapter_ipv6_addr = adapter_obj.get_adapter_ipv6_ip()
+
 if config_vars['ipv4_enabled'] == 'yes':
-    if adapter_obj.get_adapter_ipv4_ip():
+    if adapter_ipv4_addr:
         config_vars['ipv4_tests_possible'] = True
 
 if config_vars['ipv6_enabled'] == 'yes':
-    if adapter_obj.get_adapter_ipv6_ip():
+    if adapter_ipv6_addr:
         config_vars['ipv6_tests_possible'] = True
 
 ###############################################################################
@@ -195,8 +198,8 @@ def main():
     poll_obj.network("OK") 
     
     # update poll summary with IP
-    poll_obj.ip(adapter_obj.get_adapter_ipv4_ip())
-    poll_obj.ip_v6(adapter_obj.get_adapter_ipv6_ip())
+    poll_obj.ip(adapter_ipv4_addr)
+    poll_obj.ip_v6(adapter_ipv6_addr)
 
     #############################################
     # Reporting platform connectivity checks
@@ -209,9 +212,6 @@ def main():
         file_logger.info("Reporting wireless connection check results")
         network_connection_obj.report_wireless_check_results(lockf_obj, config_vars, exporter_obj)
 
-    lockf_obj.delete_lock_file()
-    sys.exit()
-
     ################################################
     # Empty results spool queue if required/enabled
     ################################################
@@ -222,32 +222,12 @@ def main():
         file_logger.info("Spooler not enabled.")
 
     #############################################
-    # Run ipv4 tests, if enabled
+    # Run network tests
     #############################################          
-    if config_vars['ipv4_tests_enabled'] == 'yes':
-        file_logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        file_logger.info("~~~ IPv4 tests enabled. Initiating test cycle ~~~")
-        file_logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
-        run_ipv4_tests(config_vars, file_logger, poll_obj, status_file_obj, exporter_obj, 
-            lockf_obj, adapter_obj, watchdog_obj)
-    else:
-        file_logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        file_logger.info("~~~ IPv4 tests not enabled. Ignoring ~~~")
-        file_logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
-
-    #############################################
-    # Run ipv6 tests, if enabled
-    #############################################          
-    if config_vars['ipv6_tests_enabled'] == 'yes':
-        file_logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        file_logger.info("~~~ IPv6 tests enabled. Initiating test cycle ~~~")
-        file_logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
-        run_ipv6_tests(config_vars, file_logger, poll_obj, status_file_obj, exporter_obj, 
-            lockf_obj, adapter_obj, watchdog_obj)
-    else:
-        file_logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        file_logger.info("~~~ IPv6 tests not enabled. Ignoring ~~~")  
-        file_logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")                                                                                                                                                                                                 
+    file_logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    file_logger.info("~~~~~    Initiating network tests cycle     ~~~~~")
+    file_logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+    run_tests(config_vars, file_logger, poll_obj, status_file_obj, exporter_obj, lockf_obj, adapter_obj, watchdog_obj)
 
     #####################################
     # Tidy up before exit

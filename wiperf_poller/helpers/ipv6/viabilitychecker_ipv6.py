@@ -25,7 +25,7 @@ class TestViabilityCheckerIpv6(object):
             if ipv6_tests_possible: 
                 return True
             else:
-                self.file_logger.error('  Supplied target address is IPv6 ({}), but IPv6 testing not available (check interface for IPv6 address)'.format(host))
+                self.file_logger.error('  Supplied target address is IPv6 ({}), but IPv6 testing not available (check interfaces have IPv6 address)'.format(host))
                 return False
 
         else: 
@@ -36,7 +36,7 @@ class TestViabilityCheckerIpv6(object):
                 if ipv6_tests_possible:
                     return True
                 else:
-                    self.file_logger.error('  Supplied hostname ({}) resolves as IPv6 address {}, but IPv6 testing not available (check interface for IPv6 address)'.format(host, ip_address))
+                    self.file_logger.error('  Supplied hostname ({}) resolves as IPv6 address {}, but IPv6 testing not available (check interfaces have IPv6 address)'.format(host, ip_address))
                     return False
                    
         # everything we tried failed, not viable (but not sure what went wrong to get here...shouldn't be possible)

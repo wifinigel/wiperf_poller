@@ -157,8 +157,9 @@ def inject_default_route_ipv6(ip_address, config_vars, file_logger):
     
     1. Get route to the destination IP address
     2. If it's not a default route entry, we can't fix this, exit
-    3. Get the existing default route & extract its metric 
-    4. Add a default route for the interface used for testing, with a lower metric
+    3. Figure out the interface over which testing traffic should be sent
+    4. Add a new default route entry for that interface
+    5. Delete the existing default route 
     """
 
     # get the default route to our ipv6 destination
@@ -169,30 +170,12 @@ def inject_default_route_ipv6(ip_address, config_vars, file_logger):
 
     if not "default" in route_to_dest:
         # this isn't a default route, so we can't fix this
-        file_logger.error('  [Route Injection (ipv6)] Route is not a default route entry...cannot resolve this routing issue: {}'.format(route_to_dest))
-        return False
-  
-    # delete and re-add route with a new metric
-    try:
-        del_route_cmd = "{} -6 route del ".format(IP_CMD) + route_to_dest
-        subprocess.run(del_route_cmd, shell=True)
-        file_logger.info("  [Route Injection (ipv6)] Deleting route: {}".format(route_to_dest))
-    except subprocess.CalledProcessError as proc_exc:
-        file_logger.error('  [Route Injection (ipv6)] Route deletion failed!: {}'.format(proc_exc))
+        file_logger.error('  [Default Route Injection (IPv6) (ipv6)] Route is not a default route entry...cannot resolve this routing issue: {}'.format(route_to_dest))
         return False
     
-    try:
-        modified_route = re.sub(r"metric (\d+)", "metric 1024", route_to_dest)
-        add_route_cmd = "{} -6 route add  ".format(IP_CMD) + modified_route
-        subprocess.run(add_route_cmd, shell=True)
-        file_logger.info("  [Route Injection (ipv6)] Re-adding deleted route with new metric: {}".format(modified_route))
-    except subprocess.CalledProcessError as proc_exc:
-        file_logger.error('  [Route Injection (ipv6)] Route addition failed!')
-        return False
-
     # figure out what our required interface is for testing traffic
     probe_mode = config_vars['probe_mode']
-    file_logger.info("  [Route Injection (ipv6)] Checking probe mode: '{}' ".format(probe_mode))
+    file_logger.info("  [Default Route Injection (IPv6) (ipv6)] Checking probe mode: '{}' ".format(probe_mode))
     test_traffic_interface= get_test_traffic_interface_ipv6(config_vars, file_logger)
 
     # inject a new route with the required interface
@@ -200,12 +183,58 @@ def inject_default_route_ipv6(ip_address, config_vars, file_logger):
         new_route = "default dev {} metric 1".format(test_traffic_interface)
         add_route_cmd = "{} -6 route add  ".format(IP_CMD) + new_route
         subprocess.run(add_route_cmd, shell=True)
-        file_logger.info("  [Route Injection (ipv6)] Adding new route: {}".format(new_route))
+        file_logger.info("  [Default Route Injection (IPv6) (ipv6)] Adding new route: {}".format(new_route))
     except subprocess.CalledProcessError as proc_exc:
-        file_logger.error('  [Route Injection (ipv6)] Route addition failed!')
+        file_logger.error('  [Default Route Injection (IPv6) (ipv6)] Route addition failed!')
         return False
+  
+    # delete existing default route
+    try:
+        del_route_cmd = "{} -6 route del ".format(IP_CMD) + route_to_dest
+        subprocess.run(del_route_cmd, shell=True)
+        file_logger.info("  [Default Route Injection (IPv6) (ipv6)] Deleting route: {}".format(route_to_dest))
+    except subprocess.CalledProcessError as proc_exc:
+        file_logger.error('  [Default Route Injection (IPv6) (ipv6)] Route deletion failed!: {}'.format(proc_exc))
+        return False
+      
+    file_logger.info("  [Default Route Injection (IPv6) (ipv6)] Route injection complete")
+    return True
 
-    file_logger.info("  [Route Injection (ipv6)] Route injection complete")
+def remove_duplicate_interface_route_ipv6(interface_ip, interface_name, file_logger):
+
+   # Lookup the routing entry of the subnet that on which the testing interface resides, then find & 
+   # remove any duplicate routing table entries:
+
+   # get routes to the supplied interface address
+    ip_route_cmd = "{} -6 route show to match ".format(IP_CMD) + interface_ip + " | grep '/'"
+    file_logger.info("  [Check Interface Routes (IPv6)] Checking if we need to remove any interface routes...")
+
+    try:
+        routes = subprocess.check_output(ip_route_cmd, stderr=subprocess.STDOUT, shell=True).decode().splitlines()
+        file_logger.info("  [Check Interface Routes (IPv6)] Checked interface route to : {}. Result: {}".format(interface_ip, routes))
+    except subprocess.CalledProcessError as exc:
+        output = exc.output.decode()
+        file_logger.error("  [Check Interface Routes (IPv6)] Issue looking up route (route cmd syntax?): {} (command used: {})".format(str(output), ip_route_cmd))
+        return False
+    
+    # check each route entry and delete any that are not our interface of interest
+    for route_entry in routes:
+
+        # ignore link local addresses
+        if route_entry.startswith("fe80"):
+            continue
+
+        if not (interface_name in route_entry):
+            # delete the route entry
+            try:
+                del_route_cmd = "{} -6 route del ".format(IP_CMD) + route_entry
+                subprocess.run(del_route_cmd, shell=True)
+                file_logger.info("  [Check Interface Routes (IPv6)] Deleting route: {}".format(route_entry))
+            except subprocess.CalledProcessError as proc_exc:
+                file_logger.error('  [Check Interface Routes (IPv6)] Route deletion failed!: {}'.format(proc_exc))
+                return False
+    
+    file_logger.info("  [Check Interface Routes (IPv6)] Checks/operations complete.")
     return True
 
 def _inject_static_route_ipv6(ip_address, req_interface, traffic_type, file_logger):
@@ -220,18 +249,18 @@ def _inject_static_route_ipv6(ip_address, req_interface, traffic_type, file_logg
     Ref: see https://www.tldp.org/HOWTO/Linux+IPv6-HOWTO/ch07s04.html
     """
 
-    file_logger.info("  [Route Injection] Attempting {} static route insertion to fix routing issue".format(traffic_type))
+    file_logger.info("  [Host Route Injection (IPv6)] Attempting {} static route insertion to fix routing issue".format(traffic_type))
     try:
         new_route = "{} dev {}".format(ip_address, req_interface)
         add_route_cmd = "{} -6 route add  ".format(IP_CMD) + new_route
         subprocess.run(add_route_cmd, shell=True)
-        file_logger.info("  [Route Injection] Adding new {} traffic route: {}".format(traffic_type, new_route))
+        file_logger.info("  [Host Route Injection (IPv6)] Adding new {} traffic route: {}".format(traffic_type, new_route))
     except subprocess.CalledProcessError as proc_exc:
         output = proc_exc.output.decode()
-        file_logger.error('  [Route Injection] Route addition ({})failed! ({})'.format(traffic_type, output))
+        file_logger.error('  [Host Route Injection (IPv6)] Route addition ({})failed! ({})'.format(traffic_type, output))
         return False
 
-    file_logger.info("  [Route Injection] Route injection ({})complete".format(traffic_type))
+    file_logger.info("  [Host Route Injection (IPv6)] Route injection ({})complete".format(traffic_type))
     return True
 
 def inject_mgt_static_route_ipv6(ip_address, config_vars, file_logger):
@@ -252,7 +281,7 @@ def inject_test_traffic_static_route_ipv6(host, config_vars, file_logger):
     destination (e.g. iperf)
     """
     probe_mode = config_vars['probe_mode']
-    file_logger.info("  [Route Injection] Checking probe mode: '{}' ".format(probe_mode))
+    file_logger.info("  [Host Route Injection (IPv6)] Checking probe mode: '{}' ".format(probe_mode))
     test_traffic_interface= get_test_traffic_interface_ipv6(config_vars, file_logger)
 
     # figure out ip (in case hostname passed)

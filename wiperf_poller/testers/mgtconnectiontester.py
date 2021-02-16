@@ -188,8 +188,9 @@ class MgtConnectionTester(object):
     # Run checks
     ##############################
     def check_mgt_connection(self, lockf_obj, watchdog_obj):
-
-        self.file_logger.info("### Reporting/mgt server connectivty checks. ###")
+        self.file_logger.info("~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*")
+        self.file_logger.info("   Reporting/mgt server connectivty checks.")
+        self.file_logger.info("~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*")
 
         # create network adapter object for interface designated as mgt i/f
         # (use generic adapter, as all info required is non-wireless)
@@ -221,7 +222,7 @@ class MgtConnectionTester(object):
             ip_address_v4 = resolve_name_ipv4(self.data_host, self.file_logger)
             ip_address_v6 = resolve_name_ipv6(self.data_host, self.file_logger)
 
-            # try using ipv4 IP address or IPv6 addressm whichever is available
+            # try using ipv4 IP address or IPv6 address whichever is available
             if ip_address_v4:
                checks_result =  self._ipv4_checks(mgt_interface_obj, watchdog_obj, lockf_obj)
             elif ip_address_v6:

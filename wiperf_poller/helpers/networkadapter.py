@@ -101,7 +101,7 @@ class NetworkAdapter(object):
         As this is a wrapper around a CLI command, it is likely to break at
         some stage
         '''
-        self.file_logger.info("Getting adapter IPv4 info: {}".format(self.if_name))
+        self.file_logger.info("  Getting adapter IPv4 info: {}".format(self.if_name))
 
         #TODO: Use psutil for the interface info
         # Get interface info
@@ -148,7 +148,7 @@ class NetworkAdapter(object):
         '''
         #TODO: Use psutil for the interface info
 
-        self.file_logger.info("Getting adapter IPv6 info: {}".format(self.if_name))
+        self.file_logger.info("  Getting adapter IPv6 info: {}".format(self.if_name))
 
         # Get interface info
         try:

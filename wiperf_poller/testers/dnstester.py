@@ -1,9 +1,16 @@
 import time
 import socket
 from wiperf_poller.helpers.timefunc import get_timestamp
-from wiperf_poller.helpers.route import resolve_name_ipv4 as resolve_name
+from wiperf_poller.helpers.route import (
+    resolve_name,
+    resolve_name_ipv4,
+    resolve_name_ipv6 ,
+    check_correct_mode_interface_ipv4,
+    is_ipv4,
+    is_ipv6
+)
 
-class DnsTesterIpv4(object):
+class DnsTester(object):
     '''
     A class to perform a number of DNS lookups and return the lookup times
     '''
@@ -15,14 +22,14 @@ class DnsTesterIpv4(object):
         self.target = []
         self.dns_result = 0
         
-        self.test_name = "DNS (IPv4)"
-        self.test_name_prefix = "dns_target"
+        self.config_vars = config_vars
+        self.test_name = "DNS"
         self.num_dns_targets = int(config_vars['dns_targets_count']) + 1
         self.data_file = config_vars['dns_data_file']
         self.resolve_name = resolve_name
 
 
-    def dns_single_lookup(self, target):
+    def dns_single_lookup(self, target, ip_ver="dual"):
         '''
         This function will run a series of DNS lookups against the targets supplied
         and return the results in a dictionary.
@@ -39,11 +46,25 @@ class DnsTesterIpv4(object):
         self.file_logger.debug("  DNS test target: {}".format(self.target))
         self.file_logger.debug("  Performing DNS lookup for: {}".format(target))
 
-        # TODO: Perform the test 3 times and take avg of best 2 out of 3 to iron
-        #       out single-case anonmalies
+        if is_ipv4(target) or is_ipv6(target):
+            self.file_logger.error("  DNS test error - IP address passed to name lookup test. Invalid value (names only)")
+            return False
+
+        if ip_ver  == "ipv4":
+            self.file_logger.info("  IPv4 name lookup")
+            self.resolve_name = resolve_name_ipv4
+        elif ip_ver  == "ipv6":
+            self.file_logger.info("  IPv6 name lookup")
+            self.resolve_name = resolve_name_ipv6
+        elif ip_ver  == "dual":
+            # just use generic resolve name func that does both
+            self.file_logger.info("  Dual stack name lookup")
+            self.resolve_name = resolve_name
+        else:
+            raise ValueError("Unknown ip ver value: {}".format(ip_ver))
 
         start = time.time()
-        ip_address = self.resolve_name(target, self.file_logger)
+        ip_address = self.resolve_name(target, self.file_logger, self.config_vars)
         
         if not ip_address:
             return False
@@ -56,32 +77,27 @@ class DnsTesterIpv4(object):
 
         return self.dns_result
     
-    def run_tests(self, status_file_obj, config_vars, exporter_obj):
+    def run_tests(self, status_file_obj, exporter_obj):
 
         self.file_logger.info("Starting DNS tests...")
         status_file_obj.write_status_file("DNS tests")
-
-        # build targets list
-        dns_targets = []
-        
-        # read in all target data
-        for target_num in range(1, self.num_dns_targets):
-            target_name = '{}{}'.format(self.test_name_prefix, target_num)
-            dns_targets.append(config_vars[target_name])
-
-        dns_index = 0
-        delete_file = True
+      
         tests_passed = True
 
-        for dns_target in dns_targets:
+        # read in all target data
+        for dns_index in range(1, self.num_dns_targets):
 
-            dns_index += 1
+            target_name = 'dns_target{}'.format(dns_index)
+            target_ip_ver = 'dns_target{}_ip_ver'.format(dns_index)
+
+            dns_target = self.config_vars[target_name]
+            dns_target_ip_ver = self.config_vars[target_ip_ver]
 
             # move on to next if no DNS entry data
             if dns_target == '':
                 continue
 
-            dns_result = self.dns_single_lookup(dns_target)
+            dns_result = self.dns_single_lookup(dns_target, dns_target_ip_ver)
 
             if dns_result:
 
@@ -91,7 +107,7 @@ class DnsTesterIpv4(object):
                 self.file_logger.info("  DNS results: {}".format(result_str))
 
                 results_dict = {
-                    'time': get_timestamp(config_vars),
+                    'time': get_timestamp(self.config_vars),
                     'dns_index': int(dns_index),
                     'dns_target': str(dns_target),
                     'lookup_time_ms': int(dns_result)
@@ -101,14 +117,11 @@ class DnsTesterIpv4(object):
                 column_headers = list(results_dict.keys())
 
                 # dump the results
-                if exporter_obj.send_results(config_vars, results_dict, column_headers, self.data_file, self.test_name, self.file_logger, delete_data_file=delete_file):
+                if exporter_obj.send_results(self.config_vars, results_dict, column_headers, self.data_file, self.test_name, self.file_logger):
                     self.file_logger.info("  DNS test ended.\n")
                 else:
                     self.file_logger.error("  Issue sending DNS results.")
                     tests_passed = False
-
-                # Make sure we don't delete data file next time around
-                delete_file = False
 
             else:
                 self.file_logger.error("  DNS test error - no results (check logs) - exiting DNS tests")
@@ -116,7 +129,3 @@ class DnsTesterIpv4(object):
 
         return tests_passed
 
-
-    def get_dns_result(self):
-        ''' Get DNS single lookup result '''
-        return self.dns_result

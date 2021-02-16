@@ -36,7 +36,7 @@ class IperfTesterIpv4(object):
 
 
     @timeout_decorator.timeout(60, use_signals=False)
-    def tcp_iperf_client_test(self, server_hostname, duration=10, port=5201, debug=False):
+    def tcp_iperf_client_test(self, server_hostname, bind_address, duration=10, port=5201, debug=False):
 
         result= ''
 
@@ -90,7 +90,7 @@ class IperfTesterIpv4(object):
         return mos_score
 
     @timeout_decorator.timeout(60, use_signals=False)
-    def udp_iperf_client_test(self, server_hostname, duration=10, port=5201, bandwidth=10000000, debug=False):
+    def udp_iperf_client_test(self, server_hostname, bind_address, duration=10, port=5201, bandwidth=10000000, debug=False):
 
         iperf_client = Client()
 
@@ -116,18 +116,29 @@ class IperfTesterIpv4(object):
         del iperf_client
         return result
 
-    def run_tcp_test(self, config_vars, status_file_obj, check_correct_mode_interface, exporter_obj):
+    def run_tcp_test(self, config_vars, status_file_obj, adapter_obj, exporter_obj):
 
+        ip_ver = config_vars['iperf3_tcp_ip_ver']
         duration = int(config_vars['iperf3_tcp_duration'])
         port = int(config_vars['iperf3_tcp_port'])
         server_hostname = config_vars['iperf3_tcp_server_hostname']
 
+        bind_address = ''
+
+        if ip_ver == 'ipv4':
+            bind_address = adapter_obj.get_adapter_ipv4_ip()
+        elif ip_ver == 'ipv6':
+            bind_address = adapter_obj.get_adapter_ipv6_ip()
+        else:
+            raise ValueError("ip_var parameter invalide: {}".format(ip_ver))
+
         # create test viability checker
-        checker = self.TestViabilityChecker(config_vars, self.file_logger)
+        #checker = self.TestViabilityChecker(config_vars, self.file_logger)
 
         self.file_logger.info("Starting iperf3 tcp test ({}:{})...".format(server_hostname, str(port)))
         status_file_obj.write_status_file("iperf3 tcp")
 
+        """
         # check test to iperf3 server will go via wlan interface
         if not check_correct_mode_interface(server_hostname, config_vars, self.file_logger):
 
@@ -142,14 +153,16 @@ class IperfTesterIpv4(object):
                 config_vars['test_issue_descr'] = "TCP iperf test failure (routing issue)"
                 return False
         
+        """
+
         # check if test to host is viable (based on probe ipv4/v6 support)
-        if not checker.check_test_host_viable(server_hostname):
-            return False
+        #if not checker.check_test_host_viable(server_hostname):
+        #    return False
 
         # run iperf test
         result = False
         try:
-            result = self.tcp_iperf_client_test(server_hostname, duration=duration, port=port, debug=False)
+            result = self.tcp_iperf_client_test(server_hostname, bind_address, duration=duration, port=port, debug=False)
         except:
             self.file_logger.error("  TCP iperf3 test process timed out.")
 
@@ -185,19 +198,30 @@ class IperfTesterIpv4(object):
             self.file_logger.error("  iperf3 tcp test failed.\n")
             return False        
                        
-    def run_udp_test(self, config_vars, status_file_obj, check_correct_mode_interface, exporter_obj):
+    def run_udp_test(self, config_vars, status_file_obj, adapter_obj, exporter_obj):
 
+        ip_ver = config_vars['iperf3_udp_ip_ver']
         duration = int(config_vars['iperf3_udp_duration'])
         port = int(config_vars['iperf3_udp_port'])
         server_hostname = config_vars['iperf3_udp_server_hostname']
         bandwidth = int(config_vars['iperf3_udp_bandwidth'])
 
+        bind_address = ''
+
+        if ip_ver == 'ipv4':
+            bind_address = adapter_obj.get_adapter_ipv4_ip()
+        elif ip_ver == 'ipv6':
+            bind_address = adapter_obj.get_adapter_ipv6_ip()
+        else:
+            raise ValueError("ip_var parameter invalid: {}".format(ip_ver))
+
         # create test viability checker
-        checker = self.TestViabilityChecker(config_vars, self.file_logger)
+        #checker = self.TestViabilityChecker(config_vars, self.file_logger)
 
         self.file_logger.info("Starting iperf3 udp test ({}:{})...".format(server_hostname, str(port)))
         status_file_obj.write_status_file("iperf3 udp")
 
+        """
         # check test to iperf3 server will go via correct interface
         if not check_correct_mode_interface(server_hostname, config_vars, self.file_logger):
 
@@ -211,10 +235,10 @@ class IperfTesterIpv4(object):
                 config_vars['test_issue'] = True
                 config_vars['test_issue_descr'] = "UDP iperf test failure (routing issue)"
                 return False
-
+        """
         # check if test to host is viable (based on probe ipv4/v6 support)
-        if not checker.check_test_host_viable(server_hostname):
-            return False
+        #if not checker.check_test_host_viable(server_hostname):
+        #    return False
 
         # Run a ping to the iperf server to get an rtt to feed in to MOS score calc
         ping_obj = self.PingTester(self.file_logger)
@@ -231,7 +255,7 @@ class IperfTesterIpv4(object):
         # Run the iperf test
         result = False
         try:
-            result = self.udp_iperf_client_test(server_hostname, duration=duration, port=port, bandwidth=bandwidth, debug=False)
+            result = self.udp_iperf_client_test(server_hostname, bind_address, duration=duration, port=port, bandwidth=bandwidth, debug=False)
         except:
             self.file_logger.error("  UDP iperf3 test process timed out")
 

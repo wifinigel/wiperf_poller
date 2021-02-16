@@ -9,8 +9,17 @@ import subprocess
 from sys import stderr
 from wiperf_poller.helpers.os_cmds import PING_CMD
 from wiperf_poller.helpers.timefunc import get_timestamp
-from wiperf_poller.helpers.route import resolve_name, check_correct_mode_interface_ipv4, is_ipv4, is_ipv6
+
+from wiperf_poller.helpers.route import (
+    resolve_name,
+    resolve_name_ipv4,
+    resolve_name_ipv6 ,
+    check_correct_mode_interface_ipv4,
+    is_ipv4,
+    is_ipv6
+)
 from wiperf_poller.helpers.ipv6.route_ipv6 import check_correct_mode_interface_ipv6
+
 from wiperf_poller.helpers.viabilitychecker import TestViabilityCheckerIpv4
 from wiperf_poller.helpers.ipv6.viabilitychecker_ipv6 import TestViabilityCheckerIpv6
 
@@ -32,6 +41,8 @@ class PingTesterIpv4(object):
         self.rtt_avg = ''
         self.rtt_max = ''
         self.rtt_mdev = ''
+
+        self.ip_ver = 'dual' # dual, ipv4, ipv6 
         self.resolve_name = resolve_name
 
         self.test_name = "Ping"
@@ -162,15 +173,30 @@ class PingTesterIpv4(object):
         for target_num in range(1, num_ping_targets):
             
             target_name = 'ping_host{}'.format(target_num)
-            ping_host = config_vars[target_name]
+            target_name_ip_ver = 'ping_host{}_ip_ver'.format(target_num)
 
+            ping_host = config_vars[target_name]
+            ping_host_ip_ver = config_vars[target_name_ip_ver]
+            
             if ping_host == '':
                 continue
-            
+
+            if ping_host_ip_ver  == "ipv4":
+                self.resolve_name = resolve_name_ipv4
+            elif ping_host_ip_ver  == "ipv6":
+                self.resolve_name = resolve_name_ipv6
+            else:
+                # just use generic resolve name func that does both
+                self.resolve_name = resolve_name
+
             ping_host_ip = self.resolve_name(ping_host, self.file_logger, config_vars)
 
+            if not ping_host_ip:
+                self.file_logger.error("  Lookup error for: {} (bypassing...)".format(ping_host))
+                continue
+            
             # initial ping to populate arp cache and avoid arp timeput for first test ping
-            self.file_logger.info("Initial ping to host: {} ({})".format(ping_host, ping_host_ip))
+            self.file_logger.info("  Initial ping to host: {} ({})".format(ping_host, ping_host_ip))
       
             # check tests is viable and will go over correct interface
             if is_ipv4(ping_host_ip):
@@ -184,17 +210,18 @@ class PingTesterIpv4(object):
 
             # check if test to host is viable (based on probe ipv4/v6 support)
             checker = TestViabilityChecker(config_vars, self.file_logger)
-            if not checker.check_test_host_viable(ping_host_ip):
+            if not checker.check_test_host_viable(ping_host):
                 self.file_logger.error("  Ping target test not viable, will not be tested ({} / {})".format(ping_host, ping_host_ip))
                 continue
             
-            # check if ping target addres will use the correct interface
+            # check if ping target address will use the correct interface
             if check_correct_mode_interface(ping_host_ip, config_vars, self.file_logger):
                 self.ping_host(ping_host_ip, 1, silent=True)
             else:
                 self.file_logger.error("  Unable to ping {} ({}) as route to destination not over correct interface...bypassing ping test".format(ping_host, ping_host_ip))
                 # we will break here if we have an issue as something bad has happened...don't want to run more tests
                 config_vars['test_issue'] = True
+                config_vars['test_issue_descr'] = "Ping"
                 tests_passed = False
                 continue
             
@@ -217,6 +244,9 @@ class PingTesterIpv4(object):
             self.file_logger.info("ping test to host: {} ({})".format(ping_host['hostname'], ping_host['ip']))
 
             ping_result = self.ping_host(ping_host['ip'], ping_count)
+
+            if not ping_result:
+                continue
 
             # put hostname back in (swap out IP)
             ping_result['host'] = ping_host['hostname']

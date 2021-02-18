@@ -17,8 +17,11 @@ def run_tests(config_vars, file_logger, poll_obj, status_file_obj, exporter_obj,
 
     #############################################
     # Run speedtest (if enabled)
-    #############################################                                                                                                                                                                                                                      
-    file_logger.info("########## speedtest (IPv4) ##########")
+    #############################################
+    file_logger.info("--------------------------------------")                                                                                                                                                                                                                 
+    file_logger.info("---        speedtest (IPv4)        ---")
+    file_logger.info("--------------------------------------")
+
     if config_vars['speedtest_enabled'] == 'yes':
 
         if config_vars['ipv6_enabled']:
@@ -38,8 +41,11 @@ def run_tests(config_vars, file_logger, poll_obj, status_file_obj, exporter_obj,
     
     #############################################
     # Run speedtest IPv6 (if enabled)
-    #############################################                                                                                                                                                                                                                      
-    file_logger.info("########## speedtest (IPv6) ##########")
+    #############################################
+    file_logger.info("--------------------------------------")                                                                                                                                                                                                                 
+    file_logger.info("---        speedtest (IPv6)        ---")
+    file_logger.info("--------------------------------------")  
+
     if config_vars['speedtest_enabled_ipv6'] == 'yes':
 
         if config_vars['ipv6_enabled']:
@@ -60,7 +66,10 @@ def run_tests(config_vars, file_logger, poll_obj, status_file_obj, exporter_obj,
     #############################
     # Run ping test (if enabled)
     #############################
-    file_logger.info("########## ping tests ##########")
+    file_logger.info("--------------------------------------")                                                                                                                                                                                                                 
+    file_logger.info("---           Ping Tests           ---")
+    file_logger.info("--------------------------------------")
+    
     if config_vars['ping_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
         # run ping test
@@ -85,7 +94,9 @@ def run_tests(config_vars, file_logger, poll_obj, status_file_obj, exporter_obj,
     ###################################
     # Run DNS lookup tests (if enabled)
     ###################################
-    file_logger.info("########## dns tests ##########")
+    file_logger.info("--------------------------------------")                                                                                                                                                                                                                 
+    file_logger.info("---           DNS Tests            ---")
+    file_logger.info("--------------------------------------")
     if config_vars['dns_test_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
         dns_obj = DnsTester(file_logger, config_vars)
@@ -108,7 +119,9 @@ def run_tests(config_vars, file_logger, poll_obj, status_file_obj, exporter_obj,
     #####################################
     # Run HTTP lookup tests (if enabled)
     #####################################
-    file_logger.info("########## http tests ##########")
+    file_logger.info("--------------------------------------")                                                                                                                                                                                                                 
+    file_logger.info("---           HTTP Tests           ---")
+    file_logger.info("--------------------------------------")
     if config_vars['http_test_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
         http_obj = HttpTester(file_logger)
@@ -130,7 +143,10 @@ def run_tests(config_vars, file_logger, poll_obj, status_file_obj, exporter_obj,
     ###################################
     # Run iperf3 tcp test (if enabled)
     ###################################
-    file_logger.info("########## iperf3 tcp test ##########")
+    file_logger.info("--------------------------------------")                                                                                                                                                                                                                 
+    file_logger.info("---         iperf3 tcp test        ---")
+    file_logger.info("--------------------------------------")
+    
     if config_vars['iperf3_tcp_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
         iperf3_tcp_obj = IperfTester(file_logger)
@@ -152,7 +168,10 @@ def run_tests(config_vars, file_logger, poll_obj, status_file_obj, exporter_obj,
     ###################################
     # Run iperf3 udp test (if enabled)
     ###################################
-    file_logger.info("########## iperf3 udp test ##########")
+    file_logger.info("--------------------------------------")                                                                                                                                                                                                                 
+    file_logger.info("---         iperf3 udp test        ---")
+    file_logger.info("--------------------------------------")
+
     if config_vars['iperf3_udp_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
         iperf3_udp_obj = IperfTester(file_logger)
@@ -173,7 +192,9 @@ def run_tests(config_vars, file_logger, poll_obj, status_file_obj, exporter_obj,
     #####################################
     # Run DHCP renewal test (if enabled)
     #####################################
-    file_logger.info("########## dhcp test ##########")
+    file_logger.info("--------------------------------------")                                                                                                                                                                                                                 
+    file_logger.info("---           DHCP Tests           ---")
+    file_logger.info("--------------------------------------")
     if config_vars['dhcp_test_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
         dhcp_obj = DhcpTester(file_logger, lockf_obj)
@@ -195,7 +216,9 @@ def run_tests(config_vars, file_logger, poll_obj, status_file_obj, exporter_obj,
     #####################################
     # Run SMB test (if enabled)
     #####################################
-    file_logger.info("########## SMB test ##########")
+    file_logger.info("--------------------------------------")                                                                                                                                                                                                                 
+    file_logger.info("---           SMB Tests            ---")
+    file_logger.info("--------------------------------------")
     if config_vars['smb_enabled'] == 'yes' and config_vars['test_issue'] == False:
 
         smb_obj = SmbTester(file_logger)

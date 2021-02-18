@@ -147,7 +147,7 @@ Rx Phy rate:{}, Tx MCS: {}, Rx MCS: {}, RSSI:{}, Tx retries:{}, IP address (v4):
                 
                 if inject_default_route_ipv4(config_vars['connectivity_lookup'], config_vars, self.file_logger):
                 
-                    #self.adapter_obj.bounce_interface()
+                    self.adapter_obj.bounce_interface() # bounce needed to update route table!
                     self.file_logger.info("  Checking if ipv4 route injection worked...")
 
                     if check_correct_mode_interface_ipv4(ip_address, config_vars, self.file_logger):
@@ -161,13 +161,11 @@ Rx Phy rate:{}, Tx MCS: {}, Rx MCS: {}, RSSI:{}, Tx retries:{}, IP address (v4):
                     self.file_logger.error("  Routing issue (ipv4) - exiting.")
                     lockf_obj.delete_lock_file()
                     sys.exit()
-            ######################################################################
-            # Check if we have any duplicate local interface route entries
-            #  (i.e. when two interfaces on same subnet) - fix duplicates
-            ######################################################################
-            remove_duplicate_interface_route_ipv4(self.adapter_obj.get_adapter_ipv4_ip(), 
-                self.testing_interface, self.file_logger)
-        
+            
+                # Take any local interface routes that may allow test traffic to leak
+                # over wrong interface
+                remove_duplicate_interface_route_ipv4(self.adapter_obj.get_adapter_ipv4_ip(), self.adapter_obj.if_name, self.file_logger)
+               
         else:
             # if we have no IPv4 address address, issue warning
             self.file_logger.warning("  No IPv4 address found on {} adapter. Unless this is an IPv6 environment, you will have issues.".format(self.probe_mode))
@@ -221,7 +219,7 @@ Rx Phy rate:{}, Tx MCS: {}, Rx MCS: {}, RSSI:{}, Tx retries:{}, IP address (v4):
                     
                     if inject_default_route_ipv6(config_vars['connectivity_lookup_ipv6'], config_vars, self.file_logger):
                     
-                        #self.adapter_obj.bounce_interface()
+                        self.adapter_obj.bounce_interface()  # bounce needed to update route table!
                         self.file_logger.info("  Checking if ipv6 route injection worked...")
 
                         if check_correct_mode_interface_ipv6(ip_address, config_vars, self.file_logger):
@@ -235,13 +233,10 @@ Rx Phy rate:{}, Tx MCS: {}, Rx MCS: {}, RSSI:{}, Tx retries:{}, IP address (v4):
                         self.file_logger.error("  Routing issue (ipv6) - exiting.")
                         lockf_obj.delete_lock_file()
                         sys.exit()
-                
-                ######################################################################
-                # Check if we have any duplicate local interface route entries
-                #  (i.e. when two interfaces on same subnet) - fix duplicates
-                ######################################################################
-                remove_duplicate_interface_route_ipv6(self.adapter_obj.get_adapter_ipv6_ip(), 
-                    self.testing_interface, self.file_logger)
+                    
+                    # Take any local interface routes that may allow test traffic to leak
+                    # over wrong interface
+                    remove_duplicate_interface_route_ipv6(self.adapter_obj.get_adapter_ipv4_ip(), self.adapter_obj.if_name, self.file_logger)
 
             else:
                 if not self.adapter_obj.get_adapter_ipv4_ip():

@@ -157,9 +157,14 @@ def inject_default_route_ipv6(ip_address, config_vars, file_logger):
     
     1. Get route to the destination IP address
     2. If it's not a default route entry, we can't fix this, exit
+    3. Take a copy of the existinf default route, delete it ad re-add it
+       with an increased metric
     3. Figure out the interface over which testing traffic should be sent
-    4. Add a new default route entry for that interface
-    5. Delete the existing default route 
+    4. Add a new default route entry for that interface (with no metric)
+    5. Delete the existing default route
+
+    (Note the interface that provides the new default route must be bounced to
+    update the probe routing table correctly)
     """
 
     # get the default route to our ipv6 destination
@@ -170,12 +175,12 @@ def inject_default_route_ipv6(ip_address, config_vars, file_logger):
 
     if not "default" in route_to_dest:
         # this isn't a default route, so we can't fix this
-        file_logger.error('  [Default Route Injection (IPv6) (ipv6)] Route is not a default route entry...cannot resolve this routing issue: {}'.format(route_to_dest))
+        file_logger.error('  [Default Route Injection (IPv6)] Route is not a default route entry...cannot resolve this routing issue: {}'.format(route_to_dest))
         return False
     
     # figure out what our required interface is for testing traffic
     probe_mode = config_vars['probe_mode']
-    file_logger.info("  [Default Route Injection (IPv6) (ipv6)] Checking probe mode: '{}' ".format(probe_mode))
+    file_logger.info("  [Default Route Injection (IPv6)] Checking probe mode: '{}' ".format(probe_mode))
     test_traffic_interface= get_test_traffic_interface_ipv6(config_vars, file_logger)
 
     # inject a new route with the required interface
@@ -183,21 +188,31 @@ def inject_default_route_ipv6(ip_address, config_vars, file_logger):
         new_route = "default dev {} metric 1".format(test_traffic_interface)
         add_route_cmd = "{} -6 route add  ".format(IP_CMD) + new_route
         subprocess.run(add_route_cmd, shell=True)
-        file_logger.info("  [Default Route Injection (IPv6) (ipv6)] Adding new route: {}".format(new_route))
+        file_logger.info("  [Default Route Injection (IPv6)] Adding new route: {}".format(new_route))
     except subprocess.CalledProcessError as proc_exc:
-        file_logger.error('  [Default Route Injection (IPv6) (ipv6)] Route addition failed!')
+        file_logger.error('  [Default Route Injection (IPv6)] Route addition failed!')
+        return False
+    
+    # re-add the default route with an increased metric
+    try:
+        modified_route = route_to_dest + " metric 1024"
+        add_route_cmd = "{} -6 route add  ".format(IP_CMD) + modified_route
+        subprocess.run(add_route_cmd, shell=True)
+        file_logger.info("  [Default Route Injection (IPv6)] Re-adding deleted route with new metric: {}".format(modified_route))
+    except subprocess.CalledProcessError as proc_exc:
+        file_logger.error('  [Default Route Injection (IPv6)] Route addition failed!')
         return False
   
     # delete existing default route
     try:
         del_route_cmd = "{} -6 route del ".format(IP_CMD) + route_to_dest
         subprocess.run(del_route_cmd, shell=True)
-        file_logger.info("  [Default Route Injection (IPv6) (ipv6)] Deleting route: {}".format(route_to_dest))
+        file_logger.info("  [Default Route Injection (IPv6)] Deleting route: {}".format(route_to_dest))
     except subprocess.CalledProcessError as proc_exc:
-        file_logger.error('  [Default Route Injection (IPv6) (ipv6)] Route deletion failed!: {}'.format(proc_exc))
+        file_logger.error('  [Default Route Injection (IPv6)] Route deletion failed!: {}'.format(proc_exc))
         return False
       
-    file_logger.info("  [Default Route Injection (IPv6) (ipv6)] Route injection complete")
+    file_logger.info("  [Default Route Injection (IPv6)] Route injection complete")
     return True
 
 def remove_duplicate_interface_route_ipv6(interface_ip, interface_name, file_logger):

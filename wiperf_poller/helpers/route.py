@@ -52,29 +52,26 @@ The process for obtaining the correct traffic flows is as follows:
    is already set a we need it.
 
 3. If the route lookup indicates that the incorrect interface is used as the default route, add
-   a default route that selects the desired interface. Then, delete the previously observered
-   default route:
+   a default route that selects the desired interface. Then, replace the previously observered
+   default route with a the same default route entry, but with a high metric (to discourage its
+   use compared to the new default route we added). 
+   
+   Add a new default route that goes via the correct interface (with no metric...i.e. zero)
 
+   Finally, bounce the interface that has just had the default route added, to ensure the probe 
+   routing table reflects the desired routing table sequence and that the new default route 
+   obtains a gateway setting (I forgot this final step which caused me 2 days of angst...):
+   
+   ip route del default via 192.168.0.1 dev eth0
+   ip route add default via 192.168.0.1 dev eth0 metric 500
    ip route add default dev wlan0
-   ip route delete default via 192.168.0.1 dev eth0
-   ip route delete 192.168.0.0/24 dev eth0 proto kernel scope link src 192.168.0.25
-
+   ifdown wlan0; ifup wlan0
+   
 4. Perform a route lookup again to verify that test traffic will now hit the required interface:
 
    ip route show to match 8.8.8.8
 
-5. In some instances, if other interfaces are on the same IP network as the testing interface (e.g.
-   if both eth0 & wlan0 are on the same subnet), it is necessary to remove any duplicate route 
-   entries to that subnet - this can be an issue if any test targets are also on he same subnet.
-
-   Lookup the routing entry of the subnet that on which the testing interface resides, then find & 
-   remove any duplicate routing table entries:
-
-   ip route show to match 192.168.0.15
-   ip route | grep 192.168.0.0/24
-   ip route delete 192.168.0.0/24 dev eth0 proto kernel scope link src 192.168.0.25
-
-6. The steps above are shown for IPv4 networks. This also needs to be repeated for IPV6 networks 
+5. The steps above are shown for IPv4 networks. This also needs to be repeated for IPV6 networks 
    if IPv6 is enabled
 
 6. Finally, make sure that there is a viable route for management traffic:
@@ -288,9 +285,14 @@ def inject_default_route_ipv4(ip_address, config_vars, file_logger):
     
     1. Get route to the destination IP address
     2. If it's not a default route entry, we can't fix this, exit
+    3. Take a copy of the existinf default route, delete it ad re-add it
+       with an increased metric
     3. Figure out the interface over which testing traffic should be sent
-    4. Add a new default route entry for that interface
-    5. Delete the existing default route   
+    4. Add a new default route entry for that interface (with no metric)
+    5. Delete the existing default route
+
+    (Note the interface that provides the new default route must be bounced to
+    update the probe routing table correctly)
     """
 
     # get the default route to our destination
@@ -316,6 +318,16 @@ def inject_default_route_ipv4(ip_address, config_vars, file_logger):
         file_logger.info("  [Default Route Injection (IPv4)] Deleting route: {}".format(route_to_dest))
     except subprocess.CalledProcessError as proc_exc:
         file_logger.error('  [Default Route Injection (IPv4)] Route deletion failed!: {}'.format(proc_exc))
+        return False
+
+    # re-add the default route with an increased metric
+    try:
+        modified_route = route_to_dest + " metric 500"
+        add_route_cmd = "{} route add  ".format(IP_CMD) + modified_route
+        subprocess.run(add_route_cmd, shell=True)
+        file_logger.info("  [Default Route Injection (IPv4)] Re-adding deleted route with new metric: {}".format(modified_route))
+    except subprocess.CalledProcessError as proc_exc:
+        file_logger.error('  [Default Route Injection (IPv4)] Route addition failed!')
         return False
 
     # inject a new route with the required testing interface
@@ -401,7 +413,7 @@ def inject_mgt_static_route_ipv4(ip_address, config_vars, file_logger):
     
     return _inject_static_route_ipv4(ip_address, mgt_interface, "mgt", file_logger)
 
-#TODO: remove
+#TODO: remove?
 def inject_test_traffic_static_route_ipv4(host, config_vars, file_logger):
     """
     Inject a static route to correct routing issue for specific test traffic 

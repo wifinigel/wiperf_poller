@@ -62,7 +62,7 @@ class HttpTesterCurl(object):
         )
 
         try:
-            self.file_logger.info("  curl command: {}".format(curl_cmd))
+            self.file_logger.debug("  curl command: {}".format(curl_cmd))
             curl_output = subprocess.check_output(curl_cmd, stderr=subprocess.STDOUT, shell=True).decode()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()

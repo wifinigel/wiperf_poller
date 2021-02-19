@@ -14,14 +14,11 @@ from wiperf_poller.helpers.route import (
     resolve_name,
     resolve_name_ipv4,
     resolve_name_ipv6 ,
-    check_correct_mode_interface_ipv4,
     is_ipv4,
     is_ipv6
 )
-from wiperf_poller.helpers.ipv6.route_ipv6 import check_correct_mode_interface_ipv6
+from wiperf_poller.helpers.viabilitychecker import TestViabilityChecker
 
-from wiperf_poller.helpers.viabilitychecker import TestViabilityCheckerIpv4
-from wiperf_poller.helpers.ipv6.viabilitychecker_ipv6 import TestViabilityCheckerIpv6
 
 class PingTesterIpv4(object):
     '''
@@ -186,7 +183,7 @@ class PingTesterIpv4(object):
             elif ping_host_ip_ver  == "ipv6":
                 self.resolve_name = resolve_name_ipv6
             else:
-                # just use generic resolve name func that does both
+                # just use generic resolve name func that does both IPv4/v6
                 self.resolve_name = resolve_name
 
             ping_host_ip = self.resolve_name(ping_host, self.file_logger, config_vars)
@@ -194,37 +191,24 @@ class PingTesterIpv4(object):
             if not ping_host_ip:
                 self.file_logger.error("  Lookup error for: {} (bypassing...)".format(ping_host))
                 continue
-            
-            # initial ping to populate arp cache and avoid arp timeput for first test ping
-            self.file_logger.info("  Initial ping to host: {} ({})".format(ping_host, ping_host_ip))
-      
-            # check tests is viable and will go over correct interface
-            if is_ipv4(ping_host_ip):
-                TestViabilityChecker = TestViabilityCheckerIpv4
-                check_correct_mode_interface = check_correct_mode_interface_ipv4
-            elif is_ipv6(ping_host_ip):
-                TestViabilityChecker = TestViabilityCheckerIpv6
-                check_correct_mode_interface = check_correct_mode_interface_ipv6
-            else:
-                raise ValueError("  Ping host IP does not match known address format: {}".format(ping_host_ip))
-
+               
             # check if test to host is viable (based on probe ipv4/v6 support)
+            # TODO: include ipv4/v6 preference?
             checker = TestViabilityChecker(config_vars, self.file_logger)
             if not checker.check_test_host_viable(ping_host):
                 self.file_logger.error("  Ping target test not viable, will not be tested ({} / {})".format(ping_host, ping_host_ip))
-                continue
-            
-            # check if ping target address will use the correct interface
-            if check_correct_mode_interface(ping_host_ip, config_vars, self.file_logger):
-                self.ping_host(ping_host_ip, 1, silent=True)
-            else:
-                self.file_logger.error("  Unable to ping {} ({}) as route to destination not over correct interface...bypassing ping test".format(ping_host, ping_host_ip))
-                # we will break here if we have an issue as something bad has happened...don't want to run more tests
                 config_vars['test_issue'] = True
                 config_vars['test_issue_descr'] = "Ping"
                 tests_passed = False
                 continue
             
+            # initial ping to populate arp cache and avoid arp timeput for first test ping
+            self.file_logger.info("  Initial ping to host (prime arp cache): {} ({})".format(ping_host, ping_host_ip))
+
+            # perform ping test
+            self.ping_host(ping_host_ip, 1, silent=True)
+            self.file_logger.info("  Initial ping test complete.\n")
+                       
             # Entry looks good for testing, add to list of test targets
             ping_hosts.append( { 'hostname': ping_host, 'ip': ping_host_ip } )
 

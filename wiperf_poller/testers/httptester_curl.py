@@ -10,8 +10,9 @@ import warnings
 from wiperf_poller.helpers.os_cmds import CURL_CMD
 
 from wiperf_poller.helpers.timefunc import get_timestamp
-from wiperf_poller.helpers.viabilitychecker import TestViabilityCheckerIpv4
-from wiperf_poller.helpers.ipv6.viabilitychecker_ipv6 import TestViabilityCheckerIpv6
+from wiperf_poller.helpers.viabilitychecker import TestViabilityChecker
+#from wiperf_poller.helpers.viabilitychecker import TestViabilityCheckerIpv4
+#from wiperf_poller.helpers.ipv6.viabilitychecker_ipv6 import TestViabilityCheckerIpv6
 from wiperf_poller.helpers.route import (
     resolve_name,
     resolve_name_ipv4,
@@ -76,9 +77,9 @@ class HttpTesterCurl(object):
         # convert string from json to dict
         curl_dict = json.loads(curl_output)
         self.http_status_code = int(curl_dict['response_code'])
-        self.http_server_response_time = float(curl_dict['time_connect']) * 1000
-        self.http_get_duration = float(curl_dict['time_total']) *1000
-        self.http_name_lookup_time = float(curl_dict['time_namelookup']) * 1000
+        self.http_server_response_time = int(float(curl_dict['time_connect']) * 1000)
+        self.http_get_duration = int(float(curl_dict['time_total']) *1000)
+        self.http_name_lookup_time = int(float(curl_dict['time_namelookup']) * 1000)
 
         self.file_logger.debug("  http get for: {} : {}mS, server repsonse time: {}ms (code: {}).".format(http_target, self.http_get_duration, self.http_server_response_time, self.http_status_code))
 
@@ -122,9 +123,6 @@ class HttpTesterCurl(object):
                    mandate use of IPv4-only or IPv6-only
             """
 
-            """
-            # check test will go over correct interface
-            #TODO: Check for correct URL format here: http://xxxx (otherwise split fails below & script exits)
             target_hostname = http_target.split('/')[2]
 
             # pull out hostname if in format [2001:1:1:1:1::5] for
@@ -132,7 +130,7 @@ class HttpTesterCurl(object):
             if "[" in target_hostname:
                 target_hostname = target_hostname[1: -1]
             
-
+            # select hostname resolution type to use
             if http_target_ip_ver  == "ipv4":
                 self.resolve_name = resolve_name_ipv4
             elif http_target_ip_ver  == "ipv6":
@@ -143,35 +141,15 @@ class HttpTesterCurl(object):
             
             http_target_ip = self.resolve_name(target_hostname, self.file_logger, config_vars)
 
-            # Select appropriate viability checker & route checker
-            if is_ipv4(http_target_ip):
-                TestViabilityChecker = TestViabilityCheckerIpv4
-                check_correct_mode_interface = check_correct_mode_interface_ipv4
-            elif is_ipv6(http_target_ip):
-                TestViabilityChecker = TestViabilityCheckerIpv6
-                check_correct_mode_interface = check_correct_mode_interface_ipv6
-            else:
-                raise ValueError("  Ping host IP does not match known address format: {}".format(http_target_ip))
-
             # create test viability checker
+            # TODO: include ipv4/v6 preference?
             checker = TestViabilityChecker(config_vars, self.file_logger)
 
             # check if test to host is viable (based on probe ipv4/v6 support)
             if not checker.check_test_host_viable(http_target_ip):
                 self.file_logger.error("  HTTP target test not viable, will not be tested ({} / {})".format(http_target, http_target_ip))
                 continue
-
-            if check_correct_mode_interface(target_hostname, config_vars, self.file_logger):
-                pass
-            else:
-                self.file_logger.error(
-                    "  Unable to test http to {} as route to destination not over correct interface...bypassing http test".format(http_target))
-                # we will break here if we have an issue as something bad has happened...don't want to run more tests
-                config_vars['test_issue'] = True
-                tests_passed = False
-                continue
-
-            """
+            
             self.file_logger.info("  Starting http test to : {}".format(http_target))
 
             http_result = self.curl(http_target, http_target_ip_ver, curl_args=[http_target_curl_args])

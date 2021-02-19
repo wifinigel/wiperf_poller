@@ -16,7 +16,7 @@ import timeout_decorator
 from wiperf_poller.testers.pingtester import PingTesterIpv4 as PingTester
 from wiperf_poller.helpers.route import inject_test_traffic_static_route_ipv4 as inject_test_traffic_static_route
 from wiperf_poller.helpers.timefunc import get_timestamp
-from wiperf_poller.helpers.viabilitychecker import TestViabilityCheckerIpv4 as TestViabilityChecker
+from wiperf_poller.helpers.viabilitychecker import TestViabilityChecker
 
 class IperfTesterIpv4(object):
     """
@@ -130,10 +130,14 @@ class IperfTesterIpv4(object):
         elif ip_ver == 'ipv6':
             bind_address = adapter_obj.get_adapter_ipv6_ip()
         else:
-            raise ValueError("ip_var parameter invalide: {}".format(ip_ver))
+            raise ValueError("ip_var parameter invalid: {}".format(ip_ver))
 
         # create test viability checker
-        #checker = self.TestViabilityChecker(config_vars, self.file_logger)
+        # TODO: include ipv4/v6 preference?
+        checker = TestViabilityChecker(config_vars, self.file_logger)
+        if not checker.check_test_host_viable(server_hostname, ip_ver_preference=ip_ver):
+            self.file_logger.error("  iperf3 tcp test not viable, will not be tested ({})".format(server_hostname))
+            return False
 
         self.file_logger.info("Starting iperf3 tcp test ({}:{})...".format(server_hostname, str(port)))
         status_file_obj.write_status_file("iperf3 tcp")
@@ -216,29 +220,14 @@ class IperfTesterIpv4(object):
             raise ValueError("ip_var parameter invalid: {}".format(ip_ver))
 
         # create test viability checker
-        #checker = self.TestViabilityChecker(config_vars, self.file_logger)
+        # TODO: include ipv4/v6 preference?
+        checker = TestViabilityChecker(config_vars, self.file_logger)
+        if not checker.check_test_host_viable(server_hostname, ip_ver_preference=ip_ver):
+            self.file_logger.error("  iperf3 udp test not viable, will not be tested ({})".format(server_hostname))
+            return False
 
         self.file_logger.info("Starting iperf3 udp test ({}:{})...".format(server_hostname, str(port)))
         status_file_obj.write_status_file("iperf3 udp")
-
-        """
-        # check test to iperf3 server will go via correct interface
-        if not check_correct_mode_interface(server_hostname, config_vars, self.file_logger):
-
-            # if route looks wrong, try to fix it
-            self.file_logger.warning("  Unable to run udp iperf test to {} as route to destination not over correct interface...injecting static route".format(server_hostname))
-
-            if not self.inject_test_traffic_static_route(server_hostname, config_vars, self.file_logger):
-
-                # route injection appears to have failed
-                self.file_logger.error("  Unable to run udp iperf test to {} as route to destination not over correct interface...bypassing test".format(server_hostname))
-                config_vars['test_issue'] = True
-                config_vars['test_issue_descr'] = "UDP iperf test failure (routing issue)"
-                return False
-        """
-        # check if test to host is viable (based on probe ipv4/v6 support)
-        #if not checker.check_test_host_viable(server_hostname):
-        #    return False
 
         # Run a ping to the iperf server to get an rtt to feed in to MOS score calc
         ping_obj = self.PingTester(self.file_logger)

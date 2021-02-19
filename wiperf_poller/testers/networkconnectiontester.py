@@ -81,12 +81,12 @@ class NetworkConnectionTester(object):
         column_headers = list(results_dict.keys())
 
         # dump out adapter info to log file
-        self.file_logger.info("### Wireless Connection Checks - wireless connectivty info ###")
-        self.file_logger.info("Wireless connection data: SSID:{}, BSSID:{}, Freq:{}, Channel: {}, Channel Width: {}, Tx Phy rate:{}, \
-Rx Phy rate:{}, Tx MCS: {}, Rx MCS: {}, RSSI:{}, Tx retries:{}, IP address (v4):{}, IP address (v6):{}".format(
-            results_dict['ssid'], results_dict['bssid'], results_dict['freq_ghz'], results_dict['channel'], 
-            results_dict['channel_width'],  results_dict['tx_rate_mbps'], results_dict['rx_rate_mbps'], results_dict['tx_mcs'],
-            results_dict['rx_mcs'], results_dict['signal_level_dbm'], results_dict['tx_retries'], results_dict['ip_address'], results_dict['ip_address_ipv6']))
+        self.file_logger.info("------------------------------------------")
+        self.file_logger.info("---     Wireless Connection Checks     ---")
+        self.file_logger.info("------------------------------------------")
+
+        self.file_logger.info("Wireless connection data: SSID:{}, BSSID:{}, Channel: {}".format(
+            results_dict['ssid'], results_dict['bssid'], results_dict['channel']))
         # dump the results
         data_file = config_vars['network_data_file']
         test_name = "Network Tests"

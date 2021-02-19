@@ -346,7 +346,8 @@ def inject_default_route_ipv4(ip_address, config_vars, file_logger):
 def remove_duplicate_interface_route_ipv4(interface_ip, interface_name, file_logger):
 
    # Lookup the routing entry of the subnet that on which the testing interface resides, then find & 
-   # remove any duplicate routing table entries:
+   # remove any duplicate routing table entries - this prevents test traffic leaking out of other local
+   # interfaces when 2 local interfaces are on same subnet:
 
    # get routes to the supplied interface address
     ip_route_cmd = "{} route show to match ".format(IP_CMD) + interface_ip + " | grep '/'"

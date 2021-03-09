@@ -8,8 +8,7 @@ def run_tests(config_vars, file_logger, poll_obj, status_file_obj, exporter_obj,
     from wiperf_poller.testers.httptester_curl import HttpTesterCurl as HttpTester
     from wiperf_poller.testers.iperf3tester import IperfTesterIpv4  as IperfTester
     from wiperf_poller.testers.pingtester import PingTesterIpv4 as PingTester
-    from wiperf_poller.testers.speedtester import SpeedtesterIpv4 as Speedtester
-    from wiperf_poller.testers.ipv6.speedtester_ipv6 import SpeedtesterIpv6 as SpeedtesterIpv6
+    from wiperf_poller.testers.speedtester import Speedtester as Speedtester
     from wiperf_poller.testers.smbtester import SmbTesterIpv4 as SmbTester
     
     from wiperf_poller.helpers.route import check_correct_mode_interface_ipv4 as check_correct_mode_interface
@@ -19,50 +18,22 @@ def run_tests(config_vars, file_logger, poll_obj, status_file_obj, exporter_obj,
     # Run speedtest (if enabled)
     #############################################
     file_logger.info("--------------------------------------")                                                                                                                                                                                                                 
-    file_logger.info("---        speedtest (IPv4)        ---")
+    file_logger.info("---          speedtest             ---")
     file_logger.info("--------------------------------------")
 
     if config_vars['speedtest_enabled'] == 'yes':
 
-        if config_vars['ipv6_enabled']:
+        speedtest_obj = Speedtester(file_logger, config_vars, resolve_name, adapter_obj)
+        test_passed = speedtest_obj.run_tests(status_file_obj, check_correct_mode_interface, config_vars, exporter_obj, lockf_obj)
 
-            speedtest_obj = Speedtester(file_logger, config_vars, resolve_name, adapter_obj)
-            test_passed = speedtest_obj.run_tests(status_file_obj, check_correct_mode_interface, config_vars, exporter_obj, lockf_obj)
-
-            if test_passed:
-                poll_obj.speedtest('Completed')
-            else:
-                poll_obj.speedtest('Failure')
+        if test_passed:
+            poll_obj.speedtest('Completed')
         else:
-            file_logger.warning("  IPv6 not enabled for probe tests....ignoring.")
+            poll_obj.speedtest('Failure')
     else:
         file_logger.info("  Speedtest not enabled in config file.")
         poll_obj.speedtest('Not enabled')
     
-    #############################################
-    # Run speedtest IPv6 (if enabled)
-    #############################################
-    file_logger.info("--------------------------------------")                                                                                                                                                                                                                 
-    file_logger.info("---        speedtest (IPv6)        ---")
-    file_logger.info("--------------------------------------")  
-
-    if config_vars['speedtest_enabled_ipv6'] == 'yes':
-
-        if config_vars['ipv6_enabled']:
-
-            speedtest_obj = SpeedtesterIpv6(file_logger, config_vars, resolve_name, adapter_obj)
-            test_passed = speedtest_obj.run_tests(status_file_obj, check_correct_mode_interface, config_vars, exporter_obj, lockf_obj)
-
-            if test_passed:
-                poll_obj.speedtest('Completed')
-            else:
-                poll_obj.speedtest('Failure')
-        else:
-            file_logger.warning("  IPv6 not enabled for probe tests....ignoring.")
-    else:
-        file_logger.info("  Speedtest IPv6 not enabled in config file.")
-        poll_obj.speedtest('Not enabled')
-
     #############################
     # Run ping test (if enabled)
     #############################

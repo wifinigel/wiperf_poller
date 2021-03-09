@@ -169,32 +169,32 @@ def read_local_config(config_file, file_logger):
      # Get Speedtest config params
     speed_sect = config['Speedtest']
     config_vars['speedtest_enabled'] = speed_sect.get('enabled', 'no')
-    config_vars['provider'] = speed_sect.get('provider', 'ookla')
-    config_vars['server_id'] = speed_sect.get('server_id', '')
-    config_vars['librespeed_args'] = speed_sect.get('librespeed_args', '')
     config_vars['speedtest_data_file'] = speed_sect.get('speedtest_data_file', 'wiperf-speedtest')
     config_vars['http_proxy'] = speed_sect.get('http_proxy', '')
     config_vars['https_proxy'] = speed_sect.get('https_proxy', '')
     config_vars['no_proxy'] = speed_sect.get('no_proxy', '')
+
     # set env vars if they are specified in the config file
     for proxy_var in ['http_proxy', 'https_proxy', 'no_proxy']:
         if config_vars[proxy_var]:
             os.environ[proxy_var] = config_vars[proxy_var]
     
-    # Get Speedtest IPv6 config params
-    speed_sect = config['SpeedtestIpv6']
-    config_vars['speedtest_enabled_ipv6'] = speed_sect.get('enabled', 'no')
-    config_vars['provider_ipv6'] = speed_sect.get('provider', 'ookla')
-    config_vars['server_id_ipv6'] = speed_sect.get('server_id', '')
-    config_vars['librespeed_args_ipv6'] = speed_sect.get('librespeed_args', '')
-    config_vars['speedtest_data_file_ipv6'] = speed_sect.get('speedtest_data_file', 'wiperf-speedtest')
-    config_vars['http_proxy_ipv6'] = speed_sect.get('http_proxy', '')
-    config_vars['https_proxy_ipv6'] = speed_sect.get('https_proxy', '')
-    config_vars['no_proxy_ipv6'] = speed_sect.get('no_proxy', '')
-    # set env vars if they are specified in the config file
-    for proxy_var in ['http_proxy_ipv6', 'https_proxy_ipv6', 'no_proxy_ipv6']:
-        if config_vars[proxy_var]:
-            os.environ[proxy_var] = config_vars[proxy_var]
+     # get specifed number of targets (format: 'ping_host1')
+    num_st_targets = int(config_vars['speedtest_targets_count']) + 1
+
+    for target_num in range(1, num_st_targets):
+        target_name = 'st{}_name'.format(target_num)
+        target_ip_ver = 'st{}_ip_ver'.format(target_num)
+        target_provider = 'st{}_provider'.format(target_num)
+        target_server_id = 'st{}_server_id'.format(target_num)
+        target_librespeed_args = 'st{}_librespeed_args'.format(target_num)
+
+        # format: config_vars["st1_name"]
+        config_vars[target_name] = speed_sect.get(target_name, '')
+        config_vars[target_ip_ver] = speed_sect.get(target_ip_ver, 'ipv4')
+        config_vars[target_provider] = speed_sect.get(target_provider, 'ookla')
+        config_vars[target_server_id] = speed_sect.get(target_server_id, '')
+        config_vars[target_librespeed_args] = speed_sect.get(target_librespeed_args, '')    
 
     # Get Ping config params
     ping_sect = config['Ping_Test']

@@ -6,7 +6,7 @@ import json
 from wiperf_poller.helpers.os_cmds import LIBRESPEED_CMD
 from wiperf_poller.helpers.timefunc import get_timestamp
 
-class SpeedtesterIpv4():
+class Speedtester():
     """
     Class to implement speedtest server tests for wiperf
     """
@@ -16,26 +16,30 @@ class SpeedtesterIpv4():
         self.file_logger = file_logger
         self.config_vars = config_vars
         self.test_name = "Speedtest"
-        self.wan_target = config_vars['connectivity_lookup']
-        self.resolve_name = resolve_name
-        self.adapter_obj = adapter_obj
-        self.adapter_ip = self.adapter_obj.get_adapter_ipv4_ip()
-        self.librespeed_ip_ver = '--ipv4'
-
-        self.speedtest_enabled = config_vars['speedtest_enabled']
-        self.provider = config_vars['provider']
-        self.server_id = config_vars['server_id']
-        self.librespeed_args = config_vars['librespeed_args']
         self.speedtest_data_file = config_vars['speedtest_data_file']
         self.http_proxy = config_vars['http_proxy']
         self.https_proxy = config_vars['https_proxy']
         self.no_proxy = config_vars['no_proxy']
+        
+        self.resolve_name = resolve_name
+        self.adapter_obj = adapter_obj
 
-    def librespeed(self, server_id='', args='', DEBUG=False):
+        # ipv4
+        self.adapter_ip_ipv4 = self.adapter_obj.get_adapter_ipv4_ip()
+        self.wan_target = config_vars['connectivity_lookup']
+
+        # ipv6
+        self.adapter_ip_ipv6 = self.adapter_obj.get_adapter_ipv6_ip()
+        self.wan_target = config_vars['connectivity_lookup_ipv6']
+           
+
+    def librespeed_run(self, target_name, server_id='', args='', ip_ver="ipv4", DEBUG=False):
         """
-        This function runs the ookla speedtest and returns the result
+        This function runs the librespeed speedtest and returns the result
         as a dictionary: 
-            {   download_rate_mbps = download_rate_mbps (float)
+            {   time = test_time (int)
+                target_name = target_name (str)
+                download_rate_mbps = download_rate_mbps (float)
                 upload_rate_mbps = upload_rate_mbps (float)
                 ping_time = ping_time (int)
                 server_name = server_name (str)
@@ -43,9 +47,11 @@ class SpeedtesterIpv4():
                 mbytes_received = mbytes_received (float)
                 latency_ms = latency_ms (same as ping_time value - float)
                 jitter_ms = jitter (int)
+                client_ip = client_ip_add (str)
+                provider = provider_name (str - always Librespeed)
             }
 
-        Speedtest result format:
+        Speedtest result format (Librespeed):
             {   
                 "timestamp":"2020-12-29T05:48:10.143697357Z",
                 "server":{
@@ -78,8 +84,12 @@ class SpeedtesterIpv4():
             self.file_logger.error("Librespeed-cli command does not appear to be installed, unable to perform test.")
             return False
         
+        # define ipv4/v6 test choice
+        librespeed_ip_ver = '--ipv4'
+        if ip_ver == 'ipv6': librespeed_ip_ver = '--ipv6'
+
         # define command to run
-        cmd = "{} {} --json".format(LIBRESPEED_CMD, self.librespeed_ip_ver)
+        cmd = "{} {} --json".format(LIBRESPEED_CMD, librespeed_ip_ver)
 
         if server_id:
             cmd += " --server {}".format(server_id)
@@ -125,19 +135,21 @@ class SpeedtesterIpv4():
         client_ip = str(results_dict['client']['ip'])
         provider = 'Librespeed'
 
-        self.file_logger.info('time: {}, ping_time: {}, download_rate_mbps: {}, upload_rate_mbps: {}, server_name: {}, mbytes_sent: {},  \
-mbytes_received: {}, latency_ms: {}, jitter_ms: {}, client_ip: {}, provider: {}'.format(
-            test_time, ping_time, download_rate_mbps, upload_rate_mbps, server_name, mbytes_sent, mbytes_received, latency_ms, jitter_ms, client_ip, provider))
-
-        return {'time': test_time, 'ping_time': ping_time, 'download_rate_mbps': download_rate_mbps, 'upload_rate_mbps': upload_rate_mbps, 
+        results_dict = {'time': test_time, 'target_name': target_name, 'ping_time': ping_time, 'download_rate_mbps': download_rate_mbps, 'upload_rate_mbps': upload_rate_mbps, 
             'server_name': server_name, 'mbytes_sent': mbytes_sent, 'mbytes_received': mbytes_received, 'latency_ms': latency_ms, 
             'jitter_ms': jitter_ms, 'client_ip': client_ip, 'provider': provider}
 
-    def ooklaspeedtest(self, server_id='', DEBUG=False):
+        self.file_logger.info(results_dict)
+
+        return results_dict
+
+    def ooklaspeedtest(self, target_name, server_id='', ip_ver="ipv4", DEBUG=False):
         '''
         This function runs the ookla speedtest and returns the result
         as a dictionary: 
-            {   download_rate_mbps = download_rate_mbps (float)
+            {   time = timestamp (int)
+                target_name = target_name (str)
+                download_rate_mbps = download_rate_mbps (float)
                 upload_rate_mbps = upload_rate_mbps (float)
                 ping_time = ping_time (int)
                 server_name = server_name (str)
@@ -145,6 +157,8 @@ mbytes_received: {}, latency_ms: {}, jitter_ms: {}, client_ip: {}, provider: {}'
                 mbytes_received = mbytes_received (float)
                 latency_ms = latency_ms (same as ping_time value - float)
                 jitter_ms = jitter (int)
+                client_ip = client_ip_add (str)
+                provider = provider_name (str - always Ookla)
             }
         
         Speedtest results format (Ookla):
@@ -218,9 +232,17 @@ mbytes_received: {}, latency_ms: {}, jitter_ms: {}, client_ip: {}, provider: {}'
                         'url': 'http://speedtest.unifone.net.nz/speedtest/upload.php'}]
         '''
 
+        # bind interface to ensure chosen ipv4/v6 test performed
+        if ip_ver == 'ipv6': 
+            adapter_ip = self.adapter_obj.get_adapter_ipv6_ip()
+        elif ip_ver == 'ipv4': 
+            adapter_ip = self.adapter_obj.get_adapter_ipv4_ip()
+        else:
+            raise ValueError("Unknown version type in speedtest ver choice: {}".format(ip_ver))
+
         # perform Speedtest
         try:
-            st = speedtest.Speedtest(source_address=self.adapter_ip)
+            st = speedtest.Speedtest(source_address=adapter_ip)
         except Exception as error:
             self.file_logger.error("Speedtest error: {}".format(error))
             return False
@@ -267,72 +289,85 @@ mbytes_received: {}, latency_ms: {}, jitter_ms: {}, client_ip: {}, provider: {}'
         client_ip = str(results_dict['client']['ip'])
         provider = 'Ookla'
 
-        self.file_logger.info( 'time: {}, ping_time: {}, download_rate_mbps: {}, upload_rate_mbps: {}, server_name: {}, mbytes_sent: {},  \
-mbytes_received: {}, latency_ms: {}, jitter_ms: {}, client_ip: {}, provider: {}'.format(
-            test_time, ping_time, download_rate_mbps, upload_rate_mbps, server_name, mbytes_sent, mbytes_received, latency_ms, jitter_ms, client_ip, provider))
-
-        return {'time': test_time, 'ping_time': ping_time, 'download_rate_mbps': download_rate_mbps, 'upload_rate_mbps': upload_rate_mbps, 'server_name': server_name, 
+        results_dict = {'time': test_time, 'target_name': target_name,'ping_time': ping_time, 'download_rate_mbps': download_rate_mbps, 'upload_rate_mbps': upload_rate_mbps, 'server_name': server_name, 
             'mbytes_sent': mbytes_sent, 'mbytes_received': mbytes_received, 'latency_ms': latency_ms, 'jitter_ms': jitter_ms, 'client_ip': client_ip,
             'provider': provider}
+
+        self.file_logger.info(results_dict)
+
+        return results_dict
 
 
     def run_tests(self, status_file_obj, check_correct_mode_interface, config_vars, exporter_obj, lockf_obj):
 
-        self.file_logger.info("Starting speedtest ({})...".format(self.provider))
+        self.file_logger.info("Starting speedtest(s)...")
         status_file_obj.write_status_file("speedtest")
 
-        if not self.adapter_ip:
-            self.file_logger.error("Unable to run Speedtest test interface has no valid IP address")
-            config_vars['test_issue'] = True
-            config_vars['test_issue_descr'] = "Speedtest test failure - no interface IP address"
-            return False
-
+        # check we can hit the WAN
         self.wan_target = self.resolve_name(self.wan_target, self.file_logger)
 
-        if check_correct_mode_interface(self.wan_target, config_vars, self.file_logger):
+        if not check_correct_mode_interface(self.wan_target, config_vars, self.file_logger):
+            self.file_logger.error("Unable to run Speedtest(s) as route to Internet not correct interface for more - we have a routing issue of some type.")
+            config_vars['test_issue'] = True
+            config_vars['test_issue_descr'] = "Speedtest test failure"
+            return False
+
+        num_st_targets = int(config_vars['speedtest_targets_count']) + 1
+
+        for target_num in range(1, num_st_targets):
+            target_name = 'st{}_name'.format(target_num)
+            target_ip_ver = 'st{}_ip_ver'.format(target_num)
+            target_provider = 'st{}_provider'.format(target_num)
+            target_server_id = 'st{}_server_id'.format(target_num)
+            target_librespeed_args = 'st{}_librespeed_args'.format(target_num)
+
+            adapter_ip = self.adapter_ip_ipv4
+            if target_ip_ver == "ipv6":
+                adapter_ip = self.adapter_ip_ipv6
+            
+            if not adapter_ip:
+                self.file_logger.error("Unable to run Speedtest test interface has no valid IP address")
+                config_vars['test_issue'] = True
+                config_vars['test_issue_descr'] = "Speedtest test failure - no interface IP address"
+                continue
 
             self.file_logger.info("Speedtest in progress....please wait.")
 
             # speedtest returns false if there are any issues
             speedtest_results = {}
 
-            if self.provider == 'ookla':
+            if target_provider == 'ookla':
                 self.file_logger.debug("Running Ookla speedtest.")
-                speedtest_results = self.ooklaspeedtest(self.server_id)
+                speedtest_results = self.ooklaspeedtest(target_name, target_server_id)
                 
-            elif self.provider == 'librespeed':
+            elif target_provider == 'librespeed':
                 self.file_logger.debug("Running Librespeed speedtest.")
-                speedtest_results = self.librespeed(server_id=self.server_id, args=self.librespeed_args)
+                speedtest_results = self.librespeed_run(target_name, server_id=target_server_id, args=target_librespeed_args)
 
             else:
-                self.file_logger.error("Unknown speedtest provider: {}".format(self.provider))
+                self.file_logger.error("Unknown speedtest provider: {}".format(target_provider))
                 return False
 
-            if not speedtest_results == False:
+            if speedtest_results:
 
                 self.file_logger.debug("Main: Speedtest results:")
                 self.file_logger.debug(speedtest_results)
 
-                # define column headers for CSV
+                # define column headers
                 column_headers = list(speedtest_results.keys())
 
                 self.file_logger.info("Speedtest ended.\n")
 
                 # dump the results
-                data_file = self.speedtest_data_file
-
-                if exporter_obj.send_results(config_vars, speedtest_results, column_headers, data_file, self.test_name, self.file_logger):
+                if exporter_obj.send_results(config_vars, speedtest_results, column_headers, self.speedtest_data_file, self.test_name, self.file_logger):
                     self.file_logger.info("Speedtest results sent OK.")
                     return True
                 else:
+                    #TODO: graceful failure?
                     self.file_logger.error("Error sending speedtest results. Exiting")
                     lockf_obj.delete_lock_file()
                     sys.exit()
             else:
                 self.file_logger.error("Error running speedtest - check logs for info.")
                 return False
-        else:
-            self.file_logger.error("Unable to run Speedtest as route to Internet not correct interface for more - we have a routing issue of some type.")
-            config_vars['test_issue'] = True
-            config_vars['test_issue_descr'] = "Speedtest test failure"
-            return False
+            

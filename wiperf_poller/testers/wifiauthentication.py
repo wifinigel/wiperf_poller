@@ -147,7 +147,7 @@ class AuthTester(object):
             self.file_logger.debug(test_result)    
         
         else:
-            self.file_logger.error("Time to authenticate test failed.")
+            self.file_logger.error("Time to authenticate test failed. (watchdog incremented)")
             tests_passed = False
             # increment watchdog
             watchd.inc_watchdog_count()

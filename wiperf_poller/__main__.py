@@ -128,6 +128,8 @@ def main():
 
     # check watchdog count...if higher than 3, time for a reboot
     watchdog_count = watchdog_obj.get_watchdog_count()
+    file_logger.info("Watchdog count =  {}".format(watchdog_count))
+
     if watchdog_count > 3:
         file_logger.error("Watchdog count exceeded...rebooting")
         bouncer_obj.reboot()
@@ -138,7 +140,7 @@ def main():
     if lockf_obj.lock_file_exists():
 
         # read lock file contents & check how old timestamp is..
-        file_logger.error("Existing lock file found...")
+        file_logger.error("Existing lock file found...  (watchdog incremented)")
         watchdog_obj.inc_watchdog_count()
 
         # if timestamp older than 10 mins, break lock
@@ -172,7 +174,8 @@ def main():
 
     # test issue flag - set if any tests hit major issues
     # to stall further testing
-    config_vars['test_issue'] = False
+    config_vars['test_issue'] = 0
+    config_vars['test_issue_threshold'] = 5 
     config_vars['test_issue_descr'] = ""
 
     # set up poll health obj

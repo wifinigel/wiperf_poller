@@ -204,7 +204,7 @@ class MgtConnectionTester(object):
         
         # check if mgt interface is up, no point in proceeding otherwise
         if not mgt_interface_obj.interface_up():
-            self.file_logger.error("   Interface for mgt traffic ({}) appears to be down, unable to proceed.".format(self.mgt_interface))
+            self.file_logger.error("   Interface for mgt traffic ({}) appears to be down, unable to proceed.  (watchdog incremented)".format(self.mgt_interface))
             watchdog_obj.inc_watchdog_count()
             mgt_interface_obj.bounce_error_exit(lockf_obj)  # exit here
         

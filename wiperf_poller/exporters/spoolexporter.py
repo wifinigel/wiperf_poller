@@ -146,7 +146,7 @@ class SpoolExporter(object):
             # to get here, exporter must have been changed to spooler due to comms issue at start 
             # of poller checks. If spooling not enabled, increment watchdog, remove lock file & exit
             # as no point in continuing as no way of saving results.
-            self.file_logger.error("Result spooling not enabled - Exiting.")
+            self.file_logger.error("Result spooling not enabled - Exiting.  (watchdog incremented)")
             watchdog_obj.inc_watchdog_count()
             lockf_obj.delete_lock_file()
             sys.exit()

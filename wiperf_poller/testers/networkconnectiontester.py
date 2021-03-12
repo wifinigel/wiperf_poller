@@ -42,13 +42,13 @@ class NetworkConnectionTester(object):
         self.file_logger.info("  Checking wireless connection available.")
         if self.adapter_obj.get_wireless_info() == False:
 
-            self.file_logger.error("  Unable to get wireless info due to failure with ifconfig command")
+            self.file_logger.error("  Unable to get wireless info due to failure with ifconfig command.  (watchdog incremented)")
             watchdog_obj.inc_watchdog_count()
             self.adapter_obj.bounce_error_exit(lockf_obj)  # exit here
 
         self.file_logger.info("Checking we're connected to the wireless network")
         if self.adapter_obj.get_bssid() == 'NA':
-            self.file_logger.error("  Problem with wireless connection: not associated to network")
+            self.file_logger.error("  Problem with wireless connection: not associated to network.  (watchdog incremented)")
             watchdog_obj.inc_watchdog_count()
             self.adapter_obj.bounce_error_exit(lockf_obj)  # exit here
         
@@ -59,7 +59,7 @@ class NetworkConnectionTester(object):
         self.file_logger.info("Checking interface connection available.")
         if self.adapter_obj.get_if_status() == False:
 
-            self.file_logger.error("Unable to get interface info due to failure with ifconfig command")
+            self.file_logger.error("Unable to get interface info due to failure with ifconfig command.  (watchdog incremented)")
             watchdog_obj.inc_watchdog_count()
             self.adapter_obj.bounce_error_exit(lockf_obj)  # exit here
         
@@ -67,7 +67,7 @@ class NetworkConnectionTester(object):
         self.file_logger.info("Checking interface link is up.")
         if self.adapter_obj.interface_up() == False:
 
-            self.file_logger.error("Interface appears to be down, unable to proceed.")
+            self.file_logger.error("Interface appears to be down, unable to proceed.  (watchdog incremented)")
             watchdog_obj.inc_watchdog_count()
             self.adapter_obj.bounce_error_exit(lockf_obj)  # exit here
 
@@ -129,7 +129,7 @@ class NetworkConnectionTester(object):
             
             if not ip_address:
                 # hmmm....things went bad, lookup failed...report & exit
-                self.file_logger.error("  DNS (ipv4) seems to be failing, please verify network connectivity (exiting).")
+                self.file_logger.error("  DNS (ipv4) seems to be failing, please verify network connectivity (exiting).  (watchdog incremented)")
                 watchdog_obj.inc_watchdog_count()
                 lockf_obj.delete_lock_file()
                 sys.exit()
@@ -201,7 +201,7 @@ class NetworkConnectionTester(object):
                 
                 if not ip_address:
                     # hmmm....things went bad, lookup failed...report & exit
-                    self.file_logger.error("  DNS (ipv6) seems to be failing, please verify network connectivity (exiting).")
+                    self.file_logger.error("  DNS (ipv6) seems to be failing, please verify network connectivity (exiting).  (watchdog incremented)")
                     watchdog_obj.inc_watchdog_count()
                     lockf_obj.delete_lock_file()
                     sys.exit()
@@ -241,7 +241,7 @@ class NetworkConnectionTester(object):
             else:
                 if not self.adapter_obj.get_adapter_ipv4_ip():
 
-                    self.file_logger.error("  No ipv4 or ipv6 address, bouncing interface.")
+                    self.file_logger.error("  No ipv4 or ipv6 address, bouncing interface. (watchdog incremented)")
                     watchdog_obj.inc_watchdog_count()
                     self.adapter_obj.bounce_error_exit(lockf_obj)  # exit here
                 

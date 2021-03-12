@@ -77,7 +77,7 @@ class DnsTester(object):
 
         return self.dns_result
     
-    def run_tests(self, status_file_obj, exporter_obj):
+    def run_tests(self, config_vars, status_file_obj, exporter_obj):
 
         self.file_logger.info("Starting DNS tests...")
         status_file_obj.write_status_file("DNS tests")
@@ -121,10 +121,12 @@ class DnsTester(object):
                     self.file_logger.info("  DNS test ended.\n")
                 else:
                     self.file_logger.error("  Issue sending DNS results.")
+                    config_vars['test_issue'] += 1
                     tests_passed = False
 
             else:
                 self.file_logger.error("  DNS test error - no results (check logs) - exiting DNS tests")
+                config_vars['test_issue'] += 1
                 tests_passed = False
 
         return tests_passed

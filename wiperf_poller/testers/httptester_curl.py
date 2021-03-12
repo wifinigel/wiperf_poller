@@ -86,12 +86,11 @@ class HttpTesterCurl(object):
         # return status code & elapsed duration in mS
         return (self.http_status_code, self.http_get_duration, self.http_server_response_time)
     
-    def run_tests(self, status_file_obj, config_vars, exporter_obj, watchd, check_correct_mode_interface,):
+    def run_tests(self, status_file_obj, config_vars, exporter_obj, check_correct_mode_interface,):
 
         self.file_logger.info("Starting HTTP tests...")
         status_file_obj.write_status_file("HTTP tests")
        
-        all_tests_fail = True
         tests_passed = True
 
         # get specifed number of targets (format: 'http_target1')
@@ -188,8 +187,6 @@ class HttpTesterCurl(object):
                         self.file_logger.error("  Issue sending HTTP results")
                         tests_passed = False
 
-                    all_tests_fail = False
-
                 else:
                     self.file_logger.error("  HTTP test had issue and failed, check agent.log")
                     tests_passed = False
@@ -199,16 +196,11 @@ class HttpTesterCurl(object):
             else:
                 self.file_logger.error(
                     "  HTTP test error - no results (check logs) - exiting HTTP tests")
-                config_vars['test_issue'] = True
+                config_vars['test_issue'] += 1
                 config_vars['test_issue_descr'] = "HTTP test failure"
                 tests_passed = False
-                break
-
-        # if all tests fail, and there are more than 2 tests, signal a possible issue
-        if all_tests_fail and (target_num > 1):
-            self.file_logger.error("Looks like quite a few http tests failed, incrementing watchdog.")
-            watchd.inc_watchdog_count()
-        
+                continue
+       
         return tests_passed
 
     def get_http_duration(self):

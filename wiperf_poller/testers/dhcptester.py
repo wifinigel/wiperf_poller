@@ -130,6 +130,7 @@ class DhcpTester(object):
                 tests_passed = False
         else:
             self.file_logger.error("DHCP test error - no results (check logs)")
+            config_vars['test_issue'] += 1
             tests_passed = False
     
         return tests_passed

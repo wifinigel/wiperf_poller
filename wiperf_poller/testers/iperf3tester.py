@@ -200,6 +200,7 @@ class IperfTesterIpv4(object):
                 return False
         else:
             self.file_logger.error("  iperf3 tcp test failed.\n")
+            config_vars['test_issue'] += 1
             return False        
                        
     def run_udp_test(self, config_vars, status_file_obj, adapter_obj, exporter_obj):
@@ -286,4 +287,5 @@ class IperfTesterIpv4(object):
 
         else:
             self.file_logger.error("  iperf3 udp test failed.\n")
+            config_vars['test_issue'] += 1
             return False

@@ -208,7 +208,7 @@ class SmbTesterIpv4():
             'rate':self.transfert_rate}
 
 
-    def run_tests(self, status_file_obj, config_vars, adapter, check_correct_mode_interface, exporter_obj, watchd):
+    def run_tests(self, status_file_obj, config_vars, adapter, check_correct_mode_interface, exporter_obj):
 
         self.file_logger.info("Starting SMB test...")
         status_file_obj.write_status_file("SMB tests")
@@ -241,18 +241,12 @@ class SmbTesterIpv4():
         tests_passed = True
 
         delete_file = True
-        all_tests_fail = True
         results_dict = {}
 
         # get specifed number of targets
         num_smb_targets = int(config_vars['smb_targets_count']) + 1
 
         for smb_index in range(1, num_smb_targets):
-
-            # bail if we have had previous test issues
-            if config_vars['test_issue'] == True:
-                self.file_logger.error("As we had previous issues, bypassing SMB tests.")
-                break
 
             smb_host = config_vars['smb_host'+ str(smb_index)]
             smb_username = config_vars['smb_username'+ str(smb_index)]
@@ -349,16 +343,9 @@ class SmbTesterIpv4():
                 self.file_logger.debug("Main: SMB test results:")
                 self.file_logger.debug(smb_result)
                 
-                # signal that at least one test passed
-                all_tests_fail = False
-
             else:
                 self.file_logger.error("SMB test failed.")
+                config_vars['test_issue'] += 1
                 tests_passed = False
-            
-        # if all tests fail, and there are more than 2 tests, signal a possible issue
-        if all_tests_fail and (smb_index > 1):
-            self.file_logger.error("Looks like quite a few SMB tests failed, incrementing watchdog.")
-            watchd.inc_watchdog_count()
-        
+               
         return tests_passed

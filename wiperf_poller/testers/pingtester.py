@@ -155,7 +155,7 @@ class PingTesterIpv4(object):
             'rtt_avg': self.rtt_avg,
             'rtt_mdev': self.rtt_mdev}
 
-    def run_tests(self, status_file_obj, config_vars, adapter, exporter_obj, watchd):
+    def run_tests(self, status_file_obj, config_vars, adapter, exporter_obj):
 
         self.file_logger.info("Starting ping test...")
         status_file_obj.write_status_file("Ping tests")
@@ -193,11 +193,10 @@ class PingTesterIpv4(object):
                 continue
                
             # check if test to host is viable (based on probe ipv4/v6 support)
-            # TODO: include ipv4/v6 preference?
             checker = TestViabilityChecker(config_vars, self.file_logger)
-            if not checker.check_test_host_viable(ping_host):
+            if not checker.check_test_host_viable(ping_host, ping_host_ip_ver):
                 self.file_logger.error("  Ping target test not viable, will not be tested ({} / {})".format(ping_host, ping_host_ip))
-                config_vars['test_issue'] = True
+                config_vars['test_issue'] += 1
                 config_vars['test_issue_descr'] = "Ping"
                 tests_passed = False
                 continue
@@ -214,14 +213,8 @@ class PingTesterIpv4(object):
 
         # run actual ping tests to ping test targets
         ping_index = 0
-        all_tests_fail = True
 
         for ping_host in ping_hosts:
-
-            # bail if we have had previous major test issues
-            if config_vars['test_issue'] == True:
-                self.file_logger.error("As we had previous issues, bypassing ping tests.")
-                break
 
             ping_index += 1
 
@@ -265,18 +258,10 @@ class PingTesterIpv4(object):
                 self.file_logger.debug("  Main: Ping test results:")
                 self.file_logger.debug(ping_result)
                 
-                # signal that at least one test passed
-                all_tests_fail = False
-
             else:
                 self.file_logger.error("  Ping test failed.")
                 tests_passed = False
-            
-        # if all tests fail, and there are more than 2 tests, signal a possible issue
-        if all_tests_fail and (ping_index > 1):
-            self.file_logger.error("Looks like quite a few pings failed, incrementing watchdog.")
-            watchd.inc_watchdog_count()
-        
+                
         return tests_passed
 
     def get_host(self):

@@ -169,6 +169,7 @@ def read_local_config(config_file, file_logger):
      # Get Speedtest config params
     speed_sect = config['Speedtest']
     config_vars['speedtest_enabled'] = speed_sect.get('enabled', 'no')
+    config_vars['speedtest_targets_count'] = speed_sect.get('speedtest_targets_count', 1)
     config_vars['speedtest_data_file'] = speed_sect.get('speedtest_data_file', 'wiperf-speedtest')
     config_vars['http_proxy'] = speed_sect.get('http_proxy', '')
     config_vars['https_proxy'] = speed_sect.get('https_proxy', '')
@@ -298,8 +299,10 @@ def read_local_config(config_file, file_logger):
     for target_num in range(1, num_smb_targets):
 
         host = 'smb_host{}'.format(target_num)
+        host_ip_ver = 'smb_host{}_ip_ver'.format(target_num)
         # format: config_vars['smb_host1']
         config_vars[host] = smb_sect.get(host, '')
+        config_vars[host_ip_ver] = smb_sect.get(host_ip_ver, 'dual')
 
         username = 'smb_username{}'.format(target_num)
         # format: config_vars['smb_username1']

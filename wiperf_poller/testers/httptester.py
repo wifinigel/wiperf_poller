@@ -219,7 +219,7 @@ class HttpTesterIpv4(object):
 
         # if all tests fail, and there are more than 2 tests, signal a possible issue
         if all_tests_fail and (target_num > 1):
-            self.file_logger.error("Looks like quite a few http tests failed, incrementing watchdog.")
+            self.file_logger.error("Looks like quite a few http tests failed, incrementing watchdog. (watchdog incremented)")
             watchd.inc_watchdog_count()
         
         return tests_passed

@@ -100,7 +100,7 @@ def run_tests(config_vars, file_logger, poll_obj, status_file_obj, exporter_obj,
     if config_vars['iperf3_tcp_enabled'] == 'yes' and config_vars['test_issue'] < config_vars['test_issue_threshold']:
 
         iperf3_tcp_obj = IperfTester(file_logger)
-        test_result = iperf3_tcp_obj.run_tcp_test(config_vars, status_file_obj, adapter_obj, exporter_obj)
+        test_result = iperf3_tcp_obj.run_tcp_tests(config_vars, status_file_obj, adapter_obj, exporter_obj)
 
         if test_result:
             poll_obj.iperf_tcp('Completed')
@@ -125,7 +125,7 @@ def run_tests(config_vars, file_logger, poll_obj, status_file_obj, exporter_obj,
     if config_vars['iperf3_udp_enabled'] == 'yes' and config_vars['test_issue'] < config_vars['test_issue_threshold']:
 
         iperf3_udp_obj = IperfTester(file_logger)
-        test_result = iperf3_udp_obj.run_udp_test(config_vars, status_file_obj, adapter_obj, exporter_obj)
+        test_result = iperf3_udp_obj.run_udp_tests(config_vars, status_file_obj, adapter_obj, exporter_obj)
 
         if test_result:
             poll_obj.iperf_udp('Completed')

@@ -116,176 +116,190 @@ class IperfTesterIpv4(object):
         del iperf_client
         return result
 
-    def run_tcp_test(self, config_vars, status_file_obj, adapter_obj, exporter_obj):
+    def run_tcp_tests(self, config_vars, status_file_obj, adapter_obj, exporter_obj):
 
-        ip_ver = config_vars['iperf3_tcp_ip_ver']
-        duration = int(config_vars['iperf3_tcp_duration'])
-        port = int(config_vars['iperf3_tcp_port'])
-        server_hostname = config_vars['iperf3_tcp_server_hostname']
-
-        bind_address = ''
-
-        if ip_ver == 'ipv4':
-            bind_address = adapter_obj.get_adapter_ipv4_ip()
-        elif ip_ver == 'ipv6':
-            bind_address = adapter_obj.get_adapter_ipv6_ip()
-        else:
-            raise ValueError("ip_var parameter invalid: {}".format(ip_ver))
-
-        # create test viability checker
-        # TODO: include ipv4/v6 preference?
-        checker = TestViabilityChecker(config_vars, self.file_logger)
-        if not checker.check_test_host_viable(server_hostname, ip_ver_preference=ip_ver):
-            self.file_logger.error("  iperf3 tcp test not viable, will not be tested ({})".format(server_hostname))
-            return False
-
-        self.file_logger.info("Starting iperf3 tcp test ({}:{})...".format(server_hostname, str(port)))
+        data_file = config_vars['iperf3_tcp_data_file']
         status_file_obj.write_status_file("iperf3 tcp")
 
-        """
-        # check test to iperf3 server will go via wlan interface
-        if not check_correct_mode_interface(server_hostname, config_vars, self.file_logger):
+        tests_passed = True
 
-            # if route looks wrong, try to fix it
-            self.file_logger.warning("  Unable to run tcp iperf test to {} as route to destination not over correct interface...injecting static route".format(server_hostname))
+        # get specifed number of targets (format: 'iperf3_tcp1_server')
+        num_targets = int(config_vars['iperf3_tcp_targets_count']) + 1
 
-            if not self.inject_test_traffic_static_route(server_hostname, config_vars, self.file_logger):
+        # read in all target data
+        for target_num in range(1, num_targets):
+            target_server = 'iperf3_tcp{}_server'.format(target_num)
+            target_ip_ver = 'iperf3_tcp{}_ip_ver'.format(target_num)
+            target_port = 'iperf3_tcp{}_port'.format(target_num)
+            target_duration = 'iperf3_tcp{}_duration'.format(target_num)
 
-                # route injection appears to have failed
-                self.file_logger.error("  Unable to run iperf test to {} as route to destination not over correct interface...bypassing test".format(server_hostname))
-                config_vars['test_issue'] = True
-                config_vars['test_issue_descr'] = "TCP iperf test failure (routing issue)"
-                return False
-        
-        """
+            server_hostname = config_vars[target_server]
+            ip_ver = config_vars[target_ip_ver]
+            port = int(config_vars[target_port])
+            duration = int(config_vars[target_duration])    
 
-        # check if test to host is viable (based on probe ipv4/v6 support)
-        #if not checker.check_test_host_viable(server_hostname):
-        #    return False
+            bind_address = ''
 
-        # run iperf test
-        result = False
-        try:
-            result = self.tcp_iperf_client_test(server_hostname, bind_address, duration=duration, port=port, debug=False)
-        except:
-            self.file_logger.error("  TCP iperf3 test process timed out.")
-
-        if result:
-
-            results_dict = {}
-
-            results_dict['time'] = get_timestamp(config_vars)
-            results_dict['sent_mbps'] =  float(round(result.sent_Mbps, 1))
-            results_dict['received_mbps']   =  float(round(result.received_Mbps, 1))
-            results_dict['sent_bytes'] =  int(result.sent_bytes)
-            results_dict['received_bytes'] =  int(result.received_bytes)
-            results_dict['retransmits'] =  int(result.retransmits)
-
-            # define column headers for CSV
-            column_headers = list(results_dict.keys())
-
-            # drop abbreviated results in log file
-            self.file_logger.info("  Iperf3 tcp results - rx_mbps: {}, tx_mbps: {}, retransmits: {}, sent_bytes: {}, rec_bytes: {}".format(
-                results_dict['received_mbps'], results_dict['sent_mbps'], results_dict['retransmits'], results_dict['sent_bytes'],
-                results_dict['received_bytes']))
-
-            # dump the results
-            data_file = config_vars['iperf3_tcp_data_file']
-
-            if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, self.tcp_test_name, self.file_logger):
-                self.file_logger.info("  Iperf3 tcp test ended.\n")
-                return True
+            if ip_ver == 'ipv4':
+                bind_address = adapter_obj.get_adapter_ipv4_ip()
+            elif ip_ver == 'ipv6':
+                bind_address = adapter_obj.get_adapter_ipv6_ip()
             else:
-                self.file_logger.error("  Error sending iperf3 tcp test result.")
-                return False
-        else:
-            self.file_logger.error("  iperf3 tcp test failed.\n")
-            config_vars['test_issue'] += 1
-            return False        
+                raise ValueError("ip_var parameter invalid: {}".format(ip_ver))
+
+            # create test viability checker
+            # TODO: include ipv4/v6 preference?
+            checker = TestViabilityChecker(config_vars, self.file_logger)
+            if not checker.check_test_host_viable(server_hostname, ip_ver_preference=ip_ver):
+                self.file_logger.error("  iperf3 tcp test not viable, will not be tested ({})".format(server_hostname))
+                tests_passed = False
+                continue
+
+            self.file_logger.info("Starting iperf3 tcp test ({}:{})...".format(server_hostname, str(port)))
+            
+            # run iperf test
+            result = False
+            try:
+                result = self.tcp_iperf_client_test(server_hostname, bind_address, duration=duration, port=port, debug=False)
+            except:
+                self.file_logger.error("  TCP iperf3 test process timed out.")
+
+            if result:
+
+                results_dict = {}
+
+                results_dict['time'] = get_timestamp(config_vars)
+                results_dict['target_server'] = server_hostname
+                results_dict['target_index'] = target_num
+                results_dict['sent_mbps'] =  float(round(result.sent_Mbps, 1))
+                results_dict['received_mbps']   =  float(round(result.received_Mbps, 1))
+                results_dict['sent_bytes'] =  int(result.sent_bytes)
+                results_dict['received_bytes'] =  int(result.received_bytes)
+                results_dict['retransmits'] =  int(result.retransmits)
+
+                # define column headers for CSV
+                column_headers = list(results_dict.keys())
+
+                # drop abbreviated results in log file
+                self.file_logger.info("  Iperf3 tcp results - server: {}, rx_mbps: {}, tx_mbps: {}, retransmits: {}, sent_bytes: {}, rec_bytes: {}".format(
+                    server_hostname, results_dict['received_mbps'], results_dict['sent_mbps'], results_dict['retransmits'], 
+                    results_dict['sent_bytes'], results_dict['received_bytes']))
+
+                # dump the results
+                if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, self.tcp_test_name, self.file_logger):
+                    self.file_logger.info("  Iperf3 tcp test ended.\n")
+                else:
+                    self.file_logger.error("  Error sending iperf3 tcp test result.")
+            
+            else:
+                self.file_logger.error("  iperf3 tcp test failed.\n")
+                config_vars['test_issue'] += 1
+                tests_passed = False
+
+        return tests_passed      
                        
-    def run_udp_test(self, config_vars, status_file_obj, adapter_obj, exporter_obj):
+    def run_udp_tests(self, config_vars, status_file_obj, adapter_obj, exporter_obj):
 
-        ip_ver = config_vars['iperf3_udp_ip_ver']
-        duration = int(config_vars['iperf3_udp_duration'])
-        port = int(config_vars['iperf3_udp_port'])
-        server_hostname = config_vars['iperf3_udp_server_hostname']
-        bandwidth = int(config_vars['iperf3_udp_bandwidth'])
-
-        bind_address = ''
-
-        if ip_ver == 'ipv4':
-            bind_address = adapter_obj.get_adapter_ipv4_ip()
-        elif ip_ver == 'ipv6':
-            bind_address = adapter_obj.get_adapter_ipv6_ip()
-        else:
-            raise ValueError("ip_var parameter invalid: {}".format(ip_ver))
-
-        # create test viability checker
-        # TODO: include ipv4/v6 preference?
-        checker = TestViabilityChecker(config_vars, self.file_logger)
-        if not checker.check_test_host_viable(server_hostname, ip_ver_preference=ip_ver):
-            self.file_logger.error("  iperf3 udp test not viable, will not be tested ({})".format(server_hostname))
-            return False
-
-        self.file_logger.info("Starting iperf3 udp test ({}:{})...".format(server_hostname, str(port)))
+        data_file = config_vars['iperf3_udp_data_file']
         status_file_obj.write_status_file("iperf3 udp")
 
-        # Run a ping to the iperf server to get an rtt to feed in to MOS score calc
-        ping_obj = self.PingTester(self.file_logger)
-        ping_obj.ping_host(server_hostname, 1) # one ping to seed arp cache
-        
-        ping_result = ping_obj.ping_host(server_hostname, 5)
+        tests_passed = True
 
-        # ping results
-        if ping_result:
-            rtt_avg_ms = round(float(ping_result['rtt_avg']), 2)
-        else:
-            rtt_avg_ms=0
+        # get specifed number of targets (format: 'iperf3_udp1_server')
+        num_targets = int(config_vars['iperf3_udp_targets_count']) + 1
 
-        # Run the iperf test
-        result = False
-        try:
-            result = self.udp_iperf_client_test(server_hostname, bind_address, duration=duration, port=port, bandwidth=bandwidth, debug=False)
-        except:
-            self.file_logger.error("  UDP iperf3 test process timed out")
+        # read in all target data
+        for target_num in range(1, num_targets):
 
-        if result:
-            
-            results_dict = {}
+            target_server = 'iperf3_udp{}_server'.format(target_num)
+            target_ip_ver = 'iperf3_udp{}_ip_ver'.format(target_num)
+            target_port = 'iperf3_udp{}_port'.format(target_num)
+            target_duration = 'iperf3_udp{}_duration'.format(target_num)
+            target_bandwidth = 'iperf3_udp{}_bandwidth'.format(target_num)
 
-            results_dict['time'] = get_timestamp(config_vars)
-            results_dict['bytes'] =  int(result.bytes)
-            results_dict['mbps']   =  float(round(result.Mbps, 1))
-            results_dict['jitter_ms'] =  float(round(result.jitter_ms, 1))
-            results_dict['packets'] =  int(result.packets)
-            results_dict['lost_packets'] =  int(result.lost_packets)
-            results_dict['lost_percent'] =  float(round(result.lost_percent, 1))
-            results_dict['mos_score'] = float(round(self.calculate_mos(rtt_avg_ms,results_dict['jitter_ms'], results_dict['lost_percent']), 2))
+            server_hostname = config_vars[target_server]
+            ip_ver = config_vars[target_ip_ver]
+            port = int(config_vars[target_port])
+            duration = int(config_vars[target_duration])
+            bandwidth = int(config_vars[target_bandwidth])
 
-            # define column headers for CSV
-            column_headers = list(results_dict.keys())
+            bind_address = ''
 
-            # workaround for crazy jitter figures sometimes seen
-            if results_dict['jitter_ms'] > 2000:
-                self.file_logger.error("  Received very high jitter value({}), set to none".format(results_dict['jitter_ms']))
-                results_dict['jitter_ms'] = 0.0
-
-            # drop results in log file
-            self.file_logger.info("  Iperf3 udp results - mbps: {}, packets: {}, lost_packets: {}, lost_percent: {}, jitter: {}, bytes: {}, mos_score: {}".format(
-                results_dict['mbps'], results_dict['packets'], results_dict['lost_packets'], results_dict['lost_percent'],
-                results_dict['jitter_ms'], results_dict['bytes'], results_dict['mos_score']))
-
-            # dump the results
-            data_file = config_vars['iperf3_udp_data_file']
-
-            if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, self.udp_test_name, self.file_logger):
-                self.file_logger.info("  Iperf3 udp test ended.\n")
-                return True
+            if ip_ver == 'ipv4':
+                bind_address = adapter_obj.get_adapter_ipv4_ip()
+            elif ip_ver == 'ipv6':
+                bind_address = adapter_obj.get_adapter_ipv6_ip()
             else:
-                self.file_logger.error("  Issue sending iperf3 UDP results.")
-                return False
+                raise ValueError("ip_var parameter invalid: {}".format(ip_ver))
 
-        else:
-            self.file_logger.error("  iperf3 udp test failed.\n")
-            config_vars['test_issue'] += 1
-            return False
+            # create test viability checker
+            # TODO: include ipv4/v6 preference?
+            checker = TestViabilityChecker(config_vars, self.file_logger)
+            if not checker.check_test_host_viable(server_hostname, ip_ver_preference=ip_ver):
+                self.file_logger.error("  iperf3 udp test not viable, will not be tested ({})".format(server_hostname))
+                tests_passed = False
+                continue
+
+            self.file_logger.info("Starting iperf3 udp test ({}:{})...".format(server_hostname, str(port)))
+
+            # Run a ping to the iperf server to get an rtt to feed in to MOS score calc
+            ping_obj = self.PingTester(self.file_logger)
+            ping_obj.ping_host(server_hostname, 1) # one ping to seed arp cache
+            
+            ping_result = ping_obj.ping_host(server_hostname, 5)
+
+            # ping results
+            if ping_result:
+                rtt_avg_ms = round(float(ping_result['rtt_avg']), 2)
+            else:
+                rtt_avg_ms=0
+
+            # Run the iperf test
+            result = False
+            try:
+                result = self.udp_iperf_client_test(server_hostname, bind_address, duration=duration, port=port, bandwidth=bandwidth, debug=False)
+            except:
+                self.file_logger.error("  UDP iperf3 test process timed out")
+
+            if result:
+                
+                results_dict = {}
+
+                results_dict['time'] = get_timestamp(config_vars)
+                results_dict['target_server'] = server_hostname
+                results_dict['target_index'] = target_num
+                results_dict['bytes'] =  int(result.bytes)
+                results_dict['mbps']   =  float(round(result.Mbps, 1))
+                results_dict['jitter_ms'] =  float(round(result.jitter_ms, 1))
+                results_dict['packets'] =  int(result.packets)
+                results_dict['lost_packets'] =  int(result.lost_packets)
+                results_dict['lost_percent'] =  float(round(result.lost_percent, 1))
+                results_dict['mos_score'] = float(round(self.calculate_mos(rtt_avg_ms,results_dict['jitter_ms'], results_dict['lost_percent']), 2))
+
+                # define column headers for CSV
+                column_headers = list(results_dict.keys())
+
+                # workaround for crazy jitter figures sometimes seen
+                if results_dict['jitter_ms'] > 2000:
+                    self.file_logger.error("  Received very high jitter value({}), set to none".format(results_dict['jitter_ms']))
+                    results_dict['jitter_ms'] = 0.0
+
+                # drop results in log file
+                self.file_logger.info("  Iperf3 udp results - server: {}, mbps: {}, packets: {}, lost_packets: {}, lost_percent: {}, jitter: {}, bytes: {}, mos_score: {}".format(
+                    server_hostname, results_dict['mbps'], results_dict['packets'], results_dict['lost_packets'], results_dict['lost_percent'],
+                    results_dict['jitter_ms'], results_dict['bytes'], results_dict['mos_score']))
+
+                # dump the results
+                data_file = config_vars['iperf3_udp_data_file']
+
+                if exporter_obj.send_results(config_vars, results_dict, column_headers, data_file, self.udp_test_name, self.file_logger):
+                    self.file_logger.info("  Iperf3 udp test ended.\n")
+                else:
+                    self.file_logger.error("  Issue sending iperf3 UDP results.")
+
+            else:
+                self.file_logger.error("  iperf3 udp test failed.\n")
+                config_vars['test_issue'] += 1
+                tests_passed = True
+        
+        return tests_passed

@@ -220,21 +220,44 @@ def read_local_config(config_file, file_logger):
     # Get iperf3 tcp test params
     iperft_sect = config['Iperf3_tcp_test']
     config_vars['iperf3_tcp_enabled'] = iperft_sect.get('enabled', 'no')
-    config_vars['iperf3_tcp_ip_ver'] = iperft_sect.get('ip_ver', 'ipv4')
     config_vars['iperf3_tcp_data_file'] = iperft_sect.get('iperf3_tcp_data_file', 'wiperf-iperf3-tcp')
-    config_vars['iperf3_tcp_server_hostname'] = iperft_sect.get('server_hostname', '')
-    config_vars['iperf3_tcp_port'] = iperft_sect.get('port', '')
-    config_vars['iperf3_tcp_duration'] = iperft_sect.get('duration', '')
+    config_vars['iperf3_tcp_targets_count'] = iperft_sect.get('iperf3_tcp_targets_count', '')
+
+    # get specifed number of targets (format: 'iperf3_tcp1_server')
+    num_iperf3_tcp_targets = int(config_vars['iperf3_tcp_targets_count']) + 1
+
+    for target_num in range(1, num_iperf3_tcp_targets):
+        target_server = 'iperf3_tcp{}_server'.format(target_num)
+        target_ip_ver = 'iperf3_tcp{}_ip_ver'.format(target_num)
+        target_port = 'iperf3_tcp{}_port'.format(target_num)
+        target_duration = 'iperf3_tcp{}_duration'.format(target_num)
+
+        config_vars[target_server] = iperft_sect.get(target_server, '')
+        config_vars[target_ip_ver] = iperft_sect.get(target_ip_ver, 'ipv4')
+        config_vars[target_port] = iperft_sect.get(target_port, 5201)
+        config_vars[target_duration] = iperft_sect.get(target_duration, '')
 
     # Get iperf3 udp test params
     iperfu_sect = config['Iperf3_udp_test']
     config_vars['iperf3_udp_enabled'] = iperfu_sect.get('enabled', 'no')
-    config_vars['iperf3_udp_ip_ver'] = iperft_sect.get('ip_ver', 'ipv4')
     config_vars['iperf3_udp_data_file'] = iperfu_sect.get('iperf3_udp_data_file', 'wiperf-iperf3-udp')
-    config_vars['iperf3_udp_server_hostname'] = iperfu_sect.get('server_hostname', '')
-    config_vars['iperf3_udp_port'] = iperfu_sect.get('port', '')
-    config_vars['iperf3_udp_duration'] = iperfu_sect.get('duration', '')
-    config_vars['iperf3_udp_bandwidth'] = iperfu_sect.get('bandwidth', '')
+    config_vars['iperf3_udp_targets_count'] = iperfu_sect.get('iperf3_udp_targets_count', '')
+
+    # get specifed number of targets (format: 'iperf3_udp1_server')
+    num_iperf3_udp_targets = int(config_vars['iperf3_udp_targets_count']) + 1
+
+    for target_num in range(1, num_iperf3_udp_targets):
+        target_server = 'iperf3_udp{}_server'.format(target_num)
+        target_ip_ver = 'iperf3_udp{}_ip_ver'.format(target_num)
+        target_port = 'iperf3_udp{}_port'.format(target_num)
+        target_duration = 'iperf3_udp{}_duration'.format(target_num)
+        target_bandwidth = 'iperf3_udp{}_bandwidth'.format(target_num)
+
+        config_vars[target_server] = iperfu_sect.get(target_server, '')
+        config_vars[target_ip_ver] = iperfu_sect.get(target_ip_ver, 'ipv4')
+        config_vars[target_port] = iperfu_sect.get(target_port, 5201)
+        config_vars[target_duration] = iperfu_sect.get(target_duration, '')
+        config_vars[target_bandwidth] = iperfu_sect.get(target_bandwidth, '')
 
     # Get DNS test params
     dns_sect = config['DNS_test']
@@ -299,7 +322,7 @@ def read_local_config(config_file, file_logger):
     for target_num in range(1, num_smb_targets):
 
         host = 'smb_host{}'.format(target_num)
-        host_ip_ver = 'smb_host{}_ip_ver'.format(target_num)
+        host_ip_ver = 'smb_host_ip_ver{}'.format(target_num)
         # format: config_vars['smb_host1']
         config_vars[host] = smb_sect.get(host, '')
         config_vars[host_ip_ver] = smb_sect.get(host_ip_ver, 'dual')

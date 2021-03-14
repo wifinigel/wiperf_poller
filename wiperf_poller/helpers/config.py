@@ -184,11 +184,11 @@ def read_local_config(config_file, file_logger):
     num_st_targets = int(config_vars['speedtest_targets_count']) + 1
 
     for target_num in range(1, num_st_targets):
-        target_name = 'st{}_name'.format(target_num)
-        target_ip_ver = 'st{}_ip_ver'.format(target_num)
-        target_provider = 'st{}_provider'.format(target_num)
-        target_server_id = 'st{}_server_id'.format(target_num)
-        target_librespeed_args = 'st{}_librespeed_args'.format(target_num)
+        target_name = 'st_name_{}'.format(target_num)
+        target_ip_ver = 'st_ip_ver_{}'.format(target_num)
+        target_provider = 'st_provider_{}'.format(target_num)
+        target_server_id = 'st_server_id_{}'.format(target_num)
+        target_librespeed_args = 'st_librespeed_args_{}'.format(target_num)
 
         # format: config_vars["st1_name"]
         config_vars[target_name] = speed_sect.get(target_name, '')
@@ -207,8 +207,8 @@ def read_local_config(config_file, file_logger):
     num_ping_targets = int(config_vars['ping_targets_count']) + 1
 
     for target_num in range(1, num_ping_targets):
-        target_name = 'ping_host{}'.format(target_num)
-        target_ip_ver = 'ping_host{}_ip_ver'.format(target_num)
+        target_name = 'ping_host_{}'.format(target_num)
+        target_ip_ver = 'ping_host_ip_ver_{}'.format(target_num)
         # format: config_vars["ping_host1"]
         config_vars[target_name] = ping_sect.get(target_name, '')
         config_vars[target_ip_ver] = ping_sect.get(target_ip_ver, 'dual')
@@ -227,10 +227,10 @@ def read_local_config(config_file, file_logger):
     num_iperf3_tcp_targets = int(config_vars['iperf3_tcp_targets_count']) + 1
 
     for target_num in range(1, num_iperf3_tcp_targets):
-        target_server = 'iperf3_tcp{}_server'.format(target_num)
-        target_ip_ver = 'iperf3_tcp{}_ip_ver'.format(target_num)
-        target_port = 'iperf3_tcp{}_port'.format(target_num)
-        target_duration = 'iperf3_tcp{}_duration'.format(target_num)
+        target_server = 'iperf3_tcp_server_{}'.format(target_num)
+        target_ip_ver = 'iperf3_tcp_ip_ver_{}'.format(target_num)
+        target_port = 'iperf3_tcp_port_{}'.format(target_num)
+        target_duration = 'iperf3_tcp_duration_{}'.format(target_num)
 
         config_vars[target_server] = iperft_sect.get(target_server, '')
         config_vars[target_ip_ver] = iperft_sect.get(target_ip_ver, 'ipv4')
@@ -247,11 +247,11 @@ def read_local_config(config_file, file_logger):
     num_iperf3_udp_targets = int(config_vars['iperf3_udp_targets_count']) + 1
 
     for target_num in range(1, num_iperf3_udp_targets):
-        target_server = 'iperf3_udp{}_server'.format(target_num)
-        target_ip_ver = 'iperf3_udp{}_ip_ver'.format(target_num)
-        target_port = 'iperf3_udp{}_port'.format(target_num)
-        target_duration = 'iperf3_udp{}_duration'.format(target_num)
-        target_bandwidth = 'iperf3_udp{}_bandwidth'.format(target_num)
+        target_server = 'iperf3_udp_server_{}'.format(target_num)
+        target_ip_ver = 'iperf3_udp_ip_ver_{}'.format(target_num)
+        target_port = 'iperf3_udp_port_{}'.format(target_num)
+        target_duration = 'iperf3_udp_duration_{}'.format(target_num)
+        target_bandwidth = 'iperf3_udp_bandwidth_{}'.format(target_num)
 
         config_vars[target_server] = iperfu_sect.get(target_server, '')
         config_vars[target_ip_ver] = iperfu_sect.get(target_ip_ver, 'ipv4')
@@ -269,8 +269,8 @@ def read_local_config(config_file, file_logger):
     num_dns_targets = int(config_vars['dns_targets_count']) + 1
 
     for target_num in range(1, num_dns_targets):
-        target_name = 'dns_target{}'.format(target_num)
-        target_ip_ver = 'dns_target{}_ip_ver'.format(target_num)
+        target_name = 'dns_target_{}'.format(target_num)
+        target_ip_ver = 'dns_target_ip_ver_{}'.format(target_num)
         # format: config_vars["dns_target1"]
         config_vars[target_name] = dns_sect.get(target_name, '')
         config_vars[target_ip_ver] = dns_sect.get(target_ip_ver, 'dual')
@@ -285,9 +285,9 @@ def read_local_config(config_file, file_logger):
     num_http_targets = int(config_vars['http_targets_count']) + 1
 
     for target_num in range(1, num_http_targets):
-        target_name = 'http_target{}'.format(target_num)
-        target_name_ip_ver = 'http_target{}_ip_ver'.format(target_num)
-        target_name_curl_args = 'http_target{}_curl_args'.format(target_num)
+        target_name = 'http_target_{}'.format(target_num)
+        target_name_ip_ver = 'http_target_ip_ver_{}'.format(target_num)
+        target_name_curl_args = 'http_target_curl_args_{}'.format(target_num)
         # format: config_vars["http_target1"]
         config_vars[target_name] = http_sect.get(target_name, '')
         config_vars[target_name_ip_ver] = http_sect.get(target_name_ip_ver, 'ipv4')
@@ -321,25 +321,25 @@ def read_local_config(config_file, file_logger):
 
     for target_num in range(1, num_smb_targets):
 
-        host = 'smb_host{}'.format(target_num)
-        host_ip_ver = 'smb_host_ip_ver{}'.format(target_num)
-        # format: config_vars['smb_host1']
+        host = 'smb_host_{}'.format(target_num)
+        host_ip_ver = 'smb_host_ip_ver_{}'.format(target_num)
+        # format: config_vars['smb_host_1']
         config_vars[host] = smb_sect.get(host, '')
         config_vars[host_ip_ver] = smb_sect.get(host_ip_ver, 'dual')
 
-        username = 'smb_username{}'.format(target_num)
+        username = 'smb_username_{}'.format(target_num)
         # format: config_vars['smb_username1']
         config_vars[username] = smb_sect.get(username, '')
 
-        password = 'smb_password{}'.format(target_num)
+        password = 'smb_password_{}'.format(target_num)
         # format: config_vars['smb_password1']
         config_vars[password] = smb_sect.get(password, '')
 
-        path = 'smb_path{}'.format(target_num)
+        path = 'smb_path_{}'.format(target_num)
         # format: config_vars['smb_path1']
         config_vars[path] = smb_sect.get(path, '')
 
-        filename = 'smb_filename{}'.format(target_num)
+        filename = 'smb_filename_{}'.format(target_num)
         # format: config_vars['smb_filename1']
         config_vars[filename] = smb_sect.get(filename, '')
     

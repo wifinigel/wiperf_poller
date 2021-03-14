@@ -192,7 +192,7 @@ def run_tests(config_vars, file_logger, poll_obj, status_file_obj, exporter_obj,
     file_logger.info("--------------------------------------")                                                                                                                                                                                                                 
     file_logger.info("---           DHCP Tests           ---")
     file_logger.info("--------------------------------------")
-    if config_vars['dhcp_test_enabled'] == 'yes' and config_vars['test_issue'] == False:
+    if config_vars['dhcp_test_enabled'] == 'yes' and config_vars['test_issue'] < config_vars['test_issue_threshold']:
 
         dhcp_obj = DhcpTester(file_logger, lockf_obj)
         tests_passed = dhcp_obj.run_tests(status_file_obj, config_vars, exporter_obj)
@@ -203,14 +203,14 @@ def run_tests(config_vars, file_logger, poll_obj, status_file_obj, exporter_obj,
             poll_obj.dhcp('Failure')
 
     else:
-        if config_vars['test_issue'] == True:
+        if config_vars['test_issue'] >= config_vars['test_issue_threshold']:
             file_logger.info("Previous test failed: {}".format(config_vars['test_issue_descr']))
             poll_obj.dhcp('Not run')
         else:
             file_logger.info("DHCP test not enabled in config file, bypassing this test...")
             poll_obj.dhcp('Not enabled')
-    
-    # If we have a high number of failures, increment watchdog counter
+
+    # increment watchdog counter if we have a high number of failures
     if config_vars['test_issue'] >= config_vars['test_issue_threshold']:
         file_logger.error("Looks like quite a few tests failed. (watchdog incremented)")
         watchdog_obj.inc_watchdog_count()

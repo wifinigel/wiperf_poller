@@ -128,10 +128,10 @@ class IperfTesterIpv4(object):
 
         # read in all target data
         for target_num in range(1, num_targets):
-            target_server = 'iperf3_tcp{}_server'.format(target_num)
-            target_ip_ver = 'iperf3_tcp{}_ip_ver'.format(target_num)
-            target_port = 'iperf3_tcp{}_port'.format(target_num)
-            target_duration = 'iperf3_tcp{}_duration'.format(target_num)
+            target_server = 'iperf3_tcp_server_{}'.format(target_num)
+            target_ip_ver = 'iperf3_tcp_ip_ver_{}'.format(target_num)
+            target_port = 'iperf3_tcp_port_{}'.format(target_num)
+            target_duration = 'iperf3_tcp_duration_{}'.format(target_num)
 
             server_hostname = config_vars[target_server]
             ip_ver = config_vars[target_ip_ver]
@@ -148,9 +148,8 @@ class IperfTesterIpv4(object):
                 raise ValueError("ip_var parameter invalid: {}".format(ip_ver))
 
             # create test viability checker
-            # TODO: include ipv4/v6 preference?
             checker = TestViabilityChecker(config_vars, self.file_logger)
-            if not checker.check_test_host_viable(server_hostname, ip_ver_preference=ip_ver):
+            if not checker.check_test_host_viable(server_hostname, ip_ver):
                 self.file_logger.error("  iperf3 tcp test not viable, will not be tested ({})".format(server_hostname))
                 tests_passed = False
                 continue
@@ -211,11 +210,11 @@ class IperfTesterIpv4(object):
         # read in all target data
         for target_num in range(1, num_targets):
 
-            target_server = 'iperf3_udp{}_server'.format(target_num)
-            target_ip_ver = 'iperf3_udp{}_ip_ver'.format(target_num)
-            target_port = 'iperf3_udp{}_port'.format(target_num)
-            target_duration = 'iperf3_udp{}_duration'.format(target_num)
-            target_bandwidth = 'iperf3_udp{}_bandwidth'.format(target_num)
+            target_server = 'iperf3_udp_server_{}'.format(target_num)
+            target_ip_ver = 'iperf3_udp_ip_ver_{}'.format(target_num)
+            target_port = 'iperf3_udp_port_{}'.format(target_num)
+            target_duration = 'iperf3_udp_duration_{}'.format(target_num)
+            target_bandwidth = 'iperf3_udp_bandwidth_{}'.format(target_num)
 
             server_hostname = config_vars[target_server]
             ip_ver = config_vars[target_ip_ver]

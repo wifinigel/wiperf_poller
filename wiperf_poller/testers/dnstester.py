@@ -24,7 +24,6 @@ class DnsTester(object):
         
         self.config_vars = config_vars
         self.test_name = "DNS"
-        self.num_dns_targets = int(config_vars['dns_targets_count']) + 1
         self.data_file = config_vars['dns_data_file']
         self.resolve_name = resolve_name
 
@@ -81,14 +80,16 @@ class DnsTester(object):
 
         self.file_logger.info("Starting DNS tests...")
         status_file_obj.write_status_file("DNS tests")
+
+        num_dns_targets = int(config_vars['dns_targets_count']) + 1
       
         tests_passed = True
 
         # read in all target data
-        for dns_index in range(1, self.num_dns_targets):
+        for dns_index in range(1, num_dns_targets):
 
-            target_name = 'dns_target{}'.format(dns_index)
-            target_ip_ver = 'dns_target{}_ip_ver'.format(dns_index)
+            target_name = 'dns_target_{}'.format(dns_index)
+            target_ip_ver = 'dns_target_ip_ver_{}'.format(dns_index)
 
             dns_target = self.config_vars[target_name]
             dns_target_ip_ver = self.config_vars[target_ip_ver]

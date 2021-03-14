@@ -169,8 +169,8 @@ class PingTesterIpv4(object):
 
         for target_num in range(1, num_ping_targets):
             
-            target_name = 'ping_host{}'.format(target_num)
-            target_name_ip_ver = 'ping_host{}_ip_ver'.format(target_num)
+            target_name = 'ping_host_{}'.format(target_num)
+            target_name_ip_ver = 'ping_host_ip_ver_{}'.format(target_num)
 
             ping_host = config_vars[target_name]
             ping_host_ip_ver = config_vars[target_name_ip_ver]

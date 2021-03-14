@@ -5,6 +5,7 @@ import subprocess
 import json
 from wiperf_poller.helpers.os_cmds import LIBRESPEED_CMD
 from wiperf_poller.helpers.timefunc import get_timestamp
+from wiperf_poller.helpers.viabilitychecker import TestViabilityChecker
 
 class Speedtester():
     """
@@ -319,11 +320,11 @@ class Speedtester():
         num_st_targets = int(config_vars['speedtest_targets_count']) + 1
 
         for target_num in range(1, num_st_targets):
-            target_name = config_vars['st{}_name'.format(target_num)]
-            target_ip_ver = config_vars['st{}_ip_ver'.format(target_num)]
-            target_provider = config_vars['st{}_provider'.format(target_num)]
-            target_server_id = config_vars['st{}_server_id'.format(target_num)]
-            target_librespeed_args = config_vars['st{}_librespeed_args'.format(target_num)]
+            target_name = config_vars['st_name_{}'.format(target_num)]
+            target_ip_ver = config_vars['st_ip_ver_{}'.format(target_num)]
+            target_provider = config_vars['st_provider_{}'.format(target_num)]
+            target_server_id = config_vars['st_server_id_{}'.format(target_num)]
+            target_librespeed_args = config_vars['st_librespeed_args_{}'.format(target_num)]
 
             wan_target = self.wan_target_ipv4
             if target_ip_ver == "ipv6":
@@ -331,6 +332,15 @@ class Speedtester():
             
             # check we can hit the WAN
             wan_target = self.resolve_name(wan_target, self.file_logger)
+            if not wan_target:
+                self.file_logger.error("  Unable to resolve WAN target IP, will not be run ({})".format(wan_target))
+                continue
+
+             # check if test to host is viable (based on probe ipv4/v6 support)
+            checker = TestViabilityChecker(config_vars, self.file_logger)
+            if not checker.check_test_host_viable(wan_target, target_ip_ver):
+                self.file_logger.error("  Speedtest not viable, will not be run (WAN target: {})".format(wan_target))
+                continue
 
             if not check_correct_mode_interface(wan_target, config_vars, self.file_logger):
                 self.file_logger.error("Unable to run Speedtest(s) as route to Internet not correct interface for more - we have a routing issue of some type.")

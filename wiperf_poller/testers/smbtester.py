@@ -233,8 +233,6 @@ class SmbTesterIpv4():
 
         self.file_logger.info("Packages all present.")
 
-        
-
         global_username = config_vars['smb_global_username']
         global_password = config_vars['smb_global_password']
 
@@ -248,9 +246,10 @@ class SmbTesterIpv4():
 
         for smb_index in range(1, num_smb_targets):
 
-            smb_host = config_vars['smb_host'+ str(smb_index)]
-            smb_username = config_vars['smb_username'+ str(smb_index)]
-            smb_password = config_vars['smb_password'+ str(smb_index)]
+            smb_host = config_vars['smb_host_'+ str(smb_index)]
+            smb_host_ip_ver = config_vars['smb_host_ip_ver_'+ str(smb_index)]
+            smb_username = config_vars['smb_username_'+ str(smb_index)]
+            smb_password = config_vars['smb_password_'+ str(smb_index)]
 
             # if we have no per-test credental, use global credential
             if not smb_username:
@@ -261,15 +260,14 @@ class SmbTesterIpv4():
             if smb_host == '':
                 continue
 
-            filename = config_vars['smb_filename'+ str(smb_index)]
-            path = config_vars['smb_path'+ str(smb_index)]
+            filename = config_vars['smb_filename_'+ str(smb_index)]
+            path = config_vars['smb_path_'+ str(smb_index)]
             
             self.file_logger.info("Starting SMB test to target: {}{}".format(smb_host, path))
 
             # check if test to host is viable (based on probe ipv4/v6 support)
-            # TODO: include ipv4/v6 preference?
             checker = TestViabilityChecker(config_vars, self.file_logger)
-            if not checker.check_test_host_viable(smb_host):
+            if not checker.check_test_host_viable(smb_host, smb_host_ip_ver):
                 self.file_logger.error("  SMB test not viable, will not be run ({})".format(smb_host))
                 continue
 

@@ -99,9 +99,9 @@ class HttpTesterCurl(object):
         # read in all target data
         for target_num in range(1, num_http_targets):
 
-            target_name = 'http_target{}'.format(target_num)
-            target_name_ip_ver = 'http_target{}_ip_ver'.format(target_num)
-            target_name_curl_args = 'http_target{}_curl_args'.format(target_num)
+            target_name = 'http_target_{}'.format(target_num)
+            target_name_ip_ver = 'http_target_ip_ver_{}'.format(target_num)
+            target_name_curl_args = 'http_target_curl_args_{}'.format(target_num)
 
             http_target = config_vars[target_name]
             http_target_ip_ver = config_vars[target_name_ip_ver]
@@ -113,21 +113,13 @@ class HttpTesterCurl(object):
 
             self.file_logger.info("  HTTP test to : {}".format(http_target))
 
-            """
-            Notes: There is little point verifying the interface to be based on the resolved IP address or the 
-            IPv4/IPv6 viability:
-
-                1. Interface should be correct due to defaut GW static route setting
-                2. HTTP transfer may alternate netween IPv4/v6 connectivity during transfer, so unable to 
-                   mandate use of IPv4-only or IPv6-only
-            """
-
             target_hostname = http_target.split('/')[2]
 
             # pull out hostname if in format [2001:1:1:1:1::5] for
             # direct ipv6 address
             if "[" in target_hostname:
                 target_hostname = target_hostname[1: -1]
+                http_target_ip_ver  = "ipv6"
             
             # select hostname resolution type to use
             if http_target_ip_ver  == "ipv4":
@@ -139,13 +131,14 @@ class HttpTesterCurl(object):
                 self.resolve_name = resolve_name
             
             http_target_ip = self.resolve_name(target_hostname, self.file_logger, config_vars)
+            if is_ipv6(http_target_ip):
+                http_target_ip_ver  = "ipv6"
 
             # create test viability checker
-            # TODO: include ipv4/v6 preference?
             checker = TestViabilityChecker(config_vars, self.file_logger)
 
             # check if test to host is viable (based on probe ipv4/v6 support)
-            if not checker.check_test_host_viable(http_target_ip):
+            if not checker.check_test_host_viable(http_target_ip, http_target_ip_ver):
                 self.file_logger.error("  HTTP target test not viable, will not be tested ({} / {})".format(http_target, http_target_ip))
                 continue
             

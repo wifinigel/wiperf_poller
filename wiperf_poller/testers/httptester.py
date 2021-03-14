@@ -216,12 +216,7 @@ class HttpTesterIpv4(object):
                 config_vars['test_issue_descr'] = "HTTP test failure"
                 tests_passed = False
                 break
-
-        # if all tests fail, and there are more than 2 tests, signal a possible issue
-        if all_tests_fail and (target_num > 1):
-            self.file_logger.error("Looks like quite a few http tests failed, incrementing watchdog. (watchdog incremented)")
-            watchd.inc_watchdog_count()
-        
+       
         return tests_passed
 
     def get_http_duration(self):

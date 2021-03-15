@@ -232,7 +232,6 @@ class IperfTesterIpv4(object):
                 raise ValueError("ip_var parameter invalid: {}".format(ip_ver))
 
             # create test viability checker
-            # TODO: include ipv4/v6 preference?
             checker = TestViabilityChecker(config_vars, self.file_logger)
             if not checker.check_test_host_viable(server_hostname, ip_ver_preference=ip_ver):
                 self.file_logger.error("  iperf3 udp test not viable, will not be tested ({})".format(server_hostname))

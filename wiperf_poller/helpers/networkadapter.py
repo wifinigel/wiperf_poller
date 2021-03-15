@@ -123,7 +123,7 @@ class NetworkAdapter(object):
         # Extract IP address info (e.g. inet 10.255.250.157)
         ip_re = re.search(r'inet .*?(\d+\.\d+\.\d+\.\d+)', self.ifconfig_info)
         if ip_re is None:
-            self.file_logger.error("No IPv4 address found")
+            self.file_logger.warning("No IPv4 address found")
             return False
         else:
             self.ip_addr = ip_re.group(1)
@@ -152,7 +152,7 @@ class NetworkAdapter(object):
 
         # Get interface info
         try:
-            cmd = "{} -6 a show  {}".format(IP_CMD, self.if_name)
+            cmd = "{} -6 a show  {} | grep inet6 | head -1".format(IP_CMD, self.if_name)
             self.ifconfig_info = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True).decode()
         except subprocess.CalledProcessError as exc:
             output = exc.output.decode()
@@ -167,9 +167,9 @@ class NetworkAdapter(object):
         self.file_logger.debug("Interface config info: {}".format(self.ifconfig_info))
 
         # Extract IP address info (e.g. inet6 2001:1:1:1:1::6/64 scope global)
-        ip_re = re.search(r'inet6 .*?(\d+\:+.*?\/\d+ +scope +global)', self.ifconfig_info)
+        ip_re = re.search(r'inet6 .*?(\d+\:+.*?)\/\d+ +scope +global', self.ifconfig_info)
         if ip_re is None:
-            self.file_logger.info("  (Info only) No IPv6 global address found on {}".format(self.if_name))
+            self.file_logger.warning("  (Info only) No IPv6 global address found on {}".format(self.if_name))
             return False
         else:
             self.ip_addr_ipv6 = ip_re.group(1)

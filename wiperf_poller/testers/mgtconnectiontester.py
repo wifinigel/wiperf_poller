@@ -27,6 +27,7 @@ class MgtConnectionTester(object):
         self.config_vars = config_vars
         self.file_logger = file_logger
         self.data_host = config_vars['data_host']
+        self.data_host_ip_type = config_vars['data_host_ip_type']
         self.data_port = config_vars['data_port']
         self.exporter_type = config_vars['exporter_type']
         self.mgt_interface = config_vars['mgt_if']
@@ -44,8 +45,17 @@ class MgtConnectionTester(object):
         #################################################
         self.file_logger.info("Checking IPv4 connectivity for mgt/reporting traffic")
 
+        # if name, convert to IP address
+        self.data_host = resolve_name_ipv4(self.data_host, self.file_logger)
+
+        # Check host is IPv4 host
         if not is_ipv4(self.data_host):
-            raise ValueError("Management IP not in IPv6 format.")
+            raise ValueError("Management IP not in IPv4 format.")
+
+        # check mgt interface has IPv4 address
+        if not mgt_interface_obj.get_adapter_ipv4_ip():
+            self.file_logger.info("  Mgt interface does not have IPv4 address.")
+            return False
        
         #####################################################
         # check if route to IPv4 address of server is via 
@@ -82,8 +92,17 @@ class MgtConnectionTester(object):
         #################################################
         self.file_logger.info("Checking IPv6 connectivity for mgt/reporting traffic")
 
+        # if name, convert to IP address
+        self.data_host = resolve_name_ipv6(self.data_host, self.file_logger)
+
+        # Check host is IPv4 host
         if not is_ipv6(self.data_host):
             raise ValueError("Management IP not in IPv6 format.")
+
+        # check mgt interface has IPv6 address
+        if not mgt_interface_obj.get_adapter_ipv6_ip():
+            self.file_logger.info("  Mgt interface does not have IPv6 address.")
+            return False
        
         #####################################################
         # check if route to IPv6 address of server is via 
@@ -218,18 +237,14 @@ class MgtConnectionTester(object):
             checks_result = self._ipv6_checks(mgt_interface_obj, watchdog_obj, lockf_obj)
         
         else:
-            # must be hostname, try both lookup options
-            ip_address_v4 = resolve_name_ipv4(self.data_host, self.file_logger)
-            ip_address_v6 = resolve_name_ipv6(self.data_host, self.file_logger)
-
-            # try using ipv4 IP address or IPv6 address whichever is available
-            if ip_address_v4:
+            # assume name if got here - use ip type param to decide on which to check
+            if self.data_host_ip_type == 'ipv4':
                checks_result =  self._ipv4_checks(mgt_interface_obj, watchdog_obj, lockf_obj)
-            elif ip_address_v6:
+            elif self.data_host_ip_type == 'ipv6':
                 checks_result = self._ipv6_checks(mgt_interface_obj, watchdog_obj, lockf_obj)
             else:
                 # no luck resolving name
-                self.file_logger.warning("   Unable to resolve management platform name/address : {}".format(self.data_host))
+                self.file_logger.warning("   Unknown IP version type supplied : {}".format(self.data_host_ip_type))
                 return False
         
         # if we had any issues with IPv4/v6 cmgt connectivity, return failure

@@ -5,7 +5,7 @@ from socket import gethostbyname
 import requests
 
 from wiperf_poller.helpers.networkadapter import NetworkAdapter
-from wiperf_poller.helpers.ipv6.route_ipv6 import (
+from wiperf_poller.helpers.route_ipv6 import (
     check_correct_mgt_interface_ipv6, 
     inject_mgt_static_route_ipv6,
     resolve_name_ipv6)

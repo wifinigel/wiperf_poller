@@ -4,7 +4,7 @@ from socket import gethostbyname
 
 from wiperf_poller.helpers.wirelessadapter import WirelessAdapter
 from wiperf_poller.helpers.networkadapter import NetworkAdapter
-from wiperf_poller.helpers.ipv6.route_ipv6 import (
+from wiperf_poller.helpers.route_ipv6 import (
     check_correct_mode_interface_ipv6,
     inject_default_route_ipv6,
     remove_duplicate_interface_route_ipv6,

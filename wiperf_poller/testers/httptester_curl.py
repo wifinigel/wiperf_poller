@@ -11,8 +11,6 @@ from wiperf_poller.helpers.os_cmds import CURL_CMD
 
 from wiperf_poller.helpers.timefunc import get_timestamp
 from wiperf_poller.helpers.viabilitychecker import TestViabilityChecker
-#from wiperf_poller.helpers.viabilitychecker import TestViabilityCheckerIpv4
-#from wiperf_poller.helpers.ipv6.viabilitychecker_ipv6 import TestViabilityCheckerIpv6
 from wiperf_poller.helpers.route import (
     resolve_name,
     resolve_name_ipv4,
@@ -21,7 +19,7 @@ from wiperf_poller.helpers.route import (
     is_ipv4,
     is_ipv6
 )
-from wiperf_poller.helpers.ipv6.route_ipv6 import check_correct_mode_interface_ipv6
+from wiperf_poller.helpers.route_ipv6 import check_correct_mode_interface_ipv6
 
 class HttpTesterCurl(object):
     '''

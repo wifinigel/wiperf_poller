@@ -8,7 +8,7 @@ from wiperf_poller.helpers.route import (
     is_ipv6, 
     check_correct_mode_interface_ipv4
 )
-from wiperf_poller.helpers.ipv6.route_ipv6 import (
+from wiperf_poller.helpers.route_ipv6 import (
     resolve_name_ipv6, 
     check_correct_mode_interface_ipv6
 )

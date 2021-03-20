@@ -59,14 +59,18 @@ class NetworkAdapter(object):
 
         # Extract interface up/down status (unless already set)
         if not self.if_status:
-            pattern = r'state (.*?) mode'
+            pattern = r'<(.*?)>'
             field_name = "if_status"
             extraction = self.field_extractor(field_name, pattern, if_info)
+            print(extraction)
             if extraction:
-                self.if_status = extraction
+                # extract 2nd from last item in comma sep string
+                fields = extraction.split(',')
+                print(fields)
+                self.if_status = fields[-2]
             else:
                 self.if_status = "Unknown"
-
+            
         return True
 
     

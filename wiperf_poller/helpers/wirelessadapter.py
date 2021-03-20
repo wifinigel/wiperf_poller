@@ -82,7 +82,7 @@ class WirelessAdapter(NetworkAdapter):
             '5.825': 165,
         }
 
-        return channels.get(freq, 'unknown')
+        return channels.get(freq, 0)
 
     def iwconfig(self):
 

@@ -320,6 +320,8 @@ class Speedtester():
         num_st_targets = int(config_vars['speedtest_targets_count']) + 1
 
         for target_num in range(1, num_st_targets):
+            self.file_logger.info("Commencing test cycle for speedtest #{}...".format(target_num))
+
             target_name = config_vars['st_name_{}'.format(target_num)]
             target_ip_ver = config_vars['st_ip_ver_{}'.format(target_num)]
             target_provider = config_vars['st_provider_{}'.format(target_num)]

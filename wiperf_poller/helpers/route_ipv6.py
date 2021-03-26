@@ -183,14 +183,13 @@ def inject_default_route_ipv6(ip_address, config_vars, file_logger):
     file_logger.info("  [Default Route Injection (IPv6)] Checking probe mode: '{}' ".format(probe_mode))
     test_traffic_interface= get_test_traffic_interface_ipv6(config_vars, file_logger)
 
-    # inject a new route with the required interface
+    # delete existing default route
     try:
-        new_route = "default dev {} metric 1".format(test_traffic_interface)
-        add_route_cmd = "{} -6 route add  ".format(IP_CMD) + new_route
-        subprocess.run(add_route_cmd, shell=True)
-        file_logger.info("  [Default Route Injection (IPv6)] Adding new route: {}".format(new_route))
+        del_route_cmd = "{} -6 route del ".format(IP_CMD) + route_to_dest
+        subprocess.run(del_route_cmd, shell=True)
+        file_logger.info("  [Default Route Injection (IPv6)] Deleting route: {}".format(route_to_dest))
     except subprocess.CalledProcessError as proc_exc:
-        file_logger.error('  [Default Route Injection (IPv6)] Route addition failed!')
+        file_logger.error('  [Default Route Injection (IPv6)] Route deletion failed!: {}'.format(proc_exc))
         return False
     
     # re-add the default route with an increased metric
@@ -202,15 +201,16 @@ def inject_default_route_ipv6(ip_address, config_vars, file_logger):
     except subprocess.CalledProcessError as proc_exc:
         file_logger.error('  [Default Route Injection (IPv6)] Route addition failed!')
         return False
-  
-    # delete existing default route
+
+    # inject a new route with the required interface
     try:
-        del_route_cmd = "{} -6 route del ".format(IP_CMD) + route_to_dest
-        subprocess.run(del_route_cmd, shell=True)
-        file_logger.info("  [Default Route Injection (IPv6)] Deleting route: {}".format(route_to_dest))
+        new_route = "default dev {} metric 1".format(test_traffic_interface)
+        add_route_cmd = "{} -6 route add  ".format(IP_CMD) + new_route
+        subprocess.run(add_route_cmd, shell=True)
+        file_logger.info("  [Default Route Injection (IPv6)] Adding new route: {}".format(new_route))
     except subprocess.CalledProcessError as proc_exc:
-        file_logger.error('  [Default Route Injection (IPv6)] Route deletion failed!: {}'.format(proc_exc))
-        return False
+        file_logger.error('  [Default Route Injection (IPv6)] Route addition failed!')
+        return False 
       
     file_logger.info("  [Default Route Injection (IPv6)] Route injection complete")
     return True

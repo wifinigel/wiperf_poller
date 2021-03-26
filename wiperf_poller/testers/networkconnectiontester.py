@@ -179,6 +179,9 @@ class NetworkConnectionTester(object):
         #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*
         self.file_logger.info("  Checking if we have an IPv6 address ({})".format(self.testing_interface))
 
+        ##########################################################
+        # Check testing interface has ipv6 address (if ipv6 used)
+        ##########################################################
         if config_vars['connectivity_lookup_ipv6']:
 
             if self.adapter_obj.get_adapter_ipv6_ip():
@@ -234,9 +237,9 @@ class NetworkConnectionTester(object):
                         lockf_obj.delete_lock_file()
                         sys.exit()
                     
-                # Take any local interface routes that may allow test traffic to leak
+                # Take out any local interface routes that may allow test traffic to leak
                 # over wrong interface
-                remove_duplicate_interface_route_ipv6(self.adapter_obj.get_adapter_ipv4_ip(), self.adapter_obj.if_name, self.file_logger)
+                remove_duplicate_interface_route_ipv6(self.adapter_obj.get_adapter_ipv6_ip(), self.adapter_obj.if_name, self.file_logger)
 
             else:
                 if not self.adapter_obj.get_adapter_ipv4_ip():

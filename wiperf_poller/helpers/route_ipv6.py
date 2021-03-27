@@ -241,6 +241,11 @@ def remove_duplicate_interface_route_ipv6(interface_ip, interface_name, file_log
             continue
 
         if not (interface_name in route_entry):
+
+            # remove expiration message (added by dhcp) in route to avoid route deletion issue
+            if "expires" in route_entry:
+                route_entry = route_entry.split("expires", 1)[0].strip()
+            
             # delete the route entry
             try:
                 del_route_cmd = "{} -6 route del ".format(IP_CMD) + route_entry

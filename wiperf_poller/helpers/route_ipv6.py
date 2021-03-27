@@ -178,6 +178,10 @@ def inject_default_route_ipv6(ip_address, config_vars, file_logger):
         file_logger.error('  [Default Route Injection (IPv6)] Route is not a default route entry...cannot resolve this routing issue: {}'.format(route_to_dest))
         return False
     
+    # remove expiration message (added by dhcp) in route to avoid route deletion issue
+    if "expires" in route_to_dest:
+        route_to_dest = route_to_dest.split("expires", 1)[0].strip()
+    
     # figure out what our required interface is for testing traffic
     probe_mode = config_vars['probe_mode']
     file_logger.info("  [Default Route Injection (IPv6)] Checking probe mode: '{}' ".format(probe_mode))

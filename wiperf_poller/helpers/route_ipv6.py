@@ -61,26 +61,6 @@ def get_test_traffic_interface_ipv6(config_vars, file_logger):
     file_logger.error("  Unknown probe mode: {} (exiting)".format(probe_mode))
     sys.exit()
 
-
-def get_first_route_to_dest_ipv6(ip_address, file_logger):
-    """
-    Check the routes to a specific ip destination & return first entry
-    """
-
-    ip_address = resolve_name_ipv6(ip_address, file_logger)
-
-    # get specific route details of path that will be used by kernel (cannot be used to modify routing entry)
-    ip_route_cmd = "{} -6 route get ".format(IP_CMD) + ip_address + " | head -n 1"
-
-    try:
-        route_detail = subprocess.check_output(ip_route_cmd, stderr=subprocess.STDOUT, shell=True).decode()
-        file_logger.info("  Checked interface route to : {}. Result: {}".format(ip_address, route_detail.strip()))
-        return route_detail.strip()
-    except subprocess.CalledProcessError as exc:
-        output = exc.output.decode()
-        file_logger.error("  Issue looking up route (route cmd syntax?): {} (command used: {})".format(str(output), ip_route_cmd))
-        return ''
-        
 def get_routes_used_to_dest_ipv6(ip_address, file_logger):
 
     ip_address = resolve_name_ipv6(ip_address, file_logger)
@@ -97,6 +77,22 @@ def get_routes_used_to_dest_ipv6(ip_address, file_logger):
         file_logger.error("  Issue looking up routes (route cmd syntax?): {} (command used: {})".format(str(output), ip_route_cmd))
         return ''
 
+
+def get_first_route_to_dest_ipv6(ip_address, file_logger):
+    """
+    Check the routes to a specific ip destination & return first entry
+    """
+
+    route_list = get_routes_used_to_dest_ipv6(ip_address, file_logger)
+
+    if len(route_list) > 0:
+        first_route = route_list[0]
+        file_logger.info("  Checked interface route to : {}. Result: {}".format(ip_address, first_route))
+        return first_route
+    else:
+        file_logger.warning("  Unable to determine first route to destination.")
+        return False
+        
 
 def check_correct_mgt_interface_ipv6(mgt_host, mgt_interface, file_logger):
     """
@@ -187,6 +183,10 @@ def inject_default_route_ipv6(ip_address, config_vars, file_logger):
         # format: default dev eth0 metric 1024 onlink pref medium (or maybe:)
         #         fe80::1 dev eth0 proto ra src 200XXXXXXXXXXXXXXXXXfe5b:2005 metric 1024 hoplimit 64 pref medium
 
+        # if an empty entry slips through, ignore
+        if not route_to_dest:
+            continue
+        
         if not "default" in route_to_dest:
             # this isn't a default route, so we can't fix this
             file_logger.error('  [Default Route Injection (IPv6)] Route is not a "default" route entry...unable to update this route: {}'.format(route_to_dest))

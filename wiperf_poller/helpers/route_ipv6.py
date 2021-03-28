@@ -89,7 +89,7 @@ def get_routes_used_to_dest_ipv6(ip_address, file_logger):
     ip_route_cmd = "{} -6 route show to match {}".format(IP_CMD, ip_address) 
 
     try:
-        route_list = subprocess.check_output(ip_route_cmd, stderr=subprocess.STDOUT, shell=True).decode().strip("\n")
+        route_list = subprocess.check_output(ip_route_cmd, stderr=subprocess.STDOUT, shell=True).decode().split("\n")
         file_logger.info("  Checked interface routes to : {}. Result: {}".format(ip_address, route_list))
         return route_list
     except subprocess.CalledProcessError as exc:

@@ -222,7 +222,7 @@ class NetworkConnectionTester(object):
                     
                     if inject_default_route_ipv6(config_vars['connectivity_lookup_ipv6'], config_vars, self.file_logger):
                     
-                        self.adapter_obj.bounce_interface()  # bounce needed to update route table!
+                        #self.adapter_obj.bounce_interface()  # bounce needed to update route table!
                         self.file_logger.info("  Checking if ipv6 route injection worked...")
 
                         if check_correct_mode_interface_ipv6(ip_address, config_vars, self.file_logger):

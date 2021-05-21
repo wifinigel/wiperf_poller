@@ -137,9 +137,10 @@ def check_correct_mode_interface_ipv6(ip_address, config_vars, file_logger):
 def inject_default_route_ipv6(ip_address, config_vars, file_logger):
 
     """
-    This function will attempt to inject an IPv6 default route to attempt
-    correct routing issues caused by path cost if the ethernet interface
-    is up and is preferred to the WLAN interface.
+    This function will attempt to inject an IPv6 default route for the test
+    trfafic interface. All other detected default routes will be removed. The
+    default route will also be modified to use a metric of 1 if existing, or
+    added with a metric of 1 if it does not exist
 
     Scenario:
 
@@ -147,7 +148,8 @@ def inject_default_route_ipv6(ip_address, config_vars, file_logger):
     testing traffic is not the required interface. An attempt will be made to 
     fix the routing by adding a new default route that uses the interface required
     for testing, which will have a lower metrc and be used in preference to the
-    original default route
+    original default route. All other default routes ill be removed. If an existing
+    default can be used, it will be deleted and re-added with a metric of 1
 
     Process flow:
     
@@ -156,7 +158,9 @@ def inject_default_route_ipv6(ip_address, config_vars, file_logger):
          - check if it is tesing interface, if it is:
             delete it and re-add it with a metric of 1
          - if not:
-            delete it and re-add it with a metric of 1024
+            delete it
+    3. If no default route has been found, as a suitable
+       default route with a metric of 1
 
     (Note the interface that provides the new default route must be bounced to
     update the probe routing table correctly)
@@ -177,6 +181,8 @@ def inject_default_route_ipv6(ip_address, config_vars, file_logger):
     test_interface_route_fixed = False
 
     file_logger.info("  [Default Route Injection (IPv6)] Checking routes...")
+
+    # step through routes and remove each default route that does not match test interface
     for route_to_dest in route_list:
 
         # This fix relies on the retrieved route being a default route in the 
@@ -205,13 +211,27 @@ def inject_default_route_ipv6(ip_address, config_vars, file_logger):
             file_logger.error('  [Default Route Injection (IPv6)] Route deletion failed!: {}'.format(proc_exc))
             return False
         
-        # if we match test interface, re-add route with metric of 1
+        # if a match for test interface, modify metric & re-add
         if test_traffic_interface in route_to_dest:
             route_to_dest =  re.sub(r"metric \d+", r"metric 1", route_to_dest)
-        else:
-            route_to_dest =  re.sub(r"metric \d+", r"metric 1024", route_to_dest)
+
+            try:
+                add_route_cmd = "{} -6 route add  ".format(IP_CMD) + route_to_dest
+                subprocess.run(add_route_cmd, shell=True)
+                file_logger.info("  [Default Route Injection (IPv6)] Re-adding deleted route with modified metric: {}".format(route_to_dest))
+
+                # signal that test traffic interface route updated
+                if test_traffic_interface in route_to_dest:
+                    test_interface_route_fixed = True
+            except subprocess.CalledProcessError as proc_exc:
+                file_logger.error('  [Default Route Injection (IPv6)] Route addition failed!')
+                return False
         
-        # update the default route with a modified metric
+    if not test_interface_route_fixed:
+
+        # add default route via test interface
+        route_to_dest = "default dev {} metric 1".format(test_traffic_interface)
+
         try:
             add_route_cmd = "{} -6 route add  ".format(IP_CMD) + route_to_dest
             subprocess.run(add_route_cmd, shell=True)
@@ -222,8 +242,8 @@ def inject_default_route_ipv6(ip_address, config_vars, file_logger):
         except subprocess.CalledProcessError as proc_exc:
             file_logger.error('  [Default Route Injection (IPv6)] Route addition failed!')
             return False
-      
-    file_logger.info("  [Default Route Injection (IPv6)] Route injection complete")
+        
+        file_logger.info("  [Default Route Injection (IPv6)] Route injection complete")
     
     return test_interface_route_fixed
 

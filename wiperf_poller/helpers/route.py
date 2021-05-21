@@ -168,11 +168,11 @@ def _field_extractor(pattern, cmd_output_text):
     """
     re_result = re.search(pattern, cmd_output_text)
 
-    if not re_result is None:
+    if re_result is None:
+        return None
+    else:
         field_value = re_result.group(1)
         return field_value
-    else:
-        return None
   
 def get_test_traffic_interface(config_vars, file_logger):
     """
@@ -191,8 +191,26 @@ def get_test_traffic_interface(config_vars, file_logger):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 def get_routes_used_to_dest_ipv4(ip_address, file_logger):
+    """
+    Inpsect the routing table to determine the routes available 
+    from the probe routing table for an IP address. 
+    Uses the command:
+    
+        ip route show to match <ip address>
+        
+        typical output:
+            root@wlanpi:/home/wlanpi# ip route show to match 8.8.8.8
+            default via 192.168.0.1 dev wlan0
+        
+            (note: may return several routes if appropriate)
 
-    ip_address = resolve_name_ipv4(ip_address, file_logger)
+    Args:
+        ip_address (str): target IP address
+        file_logger (file_logger obj): file logger object
+    """
+
+    if not is_ipv4(ip_address):
+        ip_address = resolve_name_ipv4(ip_address, file_logger)
 
     # get entries that match destination
     ip_route_cmd = "{} route show to match {}".format(IP_CMD, ip_address) 
@@ -206,6 +224,42 @@ def get_routes_used_to_dest_ipv4(ip_address, file_logger):
         file_logger.error("  Issue looking up routes (route cmd syntax?): {} (command used: {})".format(str(output), ip_route_cmd))
         return ''
 
+def get_used_interface_to_dest_ipv4(ip_address, file_logger):
+    """
+    Inpsect the routing table to determine the interface to be used 
+    from the probe routing table. Uses the command:
+    
+        ip route get <ip address>
+        
+        typical output:
+            root@wlanpi:/home/wlanpi# ip route get 192.168.192.104
+            192.168.192.104 dev ztukutsbw2 src 192.168.192.84 uid 0 
+                cache  
+
+    Args:
+        ip_address (str): target IP address
+        file_logger (file_logger obj): file logger object
+    """
+    if not is_ipv4(ip_address):
+        ip_address = resolve_name_ipv4(ip_address, file_logger)
+
+    # get entries that match destination
+    ip_route_cmd = "{} route get {}".format(IP_CMD, ip_address) 
+
+    try:
+        cmd_output = subprocess.check_output(ip_route_cmd, stderr=subprocess.STDOUT, shell=True).decode().split("\n")
+    except subprocess.CalledProcessError as exc:
+        output = exc.output.decode()
+        file_logger.error("  Issue looking up routes (route cmd syntax?): {} (command used: {})".format(str(output), ip_route_cmd))
+        return ''
+    
+    interface_line = cmd_output[0]
+    interface_used = _field_extractor(r'dev (\S+) ', interface_line)
+    file_logger.info("  Checked interface used to : {}. Result: {}".format(ip_address, interface_used))
+
+    return interface_used
+
+# TODO: remove this function as no longer used?
 def get_first_route_to_dest_ipv4(ip_address, file_logger):
     """
     Check the routes to a specific ip destination & return first entry
@@ -230,13 +284,16 @@ def check_correct_mgt_interface_ipv4(mgt_host, mgt_interface, file_logger):
     # figure out mgt_ip (in case hostname passed)
     mgt_ip = resolve_name_ipv4(mgt_host, file_logger)
 
-    route_to_dest = get_first_route_to_dest_ipv4(mgt_ip, file_logger)
+    #route_to_dest = get_first_route_to_dest_ipv4(mgt_ip, file_logger)
+    interface_to_dest = get_used_interface_to_dest_ipv4(mgt_ip, file_logger)
 
-    if mgt_interface in route_to_dest:
+    #if mgt_interface in route_to_dest:
+    if mgt_interface == interface_to_dest:
         file_logger.info("  Mgt interface route looks good.")
         return True
     else:
-        file_logger.info("  Mgt interface will be routed over wrong interface: {}".format(route_to_dest))
+        #file_logger.info("  Mgt interface will be routed over wrong interface: {}".format(route_to_dest))
+        file_logger.error("  Mgt interface will be routed over wrong interface: {}".format(interface_to_dest))
         return False
 
 def check_correct_mode_interface_ipv4(host, config_vars, file_logger):
@@ -253,11 +310,15 @@ def check_correct_mode_interface_ipv4(host, config_vars, file_logger):
     if not is_ipv4(ip_address):
         raise ValueError("IP address supplied is not IPv4 format")
 
-    route_to_dest = get_first_route_to_dest_ipv4(ip_address, file_logger)
+    #route_to_dest = get_first_route_to_dest_ipv4(ip_address, file_logger)
+    interface_to_dest = get_used_interface_to_dest_ipv4(ip_address, file_logger)
 
-    if test_traffic_interface in route_to_dest:
+    #if test_traffic_interface in route_to_dest:
+    if test_traffic_interface == interface_to_dest:
+        file_logger.info("  Test traffic interface route looks good.")
         return True
     else:
+        file_logger.error("  Test traffic will be routed over wrong interface: {}".format(interface_to_dest))
         return False
 
 def inject_default_route_ipv4(ip_address, config_vars, file_logger):
@@ -292,7 +353,7 @@ def inject_default_route_ipv4(ip_address, config_vars, file_logger):
     update the probe routing table correctly)
     """
 
-    # get the default route to our ipv6 destination
+    # get the default route to our ipv4 destination
     route_list = get_routes_used_to_dest_ipv4(ip_address, file_logger) 
     
     file_logger.info('  [Default Route Injection (IPv4)] Checking if we can fix default routing to use correct test interface...')
@@ -388,7 +449,8 @@ def inject_default_route_ipv4(ip_address, config_vars, file_logger):
         
         # pull out the IP address from the last instance of the "option routers" line 
         option_router_line = option_routers_list[-1]
-        def_gw = _field_extractor('\d+\.\d+\.\d+\.\d+', option_router_line)
+
+        def_gw = _field_extractor(r'(\d+\.\d+\.\d+\.\d+)', option_router_line)
     
         if not def_gw:
             file_logger.error('  [Default Route Injection (IPv4)] Unable to determine def gw from leases file. Route addition failed!')
@@ -421,7 +483,7 @@ def remove_duplicate_interface_route_ipv4(interface_ip, interface_name, file_log
 
    # get routes to the supplied interface address
     ip_route_cmd = "{} route show to match ".format(IP_CMD) + interface_ip + " | grep '/'"
-    file_logger.info("  [Check Interface Routes (IPv4)] Checking if we need to remove any interface routes...")
+    file_logger.info("  [Check Interface Routes (IPv4)] Checking if we need to remove any duplicate interface routes...")
 
     try:
         routes = subprocess.check_output(ip_route_cmd, stderr=subprocess.STDOUT, shell=True).decode().splitlines()

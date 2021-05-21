@@ -39,14 +39,16 @@ def is_ipv6(ip_address):
 
 
 def _field_extractor(pattern, cmd_output_text):
-
+    """
+    Generic field extraction from string based on pattern passed
+    """
     re_result = re.search(pattern, cmd_output_text)
 
-    if not re_result is None:
-        field_value = re_result.group(1)
-        return field_value
-    else:
+    if re_result is None:
         return None
+    else:
+        field_value = re_result.group()
+        return field_value
 
   
 def get_test_traffic_interface_ipv6(config_vars, file_logger):
@@ -255,7 +257,7 @@ def remove_duplicate_interface_route_ipv6(interface_ip, interface_name, file_log
 
    # get routes to the supplied interface address
     ip_route_cmd = "{} -6 route show to match ".format(IP_CMD) + interface_ip + " | grep '/'"
-    file_logger.info("  [Check Interface Routes (IPv6)] Checking if we need to remove any interface routes...")
+    file_logger.info("  [Check Interface Routes (IPv6)] Checking if we need to remove any duplicate interface routes...")
 
     try:
         routes = subprocess.check_output(ip_route_cmd, stderr=subprocess.STDOUT, shell=True).decode().splitlines()

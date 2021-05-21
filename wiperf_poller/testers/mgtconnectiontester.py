@@ -63,7 +63,7 @@ class MgtConnectionTester(object):
         ####################################################
         if not check_correct_mgt_interface_ipv4(self.data_host, self.mgt_interface, self.file_logger):
 
-            self.file_logger.warning("  We are not using the interface required for IPv4 mgt traffic due to a routing issue in this unit - attempt route addition to fix issue")
+            self.file_logger.warning("  We are not using the interface required for IPv4 mgt traffic due to a routing issue in this unit - attempting route addition to fix issue")
 
             if inject_mgt_static_route_ipv4(self.data_host, self.config_vars, self.file_logger):
 
@@ -110,7 +110,7 @@ class MgtConnectionTester(object):
         ####################################################
         if not check_correct_mgt_interface_ipv6(self.data_host, self.mgt_interface, self.file_logger):
 
-            self.file_logger.warning("  We are not using the interface required for IPv6 mgt traffic due to a routing issue in this unit - attempt route addition to fix issue")
+            self.file_logger.warning("  We are not using the interface required for IPv6 mgt traffic due to a routing issue in this unit - attempting route addition to fix issue")
 
             if inject_mgt_static_route_ipv6(self.data_host, self.config_vars, self.file_logger):
 

@@ -143,7 +143,7 @@ class NetworkConnectionTester(object):
                 ######################################################################
                 # We seem to be using wrong interface for testing, fix default route 
                 ######################################################################
-                self.file_logger.warning("  We are not using the interface required to perform our tests due to a routing issue in this unit - attempt route addition to fix issue")
+                self.file_logger.warning("  We are not using the interface required to perform our IPv4 tests due to a routing issue in this unit - attempting route addition to fix issue")
                 
                 if inject_default_route_ipv4(config_vars['connectivity_lookup'], config_vars, self.file_logger):
                 
@@ -218,7 +218,7 @@ class NetworkConnectionTester(object):
                     ##########################################################################
                     # We seem to be using wrong interface for testing, fix ipv6 default route 
                     ##########################################################################
-                    self.file_logger.warning("  We are not using the interface required to perform our ipv6 tests due to a routing issue in this unit - attempt route addition to fix issue")
+                    self.file_logger.warning("  We are not using the interface required to perform our IPv6 tests due to a routing issue in this unit - attempting route addition to fix issue")
                     
                     if inject_default_route_ipv6(config_vars['connectivity_lookup_ipv6'], config_vars, self.file_logger):
                     

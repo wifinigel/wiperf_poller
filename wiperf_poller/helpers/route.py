@@ -86,7 +86,7 @@ The process for obtaining the correct traffic flows is as follows:
 import socket
 import subprocess
 import re
-import sys
+import sys, os
 from wiperf_poller.helpers.os_cmds import IP_CMD
 
 def is_ipv4(ip_address):
@@ -164,7 +164,7 @@ def resolve_name(hostname, file_logger, config_vars):
 
 def _field_extractor(pattern, cmd_output_text):
     """
-    Generic field extracttion from string based on pattern passed
+    Generic field extraction from string based on pattern passed
     """
     re_result = re.search(pattern, cmd_output_text)
 
@@ -173,7 +173,6 @@ def _field_extractor(pattern, cmd_output_text):
         return field_value
     else:
         return None
-
   
 def get_test_traffic_interface(config_vars, file_logger):
     """
@@ -191,40 +190,36 @@ def get_test_traffic_interface(config_vars, file_logger):
 # IPv4 Utils
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-def get_first_route_to_dest_ipv4(host, file_logger, ip_ver=''):
+def get_routes_used_to_dest_ipv4(ip_address, file_logger):
+
+    ip_address = resolve_name_ipv4(ip_address, file_logger)
+
+    # get entries that match destination
+    ip_route_cmd = "{} route show to match {}".format(IP_CMD, ip_address) 
+
+    try:
+        route_list = subprocess.check_output(ip_route_cmd, stderr=subprocess.STDOUT, shell=True).decode().split("\n")
+        file_logger.info("  Checked interface routes to : {}. Result: {}".format(ip_address, route_list))
+        return route_list
+    except subprocess.CalledProcessError as exc:
+        output = exc.output.decode()
+        file_logger.error("  Issue looking up routes (route cmd syntax?): {} (command used: {})".format(str(output), ip_route_cmd))
+        return ''
+
+def get_first_route_to_dest_ipv4(ip_address, file_logger):
     """
     Check the routes to a specific ip destination & return first entry
     """
-    ip_address = resolve_name_ipv4(host, file_logger)
 
-    # get specific route details of path that will be used by kernel (cannot be used to modify routing entry)
-    ip_route_cmd = "{} {} route get ".format(IP_CMD, ip_ver) + ip_address + " | head -n 1"
+    route_list = get_routes_used_to_dest_ipv4(ip_address, file_logger)
 
-    try:
-        route_detail = subprocess.check_output(ip_route_cmd, stderr=subprocess.STDOUT, shell=True).decode()
-        file_logger.info("  Checked interface route to : {}. Result: {}".format(ip_address, route_detail.strip()))
-        return route_detail.strip()
-    except subprocess.CalledProcessError as exc:
-        output = exc.output.decode()
-        file_logger.error("  Issue looking up route (route cmd syntax?): {} (command used: {})".format(str(output), ip_route_cmd))
-        return ''
-        
-def get_route_used_to_dest_ipv4(host, file_logger):
-
-    ip_address = resolve_name_ipv4(host, file_logger)
-
-    # get first raw routing entry, otherwise show route that will actually be chosen by kernel
-    ip_route_cmd = "{} route show to match ".format(IP_CMD) + ip_address + " | head -n 1"
-
-    try:
-        route_detail = subprocess.check_output(ip_route_cmd, stderr=subprocess.STDOUT, shell=True).decode()
-        file_logger.info("  Checked interface route to : {}. Result: {}".format(ip_address, route_detail.strip()))
-        return route_detail.strip()
-    except subprocess.CalledProcessError as exc:
-        output = exc.output.decode()
-        file_logger.error("  Issue looking up route (route cmd syntax?): {} (command used: {})".format(str(output), ip_route_cmd))
-        return ''
-
+    if len(route_list) > 0:
+        first_route = route_list[0]
+        file_logger.info("  Checked interface route to : {}. Result: {}".format(ip_address, first_route))
+        return first_route
+    else:
+        file_logger.warning("  Unable to determine first route to destination.")
+        return False
 
 def check_correct_mgt_interface_ipv4(mgt_host, mgt_interface, file_logger):
     """
@@ -268,80 +263,155 @@ def check_correct_mode_interface_ipv4(host, config_vars, file_logger):
 def inject_default_route_ipv4(ip_address, config_vars, file_logger):
 
     """
-    This function will attempt to inject an IPv4 default route to attempt
-    correct routing issues caused by path cost if the ethernet interface
-    is up and is preferred to the WLAN interface.
+    This function will attempt to inject an IPv4 default route for the test
+    traffic interface. All other detected default routes will be removed. The
+    default route will also be modified to use a metric of 0 if existing, or
+    added with a metric of 0 if it does not exist
 
     Scenario:
 
     This function is called as it has been determined that the route used for
     testing traffic is not the required interface. An attempt will be made to 
-    fix the routing by increasing the metric of the exsiting default route and
-    then adding a new deault route that uses the interface required for testing
-    (which will have a lower metrc and be used in preference to the original
-    default route)
+    fix the routing by adding a new default route that uses the interface required
+    for testing, which will have a lower metrc and be used in preference to the
+    original default route. All other default routes ill be removed. If an existing
+    default can be used, it will be deleted and re-added with a metric of 1
 
     Process flow:
     
-    1. Get route to the destination IP address
-    2. If it's not a default route entry, we can't fix this, exit
-    3. Take a copy of the existinf default route, delete it ad re-add it
-       with an increased metric
-    3. Figure out the interface over which testing traffic should be sent
-    4. Add a new default route entry for that interface (with no metric)
-    5. Delete the existing default route
+    1. Get routes to the destination IP address
+    2. For each entry, if it is a "default" route:
+         - check if it is tesing interface, if it is:
+            delete it and re-add it with a metric of 0
+         - if not:
+            delete it
+    3. If no default route has been found, add a suitable
+       default route with a metric of 0
 
-    (Note the interface that provides the new default route must be bounced to
+    (Note the interface that provides the new default route *must* be bounced to
     update the probe routing table correctly)
     """
 
-    # get the default route to our destination
-    route_to_dest = get_route_used_to_dest_ipv4(ip_address, file_logger)
+    # get the default route to our ipv6 destination
+    route_list = get_routes_used_to_dest_ipv4(ip_address, file_logger) 
+    
+    file_logger.info('  [Default Route Injection (IPv4)] Checking if we can fix default routing to use correct test interface...')
 
-    # This fix relies on the retrieved route being a default route in the 
-    # format: default via 192.168.0.1 dev eth0
-
-    if not "default" in route_to_dest:
-        # this isn't a default route, so we can't fix this
-        file_logger.error('  [Default Route Injection (ipv4)] Route is not a default route entry...cannot resolve this routing issue: {}'.format(route_to_dest))
-        return False
-  
     # figure out what our required interface is for testing traffic
     probe_mode = config_vars['probe_mode']
     file_logger.info("  [Default Route Injection (IPv4)] Checking probe mode: '{}' ".format(probe_mode))
     test_traffic_interface= get_test_traffic_interface(config_vars, file_logger)
+    file_logger.info("  [Default Route Injection (IPv4)] Testing interface: '{}' ".format(test_traffic_interface))
 
-    # delete existing default route
-    try:
-        del_route_cmd = "{} route del ".format(IP_CMD) + route_to_dest
-        subprocess.run(del_route_cmd, shell=True)
-        file_logger.info("  [Default Route Injection (IPv4)] Deleting route: {}".format(route_to_dest))
-    except subprocess.CalledProcessError as proc_exc:
-        file_logger.error('  [Default Route Injection (IPv4)] Route deletion failed!: {}'.format(proc_exc))
-        return False
+    # step through routes and remove each default route that does not match test interface
+    test_interface_route_fixed = False
 
-    # re-add the default route with an increased metric
-    try:
-        modified_route = route_to_dest + " metric 500"
-        add_route_cmd = "{} route add  ".format(IP_CMD) + modified_route
-        subprocess.run(add_route_cmd, shell=True)
-        file_logger.info("  [Default Route Injection (IPv4)] Re-adding deleted route with new metric: {}".format(modified_route))
-    except subprocess.CalledProcessError as proc_exc:
-        file_logger.error('  [Default Route Injection (IPv4)] Route addition failed!')
-        return False
+    file_logger.info("  [Default Route Injection (IPv4)] Checking routes...")
+    
+    for route_to_dest in route_list:
 
-    # inject a new route with the required testing interface
-    try:
-        new_route = "default dev {}".format(test_traffic_interface)
-        add_route_cmd = "{} route add  ".format(IP_CMD) + new_route
-        subprocess.run(add_route_cmd, shell=True)
-        file_logger.info("  [Default Route Injection (IPv4)] Adding new route: {}".format(add_route_cmd))
-    except subprocess.CalledProcessError as proc_exc:
-        file_logger.error('  [Default Route Injection (IPv4)] Route addition failed!')
-        return False
+        # This fix relies on the retrieved route being a default route in the 
+        # format: default via 192.168.0.1 dev eth0
 
-    file_logger.info("  [Default Route Injection (IPv4)] Route injection complete")
-    return True
+        # if an empty entry slips through, ignore
+        if not route_to_dest:
+            continue
+        
+        if not "default" in route_to_dest:
+            # this isn't a default route, so we can't fix this
+            file_logger.debug('  [Default Route Injection (IPv4)] Route is not a "default" route entry...unable to update this route: {}'.format(route_to_dest))
+            continue
+              
+        # delete default route
+        try:
+            del_route_cmd = "{} route del ".format(IP_CMD) + route_to_dest
+            subprocess.run(del_route_cmd, shell=True)
+            file_logger.info("  [Default Route Injection (IPv4)] Deleting route: {}".format(route_to_dest))
+        except subprocess.CalledProcessError as proc_exc:
+            file_logger.error('  [Default Route Injection (IPv4)] Route deletion failed!: {}'.format(proc_exc))
+            return False
+        
+        # if a match for test interface, modify metric & re-add
+        if test_traffic_interface in route_to_dest:
+
+            if "metric" in route_to_dest:
+                route_to_dest =  re.sub(r"metric \d+", r"metric 0", route_to_dest)
+            else:
+                route_to_dest += " metric 0"
+
+            try:
+                add_route_cmd = "{} route add  ".format(IP_CMD) + route_to_dest
+                subprocess.run(add_route_cmd, shell=True)
+                file_logger.info("  [Default Route Injection (IPv4)] Re-adding deleted route with modified metric: {}".format(route_to_dest))
+            except subprocess.CalledProcessError as proc_exc:
+                file_logger.error('  [Default Route Injection (IPv4)] Route addition failed!')
+                return False
+            
+            # signal that test traffic interface route updated
+            if test_traffic_interface in route_to_dest:
+                test_interface_route_fixed = True
+        
+    if not test_interface_route_fixed:
+
+        # We didn't manage to fix our routing issue (most likely as there was another interface
+        # being used for the default route), so lets try adding a default route for the interface
+        # we're testing over.
+        #
+        # We need to add a route in the format:
+        #   ip route add default dev wlan0 via 192.168.1.1 metric 0 
+        #
+        # Process: pull out last "lease { }" entry for interface and extract "option routers"
+        #          to use as def gw for routing table
+        #          file: /var/lib/dhcp/dhclient.eth0.leases
+        #          format: option routers 192.168.1.1;
+
+        lease_file_name = "/var/lib/dhcp/dhclient.{}.leases".format(test_traffic_interface)
+        leases_file_content = ''
+
+        if os.path.exists(lease_file_name):
+            try:
+                with open(lease_file_name, 'r') as f:
+                    leases_file_content = f.read()
+            except Exception as ex:
+                file_logger.error("  [Default Route Injection (IPv4)] Issue reading lease file: {}. Route addition failed!".format(ex))
+                return False
+        else:
+            file_logger.error('  [Default Route Injection (IPv4)] Unable to find required lease file for {}. Route addition failed!'.format(test_traffic_interface))
+            return False
+        
+        # find all instances of the "option routers" configuration line
+        option_routers_list = re.findall("option routers .*?\;", leases_file_content)
+
+        if len(option_routers_list) < 1:
+            file_logger.error('  [Default Route Injection (IPv4)] Unable to determine def gw for route addition. Route addition failed!')
+            return False
+        
+        # pull out the IP address from the last instance of the "option routers" line 
+        option_router_line = option_routers_list[-1]
+        def_gw = _field_extractor('\d+\.\d+\.\d+\.\d+', option_router_line)
+    
+        if not def_gw:
+            file_logger.error('  [Default Route Injection (IPv4)] Unable to determine def gw from leases file. Route addition failed!')
+            return False
+
+        # add default route via test interface
+        route_to_dest = "default dev {} via {} metric 0".format(test_traffic_interface, def_gw)
+
+        try:
+            add_route_cmd = "{} route add  {}".format(IP_CMD, route_to_dest)
+            subprocess.run(add_route_cmd, shell=True)
+            file_logger.info("  [Default Route Injection (IPv4)] Adding test interface route: {}".format(route_to_dest))
+        except subprocess.CalledProcessError as proc_exc:
+            file_logger.error('  [Default Route Injection (IPv4)] Route addition failed!')
+            return False
+        
+        # signal that test traffic interface route updated
+        if test_traffic_interface in route_to_dest:
+            test_interface_route_fixed = True
+        
+    file_logger.info("  [Default Route Injection (IPv4)] Route injection operation complete")
+    
+    return test_interface_route_fixed
 
 def remove_duplicate_interface_route_ipv4(interface_ip, interface_name, file_logger):
 

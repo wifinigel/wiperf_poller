@@ -1,12 +1,12 @@
 """
-Routing in wiperf
-=================
+IPV4 Routing in wiperf
+======================
 
 Routing of IP traffic can be problematic in some instances within a network probe. Once multiple
 interfaces are enabled, it can be quite tricky for the IP stack to know which interface packets
 should be sent over (as we are not using any routing protocols).
 
-In the absence of any additional information, a probe will typically assign a number of interfaces
+In the absence of any additional information, a probe *may* assign a number of interfaces
 as default routes and then route packets out of the lowest cost interface. In the case of wiperf,
 this often means that if we have the Ethernet interface connected and a wireless connection established,
 the ethernet interface will generally be preferred over the wireless interface. This not generally 
@@ -14,7 +14,7 @@ what we want to achieve - in many instances, we want to route all test traffic o
 interface, with management traffic being sent over the ethernet interface. This means that when several
 interaces are up, we may need to manipulate route metrics and maybe add or remove some routes to 
 gain the desired traffic flow. This is particularly important if the ethernet and wireless interfaces
-are on the same interface, when test traffic may end up flowing out of the ethernet interface and not
+are on the same IP network, when test traffic may end up flowing out of the ethernet interface and not
 test the wireless link at all.
 
 In addition, we also need to verify that management traffic (i.e. test results data) can reach the
@@ -27,7 +27,7 @@ The interfaces to be used for testing are determined by the probe mode. There ar
 
 In wireless mode, all test traffic needs to flow over the wireless interface. Management traffic may 
 flow over any nominated interface, which may include the wireless or ethernet interfaces. It is also
-possible that other interfaces (e.g. a VPN interface (Zeortier for instance)) that are used for 
+possible that other interfaces (e.g. a VPN interface (Zeortier for instance)) are used for 
 management connectivity. The test traffic needs to flow towards the "WAN" direction, generally out to
 the Internet to test remote resources. It is assumed that as we have selected wireless mode, the 
 required test resources can be reached over the wireless Interface.
@@ -42,39 +42,43 @@ Route Checking/Modification
 
 The process for obtaining the correct traffic flows is as follows:
 
-1. Check the route that will be used to hit the test domain - this is done by looking up 
+1. Check the interface that will be used to hit the test domain - this is done by looking up 
    the route to nominated IP destination out in the test domain (usually the Internet). This
    can be achieved using the "ip" command - for instance:
 
-   ip route show to match 8.8.8.8
+   ip route get 8.8.8.8
 
 2. If route lookup indicates test traffic will hit the required interface, our default route 
-   is already set a we need it.
+   is already set as we need it.
 
-3. If the route lookup indicates that the incorrect interface is used as the default route, add
-   a default route that selects the desired interface. Then, replace the previously observered
-   default route with a the same default route entry, but with a high metric (to discourage its
-   use compared to the new default route we added). 
-   
-   Add a new default route that goes via the correct interface (with no metric...i.e. zero)
+3. If the route lookup indicates that the incorrect interface is used as the default route, delete
+   any default routes not on the desired interface. Then add a default route that forces traffic
+   across the test interface (assigning a metric of zero)
 
    Finally, bounce the interface that has just had the default route added, to ensure the probe 
    routing table reflects the desired routing table sequence and that the new default route 
    obtains a gateway setting (I forgot this final step which caused me 2 days of angst...):
    
    ip route del default via 192.168.0.1 dev eth0
-   ip route add default via 192.168.0.1 dev eth0 metric 500
-   ip route add default dev wlan0
+   ip route add default dev wlan0 metric 0
    ifdown wlan0; ifup wlan0
    
 4. Perform a route lookup again to verify that test traffic will now hit the required interface:
 
-   ip route show to match 8.8.8.8
+   ip route get 8.8.8.8
 
-5. The steps above are shown for IPv4 networks. This also needs to be repeated for IPV6 networks 
+5. Another challenge is the possibility of two local interfaces being attached to the same
+   subnet. This is a valid condition, but may make the choice of which interface to use for
+   target test resources dubious as the interface to be used may be unpredictable.
+
+   The answer to this is to remove any local interface routes on the same network as the 
+   test interface. Note, this only needs to be done if the test interface is on the same 
+   subnet as one of the other interfaces on the probe. 
+
+6. The steps above are shown for IPv4 networks. This also needs to be repeated for IPV6 networks 
    if IPv6 is enabled
 
-6. Finally, make sure that there is a viable route for management traffic:
+7. Finally, make sure that there is a viable route for management traffic:
 
     a. Lookup the route to the IP of the mgt platform
     b. If the correct interface is not being used, inject a single host route to force mgt
@@ -185,10 +189,6 @@ def get_test_traffic_interface(config_vars, file_logger):
         
     file_logger.error("  Unknown probe mode: {} (exiting)".format(probe_mode))
     sys.exit()
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# IPv4 Utils
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 def get_routes_used_to_dest_ipv4(ip_address, file_logger):
     """
@@ -349,8 +349,9 @@ def inject_default_route_ipv4(ip_address, config_vars, file_logger):
     3. If no default route has been found, add a suitable
        default route with a metric of 0
 
-    (Note the interface that provides the new default route *must* be bounced to
-    update the probe routing table correctly)
+    Note 1: If the interface nominated for test traffic is invalid as a route
+            for carrying test traffic, connectivity will be lost and may only be
+            restored via a reboot.
     """
 
     # get the default route to our ipv4 destination

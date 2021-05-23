@@ -303,7 +303,7 @@ class NetworkConnectionTester(object):
             self._ipv6_checks(watchdog_obj, lockf_obj, config_vars, exporter_obj)
         else: 
             self.file_logger.warning("IPv6 not enabled in probe config...bypassing IPv6 connectivity tests.")
-            self.file_logger.info("(Note that IPv6 may still be used by the probe IP stack if interfaces have IPv6 interfaces. Remove all IPv6 global addresses if you want to test a pure IPv4 env.)")
+            self.file_logger.info("(Note that IPv6 may still be used by the probe IP stack if interfaces have IPv6 addresses. Remove all IPv6 global addresses if you want to test a pure IPv4 env.)")
         
         # sanity check to make sure we have some type of IP enabled
         if (not config_vars['ipv4_enabled'] == 'yes') and (not config_vars['ipv6_enabled'] == 'yes'):

@@ -458,7 +458,7 @@ def remove_duplicate_interface_route_ipv6(interface_ip, interface_name, file_log
                     try:
                         add_route_cmd = "{} -6 route add  {}".format(IP_CMD, new_route)
                         subprocess.run(add_route_cmd, shell=True)
-                        file_logger.info("  [Default Route Injection (IPv6)] Re-adding deleted route with modified metric: {}".format(new_route))
+                        file_logger.info("  [Default Route Injection (IPv6)] Adding local interface route with modified metric: {}".format(new_route))
                     except subprocess.CalledProcessError as proc_exc:
                         file_logger.error('  [Default Route Injection (IPv6)] Route addition failed!')
                         return False

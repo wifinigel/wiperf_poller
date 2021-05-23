@@ -15,11 +15,9 @@ from wiperf_poller.helpers.route import (
     resolve_name,
     resolve_name_ipv4,
     resolve_name_ipv6 ,
-    check_correct_mode_interface_ipv4,
     is_ipv4,
     is_ipv6
 )
-from wiperf_poller.helpers.route_ipv6 import check_correct_mode_interface_ipv6
 
 class HttpTesterCurl(object):
     '''
@@ -84,7 +82,7 @@ class HttpTesterCurl(object):
         # return status code & elapsed duration in mS
         return (self.http_status_code, self.http_get_duration, self.http_server_response_time)
     
-    def run_tests(self, status_file_obj, config_vars, exporter_obj, check_correct_mode_interface,):
+    def run_tests(self, status_file_obj, config_vars, exporter_obj):
 
         self.file_logger.info("Starting HTTP tests...")
         status_file_obj.write_status_file("HTTP tests")

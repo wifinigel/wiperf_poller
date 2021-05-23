@@ -10,8 +10,6 @@ def run_tests(config_vars, file_logger, poll_obj, status_file_obj, exporter_obj,
     from wiperf_poller.testers.speedtester import Speedtester as Speedtester
     from wiperf_poller.testers.smbtester import SmbTesterIpv4 as SmbTester
     
-    from wiperf_poller.helpers.route import resolve_name_ipv4 as resolve_name
-
     #############################
     # Run ping test (if enabled)
     #############################
@@ -147,7 +145,7 @@ def run_tests(config_vars, file_logger, poll_obj, status_file_obj, exporter_obj,
 
     if config_vars['speedtest_enabled'] == 'yes' and config_vars['test_issue'] < config_vars['test_issue_threshold']:
 
-        speedtest_obj = Speedtester(file_logger, config_vars, resolve_name, adapter_obj)
+        speedtest_obj = Speedtester(file_logger, config_vars, adapter_obj)
         test_passed = speedtest_obj.run_tests(status_file_obj, config_vars, exporter_obj, lockf_obj)
 
         if test_passed:

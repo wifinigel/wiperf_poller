@@ -12,7 +12,7 @@ class Speedtester():
     Class to implement speedtest server tests for wiperf
     """
 
-    def __init__(self, file_logger, config_vars, resolve_name, adapter_obj):
+    def __init__(self, file_logger, config_vars, adapter_obj):
 
         self.file_logger = file_logger
         self.config_vars = config_vars
@@ -22,7 +22,6 @@ class Speedtester():
         self.https_proxy = config_vars['https_proxy']
         self.no_proxy = config_vars['no_proxy']
         
-        self.resolve_name = resolve_name
         self.adapter_obj = adapter_obj
 
         # ipv4
@@ -332,13 +331,7 @@ class Speedtester():
             if target_ip_ver == "ipv6":
                 wan_target = self.wan_target_ipv6
             
-            # check we can hit the WAN
-            wan_target = self.resolve_name(wan_target, self.file_logger)
-            if not wan_target:
-                self.file_logger.error("  Unable to resolve WAN target IP, will not be run ({})".format(wan_target))
-                continue
-
-             # check if test to host is viable (based on probe ipv4/v6 support)
+            # check if test to host is viable (based on probe ipv4/v6 support)
             checker = TestViabilityChecker(config_vars, self.file_logger)
             if not checker.check_test_host_viable(wan_target, target_ip_ver):
                 self.file_logger.error("  Speedtest not viable, will not be run (WAN target: {})".format(wan_target))

@@ -10,7 +10,6 @@ def run_tests(config_vars, file_logger, poll_obj, status_file_obj, exporter_obj,
     from wiperf_poller.testers.speedtester import Speedtester as Speedtester
     from wiperf_poller.testers.smbtester import SmbTesterIpv4 as SmbTester
     
-    from wiperf_poller.helpers.route import check_correct_mode_interface_ipv4 as check_correct_mode_interface
     from wiperf_poller.helpers.route import resolve_name_ipv4 as resolve_name
 
     #############################
@@ -75,7 +74,7 @@ def run_tests(config_vars, file_logger, poll_obj, status_file_obj, exporter_obj,
     if config_vars['http_test_enabled'] == 'yes' and config_vars['test_issue'] < config_vars['test_issue_threshold']:
 
         http_obj = HttpTester(file_logger)
-        tests_passed = http_obj.run_tests(status_file_obj, config_vars, exporter_obj, check_correct_mode_interface)
+        tests_passed = http_obj.run_tests(status_file_obj, config_vars, exporter_obj)
 
         if tests_passed:
             poll_obj.http('Completed')
@@ -149,7 +148,7 @@ def run_tests(config_vars, file_logger, poll_obj, status_file_obj, exporter_obj,
     if config_vars['speedtest_enabled'] == 'yes' and config_vars['test_issue'] < config_vars['test_issue_threshold']:
 
         speedtest_obj = Speedtester(file_logger, config_vars, resolve_name, adapter_obj)
-        test_passed = speedtest_obj.run_tests(status_file_obj, check_correct_mode_interface, config_vars, exporter_obj, lockf_obj)
+        test_passed = speedtest_obj.run_tests(status_file_obj, config_vars, exporter_obj, lockf_obj)
 
         if test_passed:
             poll_obj.speedtest('Completed')
@@ -172,7 +171,7 @@ def run_tests(config_vars, file_logger, poll_obj, status_file_obj, exporter_obj,
     if config_vars['smb_enabled'] == 'yes' and config_vars['test_issue'] < config_vars['test_issue_threshold']:
 
         smb_obj = SmbTester(file_logger)
-        tests_passed = smb_obj.run_tests(status_file_obj, config_vars, adapter_obj, check_correct_mode_interface, exporter_obj)
+        tests_passed = smb_obj.run_tests(status_file_obj, config_vars, adapter_obj, exporter_obj)
         if tests_passed:
             poll_obj.smb('Completed')
         else:

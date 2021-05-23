@@ -13,7 +13,7 @@ from wiperf_poller.helpers.timefunc import get_timestamp
 from wiperf_poller.helpers.viabilitychecker import TestViabilityChecker
 
 
-class SmbTesterIpv4():
+class SmbTester():
     '''
     A class to perform an SMB copy from a host - a basic wrapper around a CLI copy and mount command
     '''

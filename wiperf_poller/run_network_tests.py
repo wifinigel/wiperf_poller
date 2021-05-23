@@ -8,7 +8,7 @@ def run_tests(config_vars, file_logger, poll_obj, status_file_obj, exporter_obj,
     from wiperf_poller.testers.iperf3tester import IperfTesterIpv4  as IperfTester
     from wiperf_poller.testers.pingtester import PingTesterIpv4 as PingTester
     from wiperf_poller.testers.speedtester import Speedtester as Speedtester
-    from wiperf_poller.testers.smbtester import SmbTesterIpv4 as SmbTester
+    from wiperf_poller.testers.smbtester import SmbTester as SmbTester
     
     #############################
     # Run ping test (if enabled)

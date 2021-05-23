@@ -208,7 +208,7 @@ class SmbTesterIpv4():
             'rate':self.transfert_rate}
 
 
-    def run_tests(self, status_file_obj, config_vars, adapter, check_correct_mode_interface, exporter_obj):
+    def run_tests(self, status_file_obj, config_vars, adapter, exporter_obj):
 
         self.file_logger.info("Starting SMB test...")
         status_file_obj.write_status_file("SMB tests")

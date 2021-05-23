@@ -312,7 +312,7 @@ class Speedtester():
         return results_dict
 
 
-    def run_tests(self, status_file_obj, check_correct_mode_interface, config_vars, exporter_obj, lockf_obj):
+    def run_tests(self, status_file_obj, config_vars, exporter_obj, lockf_obj):
 
         self.file_logger.info("Starting speedtest(s)...")
         status_file_obj.write_status_file("speedtest")
@@ -342,12 +342,6 @@ class Speedtester():
             checker = TestViabilityChecker(config_vars, self.file_logger)
             if not checker.check_test_host_viable(wan_target, target_ip_ver):
                 self.file_logger.error("  Speedtest not viable, will not be run (WAN target: {})".format(wan_target))
-                continue
-
-            if not check_correct_mode_interface(wan_target, config_vars, self.file_logger):
-                self.file_logger.error("Unable to run Speedtest(s) as route to Internet not correct interface for more - we have a routing issue of some type.")
-                config_vars['test_issue'] += 1
-                config_vars['test_issue_descr'] = "Speedtest test failure - no route to WAN({})".format(target_name)
                 continue
 
             # get adapter ip addr

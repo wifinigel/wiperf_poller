@@ -441,27 +441,26 @@ def remove_duplicate_interface_route_ipv6(interface_ip, interface_name, file_log
                 continue
 
             if not (interface_name in route_entry):
-
                 # do nothing, not a route entry of interest
                 continue
-            else:
-                # remove expiration message (added by dhcp) in route
-                if "expires" in route_entry:
-                    route_entry = route_entry.split("expires", 1)[0].strip()
-                
-                # substitute the metric & change to 1
-                new_route =  re.sub(r"metric \d+", r"metric 1", route_entry)
 
-                # if it doesn't already exist in the route list, add static entry
-                if not new_route in routes:
+            # remove expiration message (added by dhcp) in route
+            if "expires" in route_entry:
+                route_entry = route_entry.split("expires", 1)[0].strip()
+            
+            # substitute the metric & change to 1
+            new_route =  re.sub(r"metric \d+", r"metric 1", route_entry)
 
-                    try:
-                        add_route_cmd = "{} -6 route add  {}".format(IP_CMD, new_route)
-                        subprocess.run(add_route_cmd, shell=True)
-                        file_logger.info("  [Default Route Injection (IPv6)] Adding local interface route with modified metric: {}".format(new_route))
-                    except subprocess.CalledProcessError as proc_exc:
-                        file_logger.error('  [Default Route Injection (IPv6)] Route addition failed!')
-                        return False
+            # if it doesn't already exist in the route list, add static entry
+            route_exists = any(new_route in route for route in routes)
+            if not route_exists:
+                try:
+                    add_route_cmd = "{} -6 route add  {}".format(IP_CMD, new_route)
+                    subprocess.run(add_route_cmd, shell=True)
+                    file_logger.info("  [Default Route Injection (IPv6)] Adding local interface route with modified metric: {}".format(new_route))
+                except subprocess.CalledProcessError as proc_exc:
+                    file_logger.error('  [Default Route Injection (IPv6)] Route addition failed!')
+                    return False
     
     file_logger.info("  [Check Interface Routes (IPv6)] Checks/operations complete.")
     return True

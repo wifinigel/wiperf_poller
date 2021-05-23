@@ -109,66 +109,71 @@ class NetworkConnectionTester(object):
         ##########################################################
         # Check testing interface has ipv4 address (if ipv4 used)
         ##########################################################
-        if self.adapter_obj.get_adapter_ipv4_ip():
+        if config_vars['connectivity_lookup']:
 
-            ############################
-            # Check DNS is working
-            ############################
-            # final ipv4 connectivity check: see if we can resolve an address
-            # (network connection and DNS must be up)
-            self.file_logger.info("  Checking we can do a DNS (ipv4)lookup to {}".format(config_vars['connectivity_lookup']))
+            if self.adapter_obj.get_adapter_ipv4_ip():
 
-            # Run a ping to seed arp cache - not interested in result
-            ping_obj = PingTester(self.file_logger)
-            ping_obj.ping_host(config_vars['connectivity_lookup'], 1, silent=True)
+                ############################
+                # Check DNS is working
+                ############################
+                # final ipv4 connectivity check: see if we can resolve an address
+                # (network connection and DNS must be up)
+                self.file_logger.info("  Checking we can do a DNS (ipv4)lookup to {}".format(config_vars['connectivity_lookup']))
 
-            ######################################################################
-            # Try a DNS lookup (IPv4) against configured name for Internet checks 
-            ######################################################################
-            ip_address = resolve_name_ipv4(config_vars['connectivity_lookup'], self.file_logger)
-            
-            if not ip_address:
-                # hmmm....things went bad, lookup failed...report & exit
-                self.file_logger.error("  DNS (ipv4) seems to be failing, please verify network connectivity (exiting).  (watchdog incremented)")
-                watchdog_obj.inc_watchdog_count()
-                lockf_obj.delete_lock_file()
-                sys.exit()
+                # Run a ping to seed arp cache - not interested in result
+                ping_obj = PingTester(self.file_logger)
+                ping_obj.ping_host(config_vars['connectivity_lookup'], 1, silent=True)
 
-            # check we are going to the Internet over the correct interface for ipv4 tests
-            if check_correct_mode_interface_ipv4(ip_address, config_vars, self.file_logger):
-
-                self.file_logger.info("  Correct interface ({}) being used for ipv4 tests.".format(self.testing_interface))
-            
-            else:
                 ######################################################################
-                # We seem to be using wrong interface for testing, fix default route 
+                # Try a DNS lookup (IPv4) against configured name for Internet checks 
                 ######################################################################
-                self.file_logger.warning("  We are not using the interface required to perform our IPv4 tests due to a routing issue in this unit - attempting route addition to fix issue")
+                ip_address = resolve_name_ipv4(config_vars['connectivity_lookup'], self.file_logger)
                 
-                if inject_default_route_ipv4(config_vars['connectivity_lookup'], config_vars, self.file_logger):
-                
-                    self.adapter_obj.bounce_interface() # bounce needed to update route table!
-                    self.file_logger.info("  Checking if ipv4 route injection worked...")
-
-                    if check_correct_mode_interface_ipv4(ip_address, config_vars, self.file_logger):
-                        self.file_logger.info("  Routing issue (ipv4) corrected OK.")
-                    else:
-                        self.file_logger.warning("  We still have an ipv4 routing issue. Will have to exit as testing over correct interface not possible")
-                        self.file_logger.warning("  Suggest making static routing additions or adding an additional metric to the interface causing the issue.")
-                        lockf_obj.delete_lock_file()
-                        sys.exit()
-                else:
-                    self.file_logger.error("  Routing issue (ipv4) - exiting.")
+                if not ip_address:
+                    # hmmm....things went bad, lookup failed...report & exit
+                    self.file_logger.error("  DNS (ipv4) seems to be failing, please verify network connectivity (exiting).  (watchdog incremented)")
+                    watchdog_obj.inc_watchdog_count()
                     lockf_obj.delete_lock_file()
                     sys.exit()
-            
-            # Take out any local interface routes that may allow test traffic to leak
-            # over wrong interface (e.g. if have wlan0 and eth0 on same subnet)
-            remove_duplicate_interface_route_ipv4(self.adapter_obj.get_adapter_ipv4_ip(), self.adapter_obj.if_name, self.file_logger)
-               
+
+                # check we are going to the Internet over the correct interface for ipv4 tests
+                if check_correct_mode_interface_ipv4(ip_address, config_vars, self.file_logger):
+
+                    self.file_logger.info("  Correct interface ({}) being used for ipv4 tests.".format(self.testing_interface))
+                
+                else:
+                    ######################################################################
+                    # We seem to be using wrong interface for testing, fix default route 
+                    ######################################################################
+                    self.file_logger.warning("  We are not using the interface required to perform our IPv4 tests due to a routing issue in this unit - attempting route addition to fix issue")
+                    
+                    if inject_default_route_ipv4(config_vars['connectivity_lookup'], config_vars, self.file_logger):
+                    
+                        self.file_logger.info("  Checking if ipv4 route injection worked...")
+
+                        if check_correct_mode_interface_ipv4(ip_address, config_vars, self.file_logger):
+                            self.file_logger.info("  Routing issue (ipv4) corrected OK.")
+                        else:
+                            self.file_logger.warning("  We still have an ipv4 routing issue. Will have to exit as testing over correct interface not possible")
+                            self.file_logger.warning("  Suggest making static routing additions or adding an additional metric to the interface causing the issue.")
+                            lockf_obj.delete_lock_file()
+                            sys.exit()
+                    else:
+                        self.file_logger.error("  Routing issue (ipv4) - exiting.")
+                        lockf_obj.delete_lock_file()
+                        sys.exit()
+                
+                # Take out any local interface routes that may allow test traffic to leak
+                # over wrong interface (e.g. if have wlan0 and eth0 on same subnet)
+                remove_duplicate_interface_route_ipv4(self.adapter_obj.get_adapter_ipv4_ip(), self.adapter_obj.if_name, self.file_logger)
+                
+            else:
+                # if we have no IPv4 address address, issue warning
+                self.file_logger.warning("  No IPv4 address found on {} adapter. Unless this is an IPv6 environment, you will have issues.".format(self.probe_mode))
         else:
-            # if we have no IPv4 address address, issue warning
-            self.file_logger.warning("  No IPv4 address found on {} adapter. Unless this is an IPv6 environment, you will have issues.".format(self.probe_mode))
+            self.file_logger.warning("  Config.ini parameter 'connectivity_lookup' is not set, unable to test IPv4 connectivity")
+            # disable ipv4 tests
+            config_vars['ipv4_tests_supported'] = False
 
     def _ipv6_checks(self, watchdog_obj, lockf_obj, config_vars, exporter_obj):
 
@@ -212,7 +217,7 @@ class NetworkConnectionTester(object):
                 # check we are going to the Internet over the correct interface for ipv4 tests
                 if check_correct_mode_interface_ipv6(ip_address, config_vars, self.file_logger):
 
-                    self.file_logger.info("  Correct interface being used for ipv6 tests.")
+                    self.file_logger.info("  Correct interface ({})being used for ipv6 tests.".format(self.testing_interface))
                 
                 else:
                     ##########################################################################
@@ -222,7 +227,6 @@ class NetworkConnectionTester(object):
                     
                     if inject_default_route_ipv6(config_vars['connectivity_lookup_ipv6'], config_vars, self.file_logger):
                     
-                        #self.adapter_obj.bounce_interface()  # bounce needed to update route table!
                         self.file_logger.info("  Checking if ipv6 route injection worked...")
 
                         if check_correct_mode_interface_ipv6(ip_address, config_vars, self.file_logger):

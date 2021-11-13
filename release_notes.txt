@@ -1,3 +1,6 @@
+v0.3.2
+1. Added fix for Influx DB ssl support
+
 v0.3.1
 1. Added bug-fix for remote config pull status reporting
 2. Added remote config pull additonal debugging info

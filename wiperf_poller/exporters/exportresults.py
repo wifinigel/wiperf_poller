@@ -34,11 +34,11 @@ class ResultsExporter(object):
         splunk_exp_obj=SplunkExporter(host, token, file_logger, port)
         return splunk_exp_obj.export_result(dict_data, source)
 
-    def send_results_to_influx(self, localhost, host, port, username, password, database, dict_data, source, file_logger):
+     def send_results_to_influx(self, localhost, host, port, username, password, database, use_ssl, dict_data, source, file_logger):
 
         file_logger.info("Sending results data to Influx host: {}, port: {}, database: {})".format(host, port, database))
         if is_ipv6(host): host = "[{}]".format(host)
-        return influxexporter(localhost, host, port, username, password, database, dict_data, source, file_logger)
+        return influxexporter(localhost, host, port, username, password, database, use_ssl, dict_data, source, file_logger)
     
     def send_results_to_influx2(self, localhost, url, token, bucket, org, dict_data, source, file_logger):
 
@@ -72,7 +72,7 @@ class ResultsExporter(object):
             file_logger.info("InfluxDB update: {}, source={}".format(data_file, test_name))
 
             sent_ok = self.send_results_to_influx(gethostname(), config_vars['data_host'], config_vars['data_port'], 
-                config_vars['influx_username'], config_vars['influx_password'], config_vars['influx_database'], results_dict, data_file, file_logger)
+                config_vars['influx_username'], config_vars['influx_password'], config_vars['influx_database'], config_vars['influx_ssl'], results_dict, data_file, file_logger)
         
         elif config_vars['exporter_type'] == 'influxdb2':
             

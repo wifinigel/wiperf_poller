@@ -1,0 +1,57 @@
+"""
+Routing Decision Process
+========================
+
+Assumptions:
+1. Environment may be pure IPv4, pure IPv6 or a mix of the two
+
+Notes:
+1. Use psutil module to get interface details, not subprocess wrappers (psutil.net_if_addrs())
+
+IPv4 Internet connectivity
+
+	+ Get test traffic interface - config_vars['probe_mode'] ** DONE **
+	+ Check interface is up and has IPv4 address ** DONE **
+		- Down: Fail & exit ---------------> [Exit] ** DONE **
+		- Up: Has IPv4 address?  ** DONE **
+			- No: Send warning as may cause issues unless this is an IPv6 only env  ** DONE **
+			- Yes: Check IPv4 route to internet - config_vars['connectivity_lookup'] goes via probe mode interface  ** DONE **
+				- Yes: continue ---------------> [Continue]  ** DONE **
+				- No: Create a default route that points to the required interface  ** DONE **
+	
+	
+	+ Get reporting server address, is it IPv4 or IPv6? ** DONE **
+		- IPv4: continue ** DONE **
+		- IPv6: print warning that its IPv6 and break ---------------> [Break] ** DONE **
+	+ Get mgt traffic interface - config_vars['mgt_if']
+        - Interface up? ** DONE **
+            - No: can't send mgt traffic, exit  ---------------> [Exit] ** DONE **
+            - yes: continue ** DONE **
+	+ Check IPv4 address of the server is via the required interface:
+		- Yes: continue ---------------> [Continue] ** DONE **
+		- No: Inject static route to send server traffic via mgt interface & test working OK ** DONE **
+
+2. 	+ Get test traffic interface - config_vars['probe_mode']
+	+ Check interface is up and has IPv4 address
+		- Yes: already checked, for routing & status - continue ---------------> [Continue] ** DONE ** 
+		- No: has interface got an IPv6 address:
+			- No: Fail & exit - no IPv4 or IPv6 address - fail & exit ---------------> [Exit] ** DONE ** 
+			- Yes: 
+				- Print warning that interface has only IPv6 address, could be issues if perform IPv4 tests  ** DONE ** 
+				- Check IPv6 route to internet - config_vars['connectivity_lookup_ipv6'] goes via probe mode interface ?
+					- Yes: continue
+					- No: Create a default route that points to the required interface & test
+                        - Pass? 
+                            - No ---------------> [Exit]
+                            - Yes: do nothing 
+	
+	+ Get reporting server address, is it IPv4 or IPv6?
+		- IPv4: end, already checked...nothing more to do  ---------------> [Break]
+		- IPv6: Get mgt traffic interface - config_vars['mgt_if']
+    + Check IPv6 address of the server is via the required interface:
+        - Yes: continue ---------------> [Continue]
+        - No: Inject static route to send server traffic via mgt interface & test working OK
+            - Pass? 
+                - No ---------------> [Exit]
+                - Yes: do nothing 
+"""

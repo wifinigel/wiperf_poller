@@ -1,0 +1,152 @@
+Ping test results - NOK
+2021-02-02 00:16:36,370 - Probe_Log - INFO - ########## ping tests ##########
+2021-02-02 00:16:36,371 - Probe_Log - INFO - Starting ping test...
+2021-02-02 00:16:37,376 - Probe_Log - INFO -   DNS hostname lookup : google.com / Result: 142.250.184.174
+2021-02-02 00:16:37,380 - Probe_Log - INFO -   DNS hostname lookup : facebook.com / Result: 69.171.250.35
+2021-02-02 00:16:37,396 - Probe_Log - INFO -   DNS hostname lookup : instagram.com / Result: 52.73.249.1
+2021-02-02 00:16:37,401 - Probe_Log - INFO -   DNS hostname lookup : wikipedia.org / Result: 91.198.174.192
+2021-02-02 00:16:37,412 - Probe_Log - INFO -   DNS hostname lookup : whatsapp.com / Result: 69.171.250.60
+2021-02-02 00:16:37,417 - Probe_Log - INFO -   DNS hostname lookup : ipv6.google.com / Result: 2a00:1450:4003:802::200e
+2021-02-02 00:16:37,432 - Probe_Log - INFO -   DNS hostname lookup : www.v6.facebook.com / Result: 2a03:2880:f1ff:83:face:b00c:0:25de
+2021-02-02 00:16:37,458 - Probe_Log - INFO -   Checked interface route to : 142.250.184.174. Result: 142.250.184.174 via 192.168.1.1 dev wlan0 src 192.168.1.75 uid 0
+2021-02-02 00:16:37,459 - Probe_Log - DEBUG - Pinging host: 142.250.184.174 (count=1)
+2021-02-02 00:16:37,500 - Probe_Log - DEBUG - Ping command output:
+2021-02-02 00:16:37,501 - Probe_Log - DEBUG - ['PING 142.250.184.174 (142.250.184.174) 56(84) bytes of data.', '', '--- 142.250.184.174 ping statistics ---', '1 packets transmitted, 1 received, 0% packet loss, time 0ms', 'rtt min/avg/max/mdev = 18.942/18.942/18.942/0.000 ms']
+2021-02-02 00:16:37,501 - Probe_Log - DEBUG - Packets transmitted: 1
+2021-02-02 00:16:37,502 - Probe_Log - DEBUG - Packets received: 1
+2021-02-02 00:16:37,502 - Probe_Log - DEBUG - Packet loss(%): 0
+2021-02-02 00:16:37,503 - Probe_Log - DEBUG - Test duration (mS): 0
+2021-02-02 00:16:37,503 - Probe_Log - DEBUG - rtt_min : 18.942
+2021-02-02 00:16:37,503 - Probe_Log - DEBUG - rtt_avg : 18.942
+2021-02-02 00:16:37,504 - Probe_Log - DEBUG - rtt_max : 18.942
+2021-02-02 00:16:37,504 - Probe_Log - DEBUG - rtt_mdev : 0.000
+2021-02-02 00:16:37,505 - Probe_Log - INFO -   ping_host: 142.250.184.174, pkts_tx: 1, pkts_rx: 1, pkt_loss: 0, rtt_avg: 18.942
+2021-02-02 00:16:37,525 - Probe_Log - INFO -   Checked interface route to : 69.171.250.35. Result: 69.171.250.35 via 192.168.1.1 dev wlan0 src 192.168.1.75 uid 0
+2021-02-02 00:16:37,527 - Probe_Log - DEBUG - Pinging host: 69.171.250.35 (count=1)
+2021-02-02 00:16:37,561 - Probe_Log - DEBUG - Ping command output:
+2021-02-02 00:16:37,562 - Probe_Log - DEBUG - ['PING 69.171.250.35 (69.171.250.35) 56(84) bytes of data.', '', '--- 69.171.250.35 ping statistics ---', '1 packets transmitted, 1 received, 0% packet loss, time 0ms', 'rtt min/avg/max/mdev = 12.705/12.705/12.705/0.000 ms']
+2021-02-02 00:16:37,562 - Probe_Log - DEBUG - Packets transmitted: 1
+2021-02-02 00:16:37,562 - Probe_Log - DEBUG - Packets received: 1
+2021-02-02 00:16:37,563 - Probe_Log - DEBUG - Packet loss(%): 0
+2021-02-02 00:16:37,563 - Probe_Log - DEBUG - Test duration (mS): 0
+2021-02-02 00:16:37,563 - Probe_Log - DEBUG - rtt_min : 12.705
+2021-02-02 00:16:37,564 - Probe_Log - DEBUG - rtt_avg : 12.705
+2021-02-02 00:16:37,564 - Probe_Log - DEBUG - rtt_max : 12.705
+2021-02-02 00:16:37,564 - Probe_Log - DEBUG - rtt_mdev : 0.000
+2021-02-02 00:16:37,565 - Probe_Log - INFO -   ping_host: 69.171.250.35, pkts_tx: 1, pkts_rx: 1, pkt_loss: 0, rtt_avg: 12.705
+2021-02-02 00:16:37,581 - Probe_Log - INFO -   Checked interface route to : 52.73.249.1. Result: 52.73.249.1 via 192.168.1.1 dev wlan0 src 192.168.1.75 uid 0
+2021-02-02 00:16:37,582 - Probe_Log - DEBUG - Pinging host: 52.73.249.1 (count=1)
+2021-02-02 00:16:37,710 - Probe_Log - DEBUG - Ping command output:
+2021-02-02 00:16:37,711 - Probe_Log - DEBUG - ['PING 52.73.249.1 (52.73.249.1) 56(84) bytes of data.', '', '--- 52.73.249.1 ping statistics ---', '1 packets transmitted, 1 received, 0% packet loss, time 0ms', 'rtt min/avg/max/mdev = 111.827/111.827/111.827/0.000 ms']
+2021-02-02 00:16:37,712 - Probe_Log - DEBUG - Packets transmitted: 1
+2021-02-02 00:16:37,712 - Probe_Log - DEBUG - Packets received: 1
+2021-02-02 00:16:37,713 - Probe_Log - DEBUG - Packet loss(%): 0
+2021-02-02 00:16:37,713 - Probe_Log - DEBUG - Test duration (mS): 0
+2021-02-02 00:16:37,713 - Probe_Log - DEBUG - rtt_min : 111.827
+2021-02-02 00:16:37,714 - Probe_Log - DEBUG - rtt_avg : 111.827
+2021-02-02 00:16:37,714 - Probe_Log - DEBUG - rtt_max : 111.827
+2021-02-02 00:16:37,715 - Probe_Log - DEBUG - rtt_mdev : 0.000
+2021-02-02 00:16:37,715 - Probe_Log - INFO -   ping_host: 52.73.249.1, pkts_tx: 1, pkts_rx: 1, pkt_loss: 0, rtt_avg: 111.827
+2021-02-02 00:16:37,736 - Probe_Log - INFO -   Checked interface route to : 91.198.174.192. Result: 91.198.174.192 via 192.168.1.1 dev wlan0 src 192.168.1.75 uid 0
+2021-02-02 00:16:37,737 - Probe_Log - DEBUG - Pinging host: 91.198.174.192 (count=1)
+2021-02-02 00:16:37,805 - Probe_Log - DEBUG - Ping command output:
+2021-02-02 00:16:37,806 - Probe_Log - DEBUG - ['PING 91.198.174.192 (91.198.174.192) 56(84) bytes of data.', '', '--- 91.198.174.192 ping statistics ---', '1 packets transmitted, 1 received, 0% packet loss, time 0ms', 'rtt min/avg/max/mdev = 46.741/46.741/46.741/0.000 ms']
+2021-02-02 00:16:37,807 - Probe_Log - DEBUG - Packets transmitted: 1
+2021-02-02 00:16:37,807 - Probe_Log - DEBUG - Packets received: 1
+2021-02-02 00:16:37,807 - Probe_Log - DEBUG - Packet loss(%): 0
+2021-02-02 00:16:37,808 - Probe_Log - DEBUG - Test duration (mS): 0
+2021-02-02 00:16:37,808 - Probe_Log - DEBUG - rtt_min : 46.741
+2021-02-02 00:16:37,808 - Probe_Log - DEBUG - rtt_avg : 46.741
+2021-02-02 00:16:37,809 - Probe_Log - DEBUG - rtt_max : 46.741
+2021-02-02 00:16:37,809 - Probe_Log - DEBUG - rtt_mdev : 0.000
+2021-02-02 00:16:37,809 - Probe_Log - INFO -   ping_host: 91.198.174.192, pkts_tx: 1, pkts_rx: 1, pkt_loss: 0, rtt_avg: 46.741
+2021-02-02 00:16:37,825 - Probe_Log - INFO -   Checked interface route to : 69.171.250.60. Result: 69.171.250.60 via 192.168.1.1 dev wlan0 src 192.168.1.75 uid 0
+2021-02-02 00:16:37,826 - Probe_Log - DEBUG - Pinging host: 69.171.250.60 (count=1)
+2021-02-02 00:16:37,853 - Probe_Log - DEBUG - Ping command output:
+2021-02-02 00:16:37,854 - Probe_Log - DEBUG - ['PING 69.171.250.60 (69.171.250.60) 56(84) bytes of data.', '', '--- 69.171.250.60 ping statistics ---', '1 packets transmitted, 1 received, 0% packet loss, time 0ms', 'rtt min/avg/max/mdev = 9.886/9.886/9.886/0.000 ms']
+2021-02-02 00:16:37,854 - Probe_Log - DEBUG - Packets transmitted: 1
+2021-02-02 00:16:37,855 - Probe_Log - DEBUG - Packets received: 1
+2021-02-02 00:16:37,855 - Probe_Log - DEBUG - Packet loss(%): 0
+2021-02-02 00:16:37,855 - Probe_Log - DEBUG - Test duration (mS): 0
+2021-02-02 00:16:37,855 - Probe_Log - DEBUG - rtt_min : 9.886
+2021-02-02 00:16:37,856 - Probe_Log - DEBUG - rtt_avg : 9.886
+2021-02-02 00:16:37,856 - Probe_Log - DEBUG - rtt_max : 9.886
+2021-02-02 00:16:37,856 - Probe_Log - DEBUG - rtt_mdev : 0.000
+2021-02-02 00:16:37,857 - Probe_Log - INFO -   ping_host: 69.171.250.60, pkts_tx: 1, pkts_rx: 1, pkt_loss: 0, rtt_avg: 9.886
+2021-02-02 00:16:37,877 - Probe_Log - INFO -   Checked interface route to : 2a00:1450:4003:802::200e. Result: 2a00:1450:4003:802::200e from :: via fe80::1 dev eth0 proto ra src 2001:818:e909:cf00:dea6:32ff:fe5b:2005 metric 1024 hoplimit 64 pref medium
+2021-02-02 00:16:37,878 - Probe_Log - ERROR - Unable to ping ipv6.google.com^v6 (2a00:1450:4003:802::200e) as route to destination not over correct interface...bypassing ping tests
+2021-02-02 00:16:37,879 - Probe_Log - ERROR - As we had previous issues, bypassing ping tests.
+
+It seems that eth0 is having priority on routing table over wlan0. How are you doing this on ipv4? Are you change the metric for wlan0?
+My ipv6 routing table:
+pi@raspberrypiredewifi:~ $ route -6
+Kernel IPv6 routing table
+Destination                    Next Hop                   Flag Met Ref Use If
+localhost/128                  [::]                       U    256 2     0 lo
+2001:818:e909:cf00::/64        [::]                       UAe  256 5     0 eth0
+2001:818:e909:cf00::/64        [::]                       UAe  256 2     0 wlan0
+fe80::/64                      [::]                       U    256 1     0 ztukutsbw2
+fe80::/64                      [::]                       U    256 1     0 wlan0
+fe80::/64                      [::]                       U    256 1     0 eth0
+[::]/0                         fe80::1                  UGDAe 1024 5     0 eth0
+[::]/0                         fe80::1                  UGDAe 1024 5     0 wlan0
+localhost/128                  [::]                       Un   0   6     0 lo
+2001:818:e909:cf00:dea6:32ff:fe5b:2005/128 [::]           Un   0   4     0 eth0
+2001:818:e909:cf00:dea6:32ff:fe5b:2006/128 [::]           Un   0   6     0 wlan0
+fe80::dea6:32ff:fe5b:2005/128  [::]                       Un   0   3     0 eth0
+fe80::dea6:32ff:fe5b:2006/128  [::]                       Un   0   7     0 wlan0
+fe80::e894:c8ff:fe6b:e680/128  [::]                       Un   0   3     0 ztukutsbw2
+ff00::/8                       [::]                       U    256 3     0 ztukutsbw2
+ff00::/8                       [::]                       U    256 5     0 wlan0
+ff00::/8                       [::]                       U    256 3     0 eth0
+[::]/0                         [::]                       !n   -1  1     0 lo
+
+################################################################################################
+################################################################################################ 
+DNS Tests - OK
+2021-02-02 00:26:50,125 - Probe_Log - DEBUG -   DNS test target: ipv6.google.com^v6
+2021-02-02 00:26:50,126 - Probe_Log - DEBUG -   Performing DNS lookup for: ipv6.google.com^v6
+2021-02-02 00:26:50,209 - Probe_Log - INFO -   DNS hostname lookup : ipv6.google.com / Result: 2a00:1450:4003:802::200e
+2021-02-02 00:26:50,210 - Probe_Log - DEBUG -   DNS lookup for: ipv6.google.com^v6 succeeded. (Result: 2a00:1450:4003:802::200e, Time: 83)
+2021-02-02 00:26:50,210 - Probe_Log - INFO -   DNS results:  ipv6.google.com (ipv6): 83ms
+2021-02-02 00:26:50,211 - Probe_Log - INFO - Sending results to local file cache.
+2021-02-02 00:26:50,216 - Probe_Log - INFO -   InfluxDB update: wiperf-dns, source=DNS
+2021-02-02 00:26:50,216 - Probe_Log - INFO -   Sending results data to Influx host: 192.168.192.104, port: 8086, database: wiperf)
+2021-02-02 00:26:50,218 - Probe_Log - DEBUG - Creating InfluxDB API client...
+2021-02-02 00:26:50,218 - Probe_Log - DEBUG - Remote host: -192.168.192.104-
+2021-02-02 00:26:50,219 - Probe_Log - DEBUG - Port: -8086-
+2021-02-02 00:26:50,219 - Probe_Log - DEBUG - Database: -wiperf-
+2021-02-02 00:26:50,220 - Probe_Log - DEBUG - User: -wiperf_probe-
+2021-02-02 00:26:50,384 - Probe_Log - INFO -   Data sent to influx OK
+2021-02-02 00:26:50,386 - Probe_Log - DEBUG -   Data structure sent to Influx:
+2021-02-02 00:26:50,386 - Probe_Log - DEBUG - {'measurement': 'wiperf-dns', 'tags': {'host': 'raspberrypiredewifi'}, 'fields': {'time': 1612225610211, 'dns_index': 6, 'dns_target': 'ipv6.google.com (ipv6)', 'lookup_time_ms': 83}, 'time': 1612225610211}
+2021-02-02 00:26:50,387 - Probe_Log - INFO -   DNS test ended.
+2021-02-02 00:26:50,387 - Probe_Log - DEBUG -   DNS test target: www.v6.facebook.com^v6
+2021-02-02 00:26:50,388 - Probe_Log - DEBUG -   Performing DNS lookup for: www.v6.facebook.com^v6
+2021-02-02 00:26:50,420 - Probe_Log - INFO -   DNS hostname lookup : www.v6.facebook.com / Result: 2a03:2880:f1ff:83:face:b00c:0:25de
+2021-02-02 00:26:50,420 - Probe_Log - DEBUG -   DNS lookup for: www.v6.facebook.com^v6 succeeded. (Result: 2a03:2880:f1ff:83:face:b00c:0:25de, Time: 32)
+2021-02-02 00:26:50,421 - Probe_Log - INFO -   DNS results:  www.v6.facebook.com (ipv6): 32ms
+2021-02-02 00:26:50,422 - Probe_Log - INFO - Sending results to local file cache.
+2021-02-02 00:26:50,428 - Probe_Log - INFO -   InfluxDB update: wiperf-dns, source=DNS
+2021-02-02 00:26:50,429 - Probe_Log - INFO -   Sending results data to Influx host: 192.168.192.104, port: 8086, database: wiperf)
+2021-02-02 00:26:50,430 - Probe_Log - DEBUG - Creating InfluxDB API client...
+2021-02-02 00:26:50,431 - Probe_Log - DEBUG - Remote host: -192.168.192.104-
+2021-02-02 00:26:50,432 - Probe_Log - DEBUG - Port: -8086-
+2021-02-02 00:26:50,433 - Probe_Log - DEBUG - Database: -wiperf-
+2021-02-02 00:26:50,433 - Probe_Log - DEBUG - User: -wiperf_probe-
+2021-02-02 00:26:50,606 - Probe_Log - INFO -   Data sent to influx OK
+2021-02-02 00:26:50,608 - Probe_Log - DEBUG -   Data structure sent to Influx:
+2021-02-02 00:26:50,608 - Probe_Log - DEBUG - {'measurement': 'wiperf-dns', 'tags': {'host': 'raspberrypiredewifi'}, 'fields': {'time': 1612225610422, 'dns_index': 7, 'dns_target': 'www.v6.facebook.com (ipv6)', 'lookup_time_ms': 32}, 'time': 1612225610422}
+2021-02-02 00:26:50,609 - Probe_Log - INFO -   DNS test ended.
+
+How do I know that wlan0 is being used as the default interface?
+
+################################################################################################
+################################################################################################
+
+HTTP Test - NOK
+
+2021-02-02 00:47:05,070 - Probe_Log - INFO -   DNS hostname lookup : ipv6.google.com / Result: 2a00:1450:4003:805::200e
+2021-02-02 00:47:05,091 - Probe_Log - INFO -   Checked interface route to : 2a00:1450:4003:805::200e. Result: 2a00:1450:4003:805::200e from :: via fe80::1 dev eth0 proto ra src 2001:818:e909:cf00:dea6:32ff:fe5b:2005 metric 1024 hoplimit 64 pref medium
+2021-02-02 00:47:05,099 - Probe_Log - ERROR -   Unable to test http to https://ipv6.google.com^v6 as route to destination not over correct interface...bypassing http tests
+2021-02-02 00:47:05,100 - Probe_Log - INFO - ########## iperf3 tcp test ##########

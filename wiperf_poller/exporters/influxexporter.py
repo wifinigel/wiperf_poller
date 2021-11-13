@@ -19,7 +19,7 @@ def time_lookup():
     return datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def influxexporter(localhost, host, port, username, password, database, dict_data, source, file_logger):
+def influxexporter(localhost, host, port, username, password, database, use_ssl, dict_data, source, file_logger):
 
     if not influx_modules:
         file_logger.error(" ********* MAJOR ERROR ********** ")
@@ -28,7 +28,7 @@ def influxexporter(localhost, host, port, username, password, database, dict_dat
         file_logger.error(import_err)
         sys.exit()
 
-    client = InfluxDBClient(host, port, username, password, database, timeout=100)
+    client = InfluxDBClient(host, port, username, password, database, ssl=use_ssl, verify_ssl=False, timeout=100)
     file_logger.debug("Creating InfluxDB API client...")
     file_logger.debug("Remote host: -{}-".format(host))
     file_logger.debug("Port: -{}-".format(port))

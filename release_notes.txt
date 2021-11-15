@@ -1,3 +1,6 @@
+v0.3.3
+1. Fix indent error
+
 v0.3.2
 1. Added fix for Influx DB ssl support
 

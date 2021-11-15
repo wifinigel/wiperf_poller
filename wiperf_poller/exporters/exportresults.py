@@ -34,7 +34,7 @@ class ResultsExporter(object):
         splunk_exp_obj=SplunkExporter(host, token, file_logger, port)
         return splunk_exp_obj.export_result(dict_data, source)
 
-    def send_results_to_influx(self, localhost, host, port, username, password, database, use_ssl, dict_data, source, file_logger):
+     def send_results_to_influx(self, localhost, host, port, username, password, database, use_ssl, dict_data, source, file_logger):
 
         file_logger.info("Sending results data to Influx host: {}, port: {}, database: {})".format(host, port, database))
         if is_ipv6(host): host = "[{}]".format(host)

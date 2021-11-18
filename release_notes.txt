@@ -1,3 +1,6 @@
+v0.3.4
+1. Fix influx2 data port naming issue
+
 v0.3.3
 1. Fix indent error
 

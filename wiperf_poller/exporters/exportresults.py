@@ -80,8 +80,9 @@ class ResultsExporter(object):
 
             # construct url
             host = config_vars['data_host']
+            scheme = 'https' if config_vars['influx2_ssl'] else 'http'
             if is_ipv6(host): host = "[{}]".format(host)
-            influx_url = "https://{}:{}".format(host, config_vars['data_port'])
+            influx_url = "{}://{}:{}".format(scheme, host, config_vars['data_port'])
 
             sent_ok = self.send_results_to_influx2(gethostname(), influx_url, config_vars['influx2_token'],
                     config_vars['influx2_bucket'], config_vars['influx2_org'], results_dict, data_file, file_logger)

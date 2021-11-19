@@ -18,7 +18,7 @@ except ImportError as error:
 # TODO: convert to class
 
 def time_lookup():
-    return datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def influxexporter2(localhost, url, token, bucket, org, dict_data, source, file_logger):

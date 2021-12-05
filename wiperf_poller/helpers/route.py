@@ -18,6 +18,28 @@ def is_ipv6(ip_address):
     """
     return re.search(r'[abcdf0123456789]+:', ip_address)
 
+def _ipv4_find_gateway(interface_name, file_logger):
+
+    # Extract the gateway field from all default route
+    # entries in the routing table. This will give us
+    # a gateway for each interface to use in static
+    # route entries (assuming they exist)
+
+    # get routing table, otherwise show route that will actually be chosen by kernel
+    #
+    # extract with grep & cut from line of this format:
+    #    default         192.168.1.254   0.0.0.0         UG    0      0        0 wlan0
+    gateway_extract_cmd = f'ip -4 route | grep default | grep {interface_name} | cut -d" " -f 3'
+
+    try:
+        gateway = subprocess.check_output(gateway_extract_cmd, stderr=subprocess.STDOUT, shell=True).decode()
+        file_logger.info("  Checked gateway for interface : {}. Result: {}".format(interface_name, gateway))
+        return gateway
+    except subprocess.CalledProcessError as exc:
+        output = exc.output.decode()
+        file_logger.error("  Issue extracting gateway from route table (cmd syntax?): {} (command used: {})".format(str(output), gateway_extract_cmd))
+        return ''
+
 
 def resolve_name(hostname, file_logger):
     """
@@ -102,7 +124,7 @@ def check_correct_ipv4_mgt_interface(mgt_ip, mgt_interface, file_logger):
         file_logger.info("  Mgt interface route looks good.")
         return True
     else:
-        file_logger.info("  Mgt interface will be routed over wrong interface: {}".format(route_to_dest))
+        file_logger.info("  Mgt traffic will be routed over wrong interface: {}".format(route_to_dest))
         return False
 
 
@@ -189,7 +211,7 @@ def inject_default_route(ip_address, config_vars, file_logger):
 
     if not "default" in route_to_dest:
         # this isn't a default route, so we can't fix this
-        file_logger.error('  [Route Injection] Route is not a default route entry...cannot resove this routing issue: {}'.format(route_to_dest))
+        file_logger.error('  [Route Injection] Route is not a default route entry...cannot resolve this routing issue: {}'.format(route_to_dest))
         return False
   
     # delete and re-add route with a new metric
@@ -240,9 +262,19 @@ def _inject_static_route(ip_address, req_interface, traffic_type, file_logger, i
     matched traffic over a specific interface
     """
 
+    # find out if we have a gateway address for this interface
+    gateway = _ipv4_find_gateway(req_interface, file_logger)
+    new_route = ""
+
+    if gateway:
+        file_logger.warning(f"  [Route Injection] Gateway for interface found, using: {gateway}")
+        new_route = "{} dev {} via {}".format(ip_address, req_interface, gateway)
+    else:
+        file_logger.warning(f"  [Route Injection] Unable to find gateway for interface {req_interface}, just adding interface target")
+        new_route = "{} dev {}".format(ip_address, req_interface)
+
     file_logger.info("  [Route Injection] Attempting static route insertion to fix routing issue")
     try:
-        new_route = "{} dev {}".format(ip_address, req_interface)
         add_route_cmd = "{} {} route add  ".format(IP_CMD, ip_ver) + new_route
         subprocess.run(add_route_cmd, shell=True)
         file_logger.info("  [Route Injection] Adding new {} traffic route: {}".format(traffic_type, new_route))
@@ -266,6 +298,9 @@ def inject_mgt_static_route(ip_address, config_vars, file_logger):
     Inject a static route to correct routing issue for mgt traffic
     """
     mgt_interface = config_vars['mgt_if']
+
+    # figure out mgt_ip (in case hostname passed)
+    ip_address = resolve_name(ip_address, file_logger)
 
     if is_ipv6(ip_address): 
         return _inject_ipv6_static_route(ip_address, mgt_interface, "mgt", file_logger)
